@@ -49,6 +49,7 @@ export const MAX_CHALLENGE_CONTEXT_LENGTH = 2000;
 
 export const analysisRequestSchema = z.object({
   transcript: z.string().trim().min(1).max(MAX_TRANSCRIPT_LENGTH),
+  pairId: pairIdSchema.optional(),
 });
 export type AnalysisRequest = z.infer<typeof analysisRequestSchema>;
 
@@ -77,12 +78,34 @@ export const analysisResponseSchema = z.object({
 });
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>;
 
+// J4: Pressure Check response (Featherless output)
+export const verdictSchemaJ4 = z.enum(["likely_human", "likely_clone", "uncertain"]);
+export type VerdictJ4 = z.infer<typeof verdictSchemaJ4>;
+
+export const pressureCheckResponseSchema = z.object({
+  pressureScore: z.number().int().min(0).max(100),
+  humanLikelihood: z.number().int().min(0).max(100),
+  reasoning: z.string().max(500),
+  verdict: verdictSchemaJ4,
+});
+export type PressureCheckResponse = z.infer<typeof pressureCheckResponseSchema>;
+
+// J4: Challenge request/response (Featherless output)
 export const challengeRequestSchema = z.object({
-  context: z.string().trim().min(1).max(MAX_CHALLENGE_CONTEXT_LENGTH),
+  pairId: pairIdSchema,
+  context: z.string().trim().min(1).max(MAX_CHALLENGE_CONTEXT_LENGTH).optional(),
 });
 export type ChallengeRequest = z.infer<typeof challengeRequestSchema>;
 
+export const challengeCategorySchema = z.enum(["personal", "recent", "common_knowledge"]);
+export type ChallengeCategory = z.infer<typeof challengeCategorySchema>;
+
+export const challengeDifficultySchema = z.enum(["easy", "medium", "hard"]);
+export type ChallengeDifficulty = z.infer<typeof challengeDifficultySchema>;
+
 export const challengeResponseSchema = z.object({
-  question: z.string().trim().min(1).max(300),
+  challenge: z.string().trim().min(1).max(300),
+  category: challengeCategorySchema,
+  difficulty: challengeDifficultySchema,
 });
 export type ChallengeResponse = z.infer<typeof challengeResponseSchema>;
