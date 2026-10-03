@@ -2,12 +2,15 @@
 
 import { useLiveCode } from "./useLiveCode";
 
-export function CodeDisplay({ pairId }: { pairId: string }) {
+export function CodeDisplay({ pairId, isCaller = false }: { pairId: string; isCaller?: boolean }) {
   const live = useLiveCode(pairId);
 
   if (live.status === "error") {
     return (
-      <p role="alert" className="rounded-2xl border border-red-900 bg-red-950 p-4 text-red-200">
+      <p
+        role="alert"
+        className="rounded-2xl border border-red-900 bg-red-950 p-4 text-red-200 text-center"
+      >
         {live.message}
       </p>
     );
@@ -16,17 +19,18 @@ export function CodeDisplay({ pairId }: { pairId: string }) {
   const ready = live.status === "ready";
   const digits = ready ? `${live.code.slice(0, 3)} ${live.code.slice(3)}` : "••• •••";
   const secondsLeft = ready ? live.secondsLeft : 30;
+  const codeSize = isCaller ? "text-9xl" : "text-7xl";
 
   return (
-    <div className="flex flex-col items-center gap-4 py-6">
+    <div className="flex flex-col items-center gap-6 py-4">
       <div
-        className="text-7xl font-bold tabular-nums tracking-[0.15em]"
+        className={`${codeSize} font-bold tabular-nums tracking-[0.2em] font-mono`}
         aria-label={ready ? `Current code ${live.code.split("").join(" ")}` : "Loading the code"}
       >
         {digits}
       </div>
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-neutral-800"
+        className="h-3 w-full max-w-xs overflow-hidden rounded-full bg-neutral-800"
         role="progressbar"
         aria-label="Time before the code changes"
         aria-valuemin={0}
@@ -38,7 +42,7 @@ export function CodeDisplay({ pairId }: { pairId: string }) {
           style={{ width: `${(secondsLeft / 30) * 100}%` }}
         />
       </div>
-      <p className="text-lg text-neutral-400">
+      <p className="text-lg text-neutral-400 text-center">
         {ready ? `Changes in ${secondsLeft} s` : "Loading the code…"}
       </p>
     </div>

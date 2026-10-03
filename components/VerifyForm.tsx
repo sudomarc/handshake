@@ -6,17 +6,17 @@ import { verifyCodeResponseSchema, type Verdict } from "@/lib/schemas";
 const MESSAGES: Record<Verdict, { title: string; body: string; style: string }> = {
   waiting: {
     title: "Waiting for the code",
-    body: "Ask the caller to say the 6 digits, then type what you heard.",
+    body: "Ask the caller to say the 6 digits. Then type what you heard.",
     style: "border-neutral-800 bg-neutral-900 text-neutral-300",
   },
   verified: {
-    title: "It matches",
-    body: "The caller knows the current code. They have access to your trusted pair.",
+    title: "Verified",
+    body: "The caller knows the code. They have access to your trusted connection.",
     style: "border-green-800 bg-green-950 text-green-100",
   },
   "not-verified": {
-    title: "It does not match",
-    body: "Do not trust this call. Hang up and call the person back on a number you already know.",
+    title: "Not verified",
+    body: "The code does not match. Do not send money or share sensitive info. Hang up and call the person back on a number you already know.",
     style: "border-red-800 bg-red-950 text-red-100",
   },
 };
@@ -89,14 +89,14 @@ export function VerifyForm({ pairId }: { pairId: string }) {
           {busy ? "Checking…" : "Check the code"}
         </button>
         {error ? (
-          <p role="alert" className="text-red-300">
+          <p role="alert" className="text-red-300 text-center">
             {error}
           </p>
         ) : null}
       </form>
-      <div role="status" className={`rounded-2xl border p-4 ${message.style}`}>
-        <p className="text-xl font-semibold">{message.title}</p>
-        <p className="mt-1 text-lg leading-7">{message.body}</p>
+      <div role="status" className={`rounded-2xl border p-6 ${message.style}`}>
+        <p className="text-2xl font-bold text-center">{message.title}</p>
+        <p className="mt-2 text-lg leading-7 text-center">{message.body}</p>
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ export function CreatePair() {
       if (!res.ok) throw new Error("request failed");
       setPairId(createPairResponseSchema.parse(json).pairId);
     } catch {
-      setError("We couldn't create the pair. Try again.");
+      setError("We couldn't create the trusted person. Try again.");
     } finally {
       setBusy(false);
     }
@@ -35,7 +35,7 @@ export function CreatePair() {
         disabled={busy}
         className="rounded-2xl bg-white p-4 text-lg font-semibold text-neutral-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-50"
       >
-        {busy ? "Creating…" : pairId ? "Create another pair" : "Create a trusted pair"}
+        {busy ? "Creating…" : pairId ? "Add another person" : "Add a trusted person"}
       </button>
       {error ? (
         <p role="alert" className="text-red-300">
@@ -45,16 +45,16 @@ export function CreatePair() {
       {pairId ? (
         <div className="flex flex-col gap-3">
           <p className="text-lg leading-7 text-neutral-300">
-            Share this pair code only with the person you trust, in person:
+            Share this code only with the person you trust, in person:
           </p>
           <p className="break-all rounded-2xl border border-neutral-700 p-4 font-mono text-lg">
             {pairId}
           </p>
           <Link href={`/codes/${pairId}`} className={linkStyle}>
-            I&rsquo;m the one calling — show my code
+            I am the one calling — show my code
           </Link>
           <Link href={`/verify/${pairId}`} className={linkStyle}>
-            I&rsquo;m receiving a call — verify it
+            I am receiving a call — verify them
           </Link>
         </div>
       ) : null}
