@@ -43,8 +43,9 @@ async function chatCompletionWithRetry(
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        throw new Error(`Featherless API error (${response.status}): ${text}`);
+        await response.text().catch(() => "");
+        // Do NOT retry on HTTP errors (4xx, 5xx) - fail immediately
+        throw new Error(`Featherless API error (${response.status})`);
       }
 
       const data = await response.json();
@@ -61,16 +62,19 @@ async function chatCompletionWithRetry(
       return responseSchema.parse(parsed);
     } catch (error) {
       clearTimeout(timeoutId);
-      lastError = error instanceof Error ? error : new Error(String(error));
+      const err = error instanceof Error ? error : new Error(String(error));
 
-      if (error instanceof z.ZodError) {
-        lastError = new Error(`Featherless response validation failed: ${error.message}`);
-      }
+      // Only retry on JSON parse failure or Zod validation failure (malformed model output)
+      const isRetryable =
+        err.message === "Featherless returned invalid JSON" || error instanceof z.ZodError;
 
-      if (attempt === 0) {
+      if (attempt === 0 && isRetryable) {
+        lastError = err;
         continue;
       }
-      throw lastError;
+
+      // For all other errors (HTTP errors, timeout, network, config, auth), fail immediately
+      throw err;
     }
   }
 

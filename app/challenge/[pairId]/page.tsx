@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, ChangeEvent } from "react";
+import { useParams } from "next/navigation";
 import { PageShell } from "@/components/PageShell";
 
 type ChallengeResult = {
@@ -16,18 +17,21 @@ type ApiError = {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const categoryLabels: Record<ChallengeResult["category"], string> = {
   personal: "Personal / shared history",
   recent: "Recent event",
   common_knowledge: "Common knowledge",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const difficultyLabels: Record<ChallengeResult["difficulty"], string> = {
   easy: "Easy",
   medium: "Medium",
   hard: "Hard",
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const difficultyColors: Record<ChallengeResult["difficulty"], { bg: string; text: string }> = {
   easy: { bg: "bg-green-900/30", text: "text-green-300" },
   medium: { bg: "bg-amber-900/30", text: "text-amber-300" },
@@ -35,11 +39,32 @@ const difficultyColors: Record<ChallengeResult["difficulty"], { bg: string; text
 };
 
 export default function ChallengePage() {
+  const params = useParams<{ pairId: string }>();
+  const pairId = params.pairId;
+
   const [context, setContext] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+
+  const categoryLabels: Record<ChallengeResult["category"], string> = {
+    personal: "Personal / shared history",
+    recent: "Recent event",
+    common_knowledge: "Common knowledge",
+  };
+
+  const difficultyLabels: Record<ChallengeResult["difficulty"], string> = {
+    easy: "Easy",
+    medium: "Medium",
+    hard: "Hard",
+  };
+
+  const difficultyColors: Record<ChallengeResult["difficulty"], { bg: string; text: string }> = {
+    easy: { bg: "bg-green-900/30", text: "text-green-300" },
+    medium: { bg: "bg-amber-900/30", text: "text-amber-300" },
+    hard: { bg: "bg-red-900/30", text: "text-red-300" },
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,7 +88,7 @@ export default function ChallengePage() {
       const response = await fetch("/api/challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pairId: "demo-pair-id", context: trimmed }),
+        body: JSON.stringify({ pairId, context: trimmed }),
       });
 
       const data = await response.json();
