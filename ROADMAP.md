@@ -15,8 +15,8 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 - [x] Event facts verified: deadline 12:00 PM EDT, judging criteria, track prompt
 - [x] Repo initialized: Next.js 16 + TS + Tailwind, otplib, zod, ESLint, Prettier
 - [x] Docs: README, ROADMAP, ARCHITECTURE, SECURITY, DEMO_SCRIPT
-- [ ] **You:** register on Devpost (forgehacks-2026.devpost.com) + join Discord
-- [ ] **You:** redeem $25 Featherless credits (Discord) → API key → `.env.local`
+- [x] **You:** register on Devpost (forgehacks-2026.devpost.com) + join Discord
+- [x] **You:** redeem $25 Featherless credits (Discord) → API key → `.env.local`
 
 ### J2 — Sun Oct 4: rotating codes end to end
 
