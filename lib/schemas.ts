@@ -53,31 +53,6 @@ export const analysisRequestSchema = z.object({
 });
 export type AnalysisRequest = z.infer<typeof analysisRequestSchema>;
 
-export const riskLevelSchema = z.enum(["low", "medium", "high"]);
-export type RiskLevel = z.infer<typeof riskLevelSchema>;
-
-export const tacticNameSchema = z.enum([
-  "artificial_urgency",
-  "secrecy",
-  "immediate_payment",
-  "authority_pressure",
-  "other",
-]);
-export type TacticName = z.infer<typeof tacticNameSchema>;
-
-export const tacticSchema = z.object({
-  name: tacticNameSchema,
-  evidence: z.string().max(280),
-});
-export type Tactic = z.infer<typeof tacticSchema>;
-
-export const analysisResponseSchema = z.object({
-  riskLevel: riskLevelSchema,
-  tactics: z.array(tacticSchema).max(8),
-  summary: z.string().max(500),
-});
-export type AnalysisResponse = z.infer<typeof analysisResponseSchema>;
-
 // J4: Pressure Check response (Featherless output)
 export const verdictSchemaJ4 = z.enum(["likely_human", "likely_clone", "uncertain"]);
 export type VerdictJ4 = z.infer<typeof verdictSchemaJ4>;
