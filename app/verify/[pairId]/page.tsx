@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { CodeDisplay } from "@/components/CodeDisplay";
 import { PageShell } from "@/components/PageShell";
+import { VerifyForm } from "@/components/VerifyForm";
 import { pairIdSchema } from "@/lib/schemas";
 
 export default async function VerifyPage({ params }: { params: Promise<{ pairId: string }> }) {
@@ -10,13 +12,12 @@ export default async function VerifyPage({ params }: { params: Promise<{ pairId:
     <PageShell title="Verify a call">
       {parsed.success ? (
         <>
-          <div className="flex flex-col items-center gap-3 py-6" aria-live="polite">
-            <div className="text-7xl font-bold tabular-nums tracking-[0.25em]">••••••</div>
-            <p className="text-lg text-neutral-400">The live code appears here.</p>
-          </div>
+          <CodeDisplay pairId={parsed.data} />
           <p className="text-lg leading-7 text-neutral-300">
-            Ask the caller to say the code. If they can, it&rsquo;s the real person.
+            Ask the caller to say the code out loud. Compare it with the one above, or type what you
+            heard.
           </p>
+          <VerifyForm pairId={parsed.data} />
         </>
       ) : (
         <p className="text-lg leading-7 text-neutral-300">

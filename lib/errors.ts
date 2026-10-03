@@ -11,3 +11,10 @@ export class PairNotFoundError extends Error {
     this.name = "PairNotFoundError";
   }
 }
+
+export class ConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConfigError";
+  }
+}

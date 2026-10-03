@@ -28,6 +28,7 @@ export const currentCodeResponseSchema = z.object({
   code: sixDigitCodeSchema,
   windowStart: z.number().int().nonnegative(),
   periodSeconds: z.literal(30),
+  secondsRemaining: z.number().int().min(1).max(30),
 });
 export type CurrentCode = z.infer<typeof currentCodeResponseSchema>;
 
