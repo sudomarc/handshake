@@ -21,6 +21,14 @@ const MESSAGES: Record<Verdict, { title: string; body: string; style: string }> 
   },
 };
 
+function readMessage(json: unknown): string | null {
+  if (typeof json !== "object" || json === null || !("error" in json)) return null;
+  const error = (json as { error: unknown }).error;
+  if (typeof error !== "object" || error === null || !("message" in error)) return null;
+  const message = (error as { message: unknown }).message;
+  return typeof message === "string" ? message : null;
+}
+
 export function VerifyForm({ pairId }: { pairId: string }) {
   const [code, setCode] = useState("");
   const [verdict, setVerdict] = useState<Verdict>("waiting");
@@ -42,6 +50,10 @@ export function VerifyForm({ pairId }: { pairId: string }) {
         body: JSON.stringify({ pairId, code }),
       });
       const json: unknown = await res.json();
+      if (res.status === 429) {
+        setError(readMessage(json) ?? "Too many tries. Wait a moment, then try again.");
+        return;
+      }
       if (!res.ok) throw new Error("request failed");
       setVerdict(verifyCodeResponseSchema.parse(json).verdict);
     } catch {

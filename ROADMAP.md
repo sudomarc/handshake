@@ -20,18 +20,18 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 
 ### J2 — Sun Oct 4: rotating codes end to end
 
-- [ ] Pair creation (server derives + holds the pair secret)
-- [ ] "My codes" screen (caller side): current code + countdown
-- [ ] Verify screen (receiver side): huge code + countdown + claimed-code entry
-- [ ] Server verify: verdict `verified` / `not-verified` / `waiting`
-- [ ] Manual test: two devices, same code, wrong code rejected, rotation works
+- [x] Pair creation (server derives + holds the pair secret)
+- [x] "My codes" screen (caller side): current code + countdown
+- [x] Verify screen (receiver side): huge code + countdown + claimed-code entry
+- [x] Server verify: verdict `verified` / `not-verified` / `waiting`
+- [x] Manual test: two devices, same code, wrong code rejected, rotation works
 - **Definition of done:** the code flow works live on two devices, no manual state.
 
 ### J3 — Mon Oct 5: hardening + public URL
 
-- [ ] Rate limiting on code verify (attempts per window per pair)
-- [ ] Rotation-boundary handling (current ± previous window)
-- [ ] Error states: unknown pair, expired window, malformed input — plain language
+- [x] Rate limiting on code verify (attempts per window per pair)
+- [x] Rotation-boundary handling (current ± previous window)
+- [x] Error states: malformed input, rate limited, not configured — plain language (no "unknown pair": pair secrets are derived, so every well-formed pair ID is valid by design)
 - [ ] Vercel deploy, public URL tested from a mobile network
 - **Definition of done:** a stranger with the URL cannot break or spam the demo.
 

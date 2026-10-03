@@ -33,8 +33,14 @@ the flow, not the only control a production system would rely on).
 
 **Attack.** An attacker watches a pair and guesses codes: 1,000,000 possibilities per window.
 **Mitigation.** Rate limit: at most 5 verify attempts per window per pair, then
-the pair is locked for the rest of that window (J3). That bounds guessing to
+the pair is locked for the rest of that window (implemented in J3: HTTP 429 with
+`Retry-After`, plus 30 attempts/minute per client IP). That bounds guessing to
 5/1,000,000 per window per pair.
+
+**Residual risk.** Counters are in memory, per server instance. On serverless
+hosting several instances can run at once, so the real limit can be a small
+multiple of 5. Someone who knows the pair ID can also burn the 5 attempts and
+lock the real receiver out for the rest of the window (at most 30 s).
 **Residual risk.** A distributed attacker could use many source addresses; the
 demo does not implement IP-level abuse tracking (Vercel platform defaults
 apply). Documented, not solved.

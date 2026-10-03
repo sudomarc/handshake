@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { NotImplementedError, PairNotFoundError } from "./errors";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "./errors";
 
 type ApiError = { code: string; message: string };
 
@@ -13,6 +13,21 @@ export function handleApiError(error: unknown) {
     return jsonError(400, {
       code: "invalid_input",
       message: "That input doesn't look right. Please check it and try again.",
+    });
+  }
+  if (error instanceof RateLimitError) {
+    const response = jsonError(429, {
+      code: "rate_limited",
+      message: `Too many tries. Wait ${error.retryAfterSeconds} seconds, then try again.`,
+    });
+    response.headers.set("Retry-After", String(error.retryAfterSeconds));
+    return response;
+  }
+  if (error instanceof ConfigError) {
+    console.error("Configuration error:", error.message);
+    return jsonError(503, {
+      code: "not_configured",
+      message: "The service isn't set up yet. Please try again later.",
     });
   }
   if (error instanceof NotImplementedError) {

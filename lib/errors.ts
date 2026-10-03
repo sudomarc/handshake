@@ -18,3 +18,12 @@ export class ConfigError extends Error {
     this.name = "ConfigError";
   }
 }
+
+export class RateLimitError extends Error {
+  readonly retryAfterSeconds: number;
+  constructor(retryAfterSeconds: number) {
+    super("Too many attempts");
+    this.name = "RateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
