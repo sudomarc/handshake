@@ -16,6 +16,9 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://handshake-pi-amber.vercel.app"
       }
     },
     "production": {
