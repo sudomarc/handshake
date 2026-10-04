@@ -41,10 +41,10 @@ aid unless the live feature is independently verified.
 - **Personal-first UX.** The long-term Personal product should feel automated:
   the user starts a protection/check flow and Handshake orchestrates the relevant
   checks instead of asking the user to choose technical tools.
-- **Platform split (future direction).** Personal is intended as a mobile app;
-  Business is intended as a web application. The current hackathon web app remains
-  the working prototype and should not be blocked by building the future mobile
-  client.
+- **Hackathon platform decision.** Personal mobile is now the primary hackathon
+  deliverable. The existing Next.js web app remains in the repo as the working
+  prototype and API/reference client. Do not broadly rewrite it during the mobile
+  sprint. Business web is the post-hackathon product.
 
 ## Day plan
 
@@ -101,41 +101,61 @@ aid unless the live feature is independently verified.
 - [ ] Upload fallback video (unlisted)
 - **Definition of done:** the contrast is real, observed, and on record.
 
-### J6 — Thu Oct 8: polish + first-hour + story
+### J6 — Thu Oct 8: Personal mobile MVP + integration + story
 
-- [ ] First-hour screen (static checklist)
-- [ ] UX/UI redesign: improve hierarchy, contrast, controls, states, spacing,
-      visual identity and human readability — not just a color swap
-- [ ] Keep the primary Personal flow obvious: start verification; do not make
-      the user choose internal security/AI tools for the core flow
+- [ ] Create Handshake Personal mobile app in isolated `mobile/` Expo project
+- [ ] Keep the existing Next.js web prototype intact except for necessary API/compatibility fixes
+- [ ] Implement real trusted-person + rotating-code verification flows in mobile
+- [ ] Implement caller code screen optimized for reading aloud
+- [ ] Remove internal-tool choice from the primary Personal flow
+- [ ] Establish mobile API base URL configuration
+- [ ] Configure an Android APK build for testing/demo
+- [ ] Real two-device mobile test against the existing backend
+- [ ] First-hour screen only if time remains after the mobile core is stable
+- [ ] Mobile UI polish: hierarchy, contrast, controls, states, spacing and human readability
 - [ ] README final pass + Devpost project story written
-- [ ] Document which parts are live, which are fallbacks, and which are future
-      product direction
-- **Definition of done:** a first-time user completes the verify flow unaided on a phone.
+- [ ] Document live features, fallbacks, future Business web direction and mobile limitations
+- **Definition of done:** Handshake Personal mobile completes the real verify flow on two devices.
 
-### J7 — Fri Oct 9: final tests, final video, submit
+### J7 — Fri Oct 9: mobile QA + final demo + submit
 
-- [ ] Full manual test pass on the public URL (fresh browser, mobile)
-- [ ] Recreate demo pair right before the demo (storage may be ephemeral)
+- [ ] Full manual test pass on the mobile app
+- [ ] Test the Android APK on a real device/emulator
+- [ ] Real two-device verification test using the mobile app
+- [ ] Keep the web prototype/API healthy after any compatibility fix
+- [ ] Record the cleanest real mobile demo
 - [ ] Final public demo video, **2–4 min maximum**
-- [ ] Video clearly shows the problem and how Handshake works
+- [ ] Video clearly shows the problem and how the mobile Handshake product works
 - [ ] Final README/project description includes target users, technical approach,
       real-world impact, and the correct track
 - [ ] Confirm GitHub repo is publicly accessible and contains source code + clear README
-- [ ] Add deployment/testing link and supporting screenshots/architecture evidence
-- [ ] Explicitly label live features, fallbacks, and future/unshipped features
-- [ ] **Submit on Devpost before 12:00 PM EDT** (target: by noon)
+- [ ] Add mobile build/testing evidence, screenshots and architecture evidence
+- [ ] Explicitly label live features, fallbacks, and future Business web product
+- [ ] **Submit on Devpost before 12:00 PM EST** (target: by noon)
 - [ ] Stop. Buffer day (Oct 10) is untouched.
+
+## Hackathon platform decision
+
+**Decision recorded 2026-10-04:** Handshake Personal mobile is the primary
+ForgeHacks deliverable.
+
+The existing Next.js web app is preserved as the working web prototype and API
+reference. It may receive minimal fixes when required by the mobile client, but
+there is no broad web rewrite during this mobile sprint.
+
+After the hackathon, the web product becomes the basis for **Handshake Business**
+for organizations. The mobile client becomes the Personal product for families
+and individuals.
 
 ## Post-hackathon product direction
 
 These are **future product decisions**, not requirements that block the current
 hackathon submission:
 
-1. Build Handshake Personal as a React Native + Expo + TypeScript mobile app,
-   with Android APK builds for testing/distribution and an eventual Play Store
-   AAB/iOS distribution path.
-2. Keep Handshake Business as the web experience for organizations.
+1. Continue Handshake Personal as a React Native + Expo + TypeScript mobile
+   product, with Android APK builds for direct testing and AAB/iOS distribution
+   paths as appropriate.
+2. Evolve the existing Next.js web product into Handshake Business for organizations.
 3. Keep a shared Handshake Core/API so security and verification logic is not
    duplicated across clients.
 4. Move from explicit internal tools to automated orchestration in Personal:
@@ -154,8 +174,9 @@ hackathon submission:
 
 ## Definition of done (overall)
 
-- Public URL works from a phone.
-- Core verification flow works for real on two devices.
+- Handshake Personal mobile build is testable on a real Android device.
+- Core mobile verification flow works for real on two devices.
+- Existing web prototype/API still passes its regression checks.
 - Any live AI feature shown in the demo actually calls the configured backend.
 - Public demo video (2–4 min max) uploaded and linked on Devpost.
 - Repo public with README that a judge can follow to run the app.
