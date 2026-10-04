@@ -180,9 +180,39 @@ underlying orchestration is still being designed.
   the app. Before any production use, the provider's data-retention and
   no-training policies must be reviewed (not yet done for this demo).
 
+## Hackathon submission standard
+
+ForgeHacks requires a **working AI-powered project** addressing a real-world
+problem. The submission must include a project description, track selection, a
+**public 2–4 minute demo video** showing the problem and how the project works,
+a GitHub repository with source code and a clear README, a written description
+covering the problem/target users, technical approach and real-world impact, and
+supporting evidence such as screenshots, an architecture diagram, or a testing
+deployment link.
+
+The judging criteria explicitly include **Execution & Completeness**, which
+looks at working demo, polish, usability, and how much was actually shipped.
+Incomplete submissions missing the required video or code are not eligible for
+judging.
+
+Source: https://forgehacks-2026.devpost.com/ and
+https://forgehacks-2026.devpost.com/rules
+
+For Handshake, this means:
+
+- the core verification flow must work for real;
+- any AI feature presented as live must actually call the configured backend;
+- screenshots/prerecorded footage are acceptable as clearly identified fallbacks
+  or presentation aids, not as substitutes for a claimed live feature;
+- external results such as a deepfake-detector classification must be observed
+  before they are claimed;
+- future mobile, Business, production, and other unshipped features should be
+  labeled as future direction rather than represented as completed functionality.
+
 ## Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — components, data flows, trust boundaries
 - [SECURITY.md](./SECURITY.md) — plain-language threat model, mitigations and gaps
-- [ROADMAP.md](./ROADMAP.md) — day-by-day plan and cut list
-- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) — the exact demo flow with fallbacks
+- [ROADMAP.md](./ROADMAP.md) — day-by-day plan, demo standard, and product direction
+- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) — exact demo flow with evidence-based fallbacks
+- [HACKATHON.md](./HACKATHON.md) — verified ForgeHacks submission requirements
