@@ -41,6 +41,16 @@ aid unless the live feature is independently verified.
 - **Personal-first UX.** The long-term Personal product should feel automated:
   the user starts a protection/check flow and Handshake orchestrates the relevant
   checks instead of asking the user to choose technical tools.
+- **Call-aware automation is the long-term target.** During a supported call
+  session, Handshake should act as a protection companion: identify the trusted
+  person, prepare the relevant verification context, run appropriate checks when
+  the required signals are available, and surface one understandable result.
+  The user should not have to manually open Pressure Check, Personal Challenge,
+  or other internal controls one by one.
+- **Platform boundaries are explicit.** Call state, audio, transcription and
+  background execution can only be used where the operating system and user
+  permissions actually allow them. A future call mode must never depend on a
+  fabricated "always listening" capability.
 - **Hackathon platform decision.** Personal mobile is now the primary hackathon
   deliverable. The existing Next.js web app remains in the repo as the working
   prototype and API/reference client. Do not broadly rewrite it during the mobile
@@ -115,7 +125,12 @@ aid unless the live feature is independently verified.
 - [ ] Mobile UI polish: hierarchy, contrast, controls, states, spacing and human readability
 - [ ] README final pass + Devpost project story written
 - [ ] Document live features, fallbacks, future Business web direction and mobile limitations
+- [ ] Do **not** attempt unrestricted phone-call interception or background recording for the hackathon MVP
 - **Definition of done:** Handshake Personal mobile completes the real verify flow on two devices.
+
+**Hackathon boundary:** automatic during-call behavior is a post-hackathon
+product phase. The current sprint proves the trust model and mobile client
+without destabilizing them through an unverified telephony integration.
 
 ### J7 — Fri Oct 9: mobile QA + final demo + submit
 
@@ -162,6 +177,84 @@ hackathon submission:
    Handshake should select appropriate checks and expose one understandable result.
 5. Add real accounts, device enrollment/revocation, persistent storage and
    production-grade abuse controls before any real consumer security claim.
+
+## Post-hackathon roadmap — automatic protection during calls
+
+The long-term Personal experience is not a toolbox of manual security features.
+Handshake should become a **user-controlled trust layer around a communication
+session**, automatically choosing the smallest useful set of checks.
+
+### Phase 1 — Call-awareness feasibility
+
+- Verify what Android and iOS actually permit for call-state awareness,
+  background execution, notifications, audio access and transcription.
+- Prototype only OS-supported signals with explicit user consent.
+- Identify which call types are realistically supportable first (for example,
+  supported VoIP/app calls versus carrier calls).
+- Keep the existing verification API as the source of truth.
+
+**Exit condition:** one real supported call/session scenario can be detected or
+entered without claiming capabilities the platform does not provide.
+
+### Phase 2 — Protected Call Session
+
+When a protected call starts, Handshake should automatically:
+
+1. load the trusted-person relationship and enrolled device context;
+2. start the rotating-code verification context;
+3. prepare the relevant risk checks;
+4. keep one simple user-facing state: **Protected / Verify / Risk**.
+
+The user can pause or end the protection session at any time.
+
+**Target flow:**
+
+Call starts → Handshake prepares → relevant checks run automatically → one clear result
+
+### Phase 3 — Automatic orchestration
+
+Introduce a server-side orchestration/policy layer that decides which checks
+are appropriate from the signals actually available:
+
+- rotating-code verification for trusted-person identity;
+- Personal Challenge only when additional proof is useful;
+- Pressure Check when a permitted transcript/message source is available;
+- recovery guidance when the user reports that money or sensitive information
+  may already have been sent.
+
+The UI should present the result and the evidence behind it, not the internal
+tool names or technical workflow.
+
+**Target behavior:** the user does not choose the security mechanism; Handshake
+chooses the next appropriate verification step.
+
+### Phase 4 — Accounts, devices and persistent trust
+
+- Real accounts and authentication.
+- Trusted-person invitations and relationship management.
+- Device enrollment, revocation and recovery.
+- Real database and production-grade secret storage.
+- Replace shared pair IDs as the primary identity primitive.
+
+### Phase 5 — Handshake Business
+
+- Evolve the existing Next.js web prototype into the organization-facing
+  Handshake Business dashboard.
+- Add organization administration, policies, verification history and reporting.
+- Reuse Handshake Core/API instead of duplicating trust logic.
+
+### Phase 6 — Production security, privacy and evaluation
+
+- Production-grade rate limiting, abuse detection and audit logging.
+- Explicit consent, privacy controls and data deletion for call-derived data.
+- Security review and adversarial testing.
+- Measure advisory AI signals before publishing performance claims.
+- Review provider data retention and data-processing requirements.
+
+**Long-term product principle:** Handshake should feel automatic during a
+supported communication session, while remaining explicit, user-controlled and
+privacy-preserving. It must never become invisible surveillance or claim
+unverified platform capabilities.
 
 ## Cut list (in this order, only if behind)
 
