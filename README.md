@@ -155,9 +155,19 @@ The intended product split is:
 For Personal, the long-term UX goal is **automation rather than a toolbox**:
 users should not have to decide whether to run Pressure Check, Personal Question,
 or another internal control. Handshake should determine which verification signals
-are appropriate and present one clear result. The current prototype keeps these
-controls explicit because that is simpler and safer to demonstrate while the
-underlying orchestration is still being designed.
+are appropriate and present one clear result.
+
+The stronger long-term vision is **call-aware protection**. During a supported
+call session, Handshake should automatically prepare the trusted-person context,
+start the relevant verification flow, and invoke additional checks when useful
+signals are available. The user should experience this as one protection layer
+around the call, not as a sequence of separate tools.
+
+The current prototype keeps these controls explicit because that is simpler and
+safer to demonstrate while orchestration and mobile OS capabilities are still
+being validated. The roadmap treats call-aware/background behavior as a
+post-hackathon phase; no capability is considered live until it is verified on
+the target platform.
 
 ## Honest limitations
 - **Demo-grade storage.** Pair data lives in simple server-side local storage.
