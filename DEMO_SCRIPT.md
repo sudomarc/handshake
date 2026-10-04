@@ -1,79 +1,96 @@
-# Demo Script
+# Demo Script (Handshake Personal — mobile)
 
-**Goal (one sentence):** show a convincing voice clone or scam scenario, then
-show the real Handshake verification flow working and producing an observed
+**Goal (one sentence):** show a convincing voice-clone scam scenario, then show
+the real Handshake verification flow on two phones producing an observed
 result.
 
-**Evidence rule:** only state a detector result if it was actually observed and
-recorded. If the detector does not produce the expected result, do not invent or
+**What the product does (and does not do):**
+
+- Identity is proven by a **shared 6-digit code that rotates every 30 seconds**,
+  derived server-side and verified server-side. The Verify screen
+  **deliberately does not show the live code** — showing it on the screen where
+  you type it would defeat the check.
+- The **Pressure check** analyzes scam tactics in a **text transcript** (urgency,
+  secrecy, payment requests, authority impersonation). It does not analyze
+  audio and is not a voice-clone detector. Never claim cloned-voice detection.
+
+**Evidence rule:** only state a result if it was actually observed and
+recorded. If a feature does not produce the expected result, do not invent or
 simulate it; use the observed result and adapt the narration.
 
-Target length: 2–3 min; ForgeHacks permits a public demo video of up to 4 minutes. This script assumes **the developer
-solo, driving two devices**; a friend on Device A is a bonus, not a requirement.
+Target length: 2–3 min (ForgeHacks allows up to 4 min). This script assumes the
+developer solo, driving **two Android phones** (one device + emulator works for
+rehearsal; two real devices for the recording).
 
 ## Roles & devices
 
 | Role                    | Device                             | What it shows                                                             |
 | ----------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
-| "Mom" (receiver)        | **Device A** — phone, portrait     | Handshake **Verify** screen: huge code + countdown + verdict              |
-| Real person (developer) | **Device B** — laptop              | Handshake **My codes** screen (reads the code aloud) + **Pressure check** |
+| "Mom" (receiver)        | **Device A** — Android phone       | Handshake **Verify a call** screen: types the code the caller says → verdict. No live code on this screen. |
+| Real person (developer) | **Device B** — Android phone       | Handshake **My code** screen (6 digits + countdown, read aloud) + **Pressure check** + **The first hour** |
 | Scammer                 | speaker on Device A or a 2nd phone | plays the **cloned voice** scam audio                                     |
 
-Setup: one pair created in advance (pair made 5 min before the demo in case
-hosted storage is empty — creation takes seconds).
+Setup: one pair created in advance in the Trusted tab on Device A; Device B
+joins the same pair (same pairId). Both devices must show the same 6 digits
+before the demo.
 
 ## Preflight (do 30 min before)
 
-- [ ] Public URL opens on a **mobile network** (not just Wi-Fi), both screens
-- [ ] Fresh pair created; Device A and Device B show the **same** code
-- [ ] Clone audio file plays cleanly through the chosen speaker
-- [ ] If a detector result is used in the story, the observed result is recorded
-      (video or screenshot) — J5
-- [ ] Fallback video uploaded (unlisted) and link copied
+- [ ] APK installed on both devices; Home renders, no red screen
+- [ ] Both devices joined to the same pair and show the **same** 6 digits
+- [ ] Public API URL reachable on **mobile data** (not just Wi-Fi)
+- [ ] Code rotates at 30 s on both devices (wait one full window)
 - [ ] One test transcript through Pressure check works (LLM key healthy)
-- [ ] Browser: no other tabs, volume up, phone on quiet
+- [ ] One test verify (good + bad code) works end-to-end
+- [ ] Clone audio file plays cleanly through the chosen speaker
+- [ ] Fallback video uploaded (unlisted) and link copied
+- [ ] Phones: volume up, DND on, battery > 60 %, no pending updates
 
 ## The run (numbered)
 
-1. **(10 s) Hook.** "This is a voice clone of me. A commercial detector says it
-   sounds human. Watch what happens when it asks for money."
+1. **(10 s) Hook.** "Scammers can clone your voice. The only check that works
+   is one the clone can't access: a code only the real person's phone can show."
 2. **(20 s) The scam.** Play the clone audio on speaker: _"Mom, it's me, I'm in
    trouble, I need $500 right now, don't tell anyone."_
-3. **(20 s) The reflex.** Switch to Device A (Mom's phone): Handshake Verify
-   screen — huge code, countdown ticking. Narrate: "Mom doesn't guess and
-   doesn't transfer. She asks for the code. Only the real person — someone with
-   the real person's phone — can say it."
-4. **(30 s) Verify — pass.** Developer (real-person role, Device B visible)
-   reads the current code from the **My codes** screen. On Device A, type the
-   claimed code → **Verified** (green, big). "The clone can't say a code it
-   never saw."
+3. **(25 s) The reflex.** Device A (Mom's phone) on **Verify a call**. Narrate:
+   "Mom doesn't guess and doesn't transfer. She asks the caller to say the
+   code out loud. This screen shows no code — so there is nothing on screen to
+   read. Only the real person's phone can produce it."
+4. **(30 s) Verify — pass.** Device B on **My code**: developer reads the 6
+   digits aloud as the "real person". On Device A, type the claimed code →
+   **Verified** (big). "The clone can't say a code it never saw."
 5. **(30 s) Verify — fail.** The clone audio resumes and is asked for the code.
-   The clone cannot answer (no phone, no access). On Device A, enter a guess /
-   leave blank → **Not verified** (red). "Same voice. Different verdict —
-   because we verify the person, not the voice."
-6. **(30 s) Pressure check.** On Device B, paste the call transcript → risk
-   level + tactics (urgency, secrecy, immediate payment) appear as structured
-   cards. One line: "and before you answer, this flags the manipulation."
-7. **(20 s) Contrast beat.** Show the detector result (recorded): same audio →
-   "human". Narrate the thesis: "Detection is an arms race. Verification isn't."
-8. **(20 s) Worst case.** Tap **The first hour**: "If money already moved, here
-   is the calm checklist for the next 60 minutes." (Do not read all items.)
-9. **(10 s) Close.** One sentence on the trust model + "this is the whole
-   product, live, on a phone."
+   The clone cannot answer (no phone, no access). On Device A, enter a wrong
+   code → **Not verified** (red). "Same voice. Different verdict — because we
+   verify the person's phone, not the voice."
+6. **(30 s) Pressure check.** On Device B, open **Pressure check**, paste the
+   call transcript → pressure score + tactics (urgency, secrecy, immediate
+   payment, authority impersonation) appear as structured cards. One line: "and
+   before you answer, this flags the manipulation tactics in what they said."
+7. **(20 s, optional) Contrast beat.** Only if you have a *recorded external*
+   voice-detection result: show it and narrate the thesis — "Detection is an
+   arms race. Verification isn't." Frame it as an outside reference, never as a
+   product feature.
+8. **(20 s) Worst case.** Tap **The first hour** on Device B: "If money already
+   moved, here is the calm checklist for the next 60 minutes." (Do not read all
+   items.)
+9. **(10 s) Close.** One sentence on the trust model + "that is the whole
+   product, live, on two phones."
 
 ## Fallbacks (decide per failure, keep the story intact)
 
 | Failure                                               | Fallback                                                                                                                                                                                                                                  |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Detector flags the clone as fake, or detector is down | Use the J5 recorded detector result (if it showed "human"); if no clean "human" result exists, skip step 7 and lean on "even when detectors are uncertain, the code check is decisive" — never assert a detector result we didn't observe |
-| LLM slow (>10 s) or down on the day                   | Show the J4 pre-captured Pressure check screenshot; narrate the same beat                                                                                                                                                                 |
-| Code doesn't match at the rotation moment             | Wait for the next window (≤30 s) or recreate the pair (seconds) before step 4                                                                                                                                                             |
-| Hosted storage empty / URL broken                     | Recreate pair; if the URL itself is down, switch entirely to the pre-recorded video and continue the live narration around it                                                                                                             |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LLM slow (>10 s) or down on the day                   | Show the pre-captured Pressure check screenshot; narrate the same beat, clearly as a fallback                                                                                                                                               |
+| Code doesn't match at the rotation moment             | Wait for the next window (≤30 s) or recreate the pair (seconds) before step 4                                                                                                                                                              |
+| One device loses network mid-demo                     | Show the clear network error, restore connection, show recovery — or cut to the pre-recorded video and continue the live narration around it                                                                                               |
+| API down on the day                                   | Switch entirely to the pre-recorded video; continue the live narration around it                                                                                                                                                           |
 | Anything derails > 1 min                              | Cut to step 5 (the fail) — the contrast is the story; the rest is garnish                                                                                                                                                                 |
-| Total disaster                                        | Play the pre-recorded video (J5, re-cut J7) unbroken                                                                                                                                                                                      |
+| Total disaster                                        | Play the pre-recorded video unbroken                                                                                                                                                                                                     |
 
 ## After the demo
 
-- Re-record the final video (J7) from the cleanest live run.
+- Re-record the final video (2–4 min) from the cleanest live run; upload it
+  online (e.g., YouTube) for the Devpost submission.
 - Refresh README "Demo" section if the flow changed.
-- Submit Devpost with: repo URL, video link, story, screenshots, public URL.
+- Submit on Devpost with: repo URL, video link, story, screenshots, public URL.

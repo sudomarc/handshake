@@ -6,6 +6,18 @@ Primary sources:
 - https://forgehacks-2026.devpost.com/
 - https://forgehacks-2026.devpost.com/rules
 
+## Dates (from the official Rules tab)
+
+- Hackathon begins: **October 3, 12:00 PM EST**
+- Submission deadline: **October 10, 2026, 12:00 PM EDT**
+- Judging period: October 10–11
+- Winners announced: October 12, 3:00 PM EST
+
+Also from the official rules: teams of 1–4 students; code must be publicly
+viewable; projects must be substantially created during the hackathon period;
+one submission per team. Track prompts: AI + Healthcare, AI + Education,
+AI + Climate, AI + Business, AI + Cybersecurity, AI + Creativity.
+
 ## What ForgeHacks requires
 
 ForgeHacks describes the build requirement as a **working AI-powered project**
