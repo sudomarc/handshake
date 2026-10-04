@@ -6,6 +6,22 @@
 Devpost note: planned maintenance Oct 7, 6:00 AM UTC / 2:00 AM ET — irrelevant to
 us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 
+## Product and demo principles
+
+- **Working demo first.** The submission must demonstrate a genuinely working
+  core flow, not a fake interaction or click-through that only looks functional.
+- **Honest presentation.** Screenshots, prerecorded video, and other presentation
+  aids are allowed as fallbacks, but must not be presented as live functionality.
+- **Evidence over scripted outcomes.** Do not claim a detector result, AI result,
+  or other external behavior unless it was actually observed.
+- **Personal-first UX.** The long-term Personal product should feel automated:
+  the user starts a protection/check flow and Handshake orchestrates the relevant
+  checks instead of asking the user to choose technical tools.
+- **Platform split (future direction).** Personal is intended as a mobile app;
+  Business is intended as a web application. The current hackathon web app remains
+  the working prototype and should not be blocked by building the future mobile
+  client.
+
 ## Day plan
 
 ### J1 — Sat Oct 3: idea, repo, docs ✅
@@ -64,8 +80,13 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 ### J6 — Thu Oct 8: polish + first-hour + story
 
 - [ ] First-hour screen (static checklist)
-- [ ] UX polish: contrast, focus states, font sizes, plain language, no jargon in UI
+- [ ] UX/UI redesign: improve hierarchy, contrast, controls, states, spacing,
+      visual identity and human readability — not just a color swap
+- [ ] Keep the primary Personal flow obvious: start verification; do not make
+      the user choose internal security/AI tools for the core flow
 - [ ] README final pass + Devpost project story written
+- [ ] Document which parts are live, which are fallbacks, and which are future
+      product direction
 - **Definition of done:** a first-time user completes the verify flow unaided on a phone.
 
 ### J7 — Fri Oct 9: final tests, final video, submit
@@ -75,6 +96,22 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 - [ ] Final 2–3 min video
 - [ ] **Submit on Devpost before 12:00 PM EDT** (target: by noon)
 - [ ] Stop. Buffer day (Oct 10) is untouched.
+
+## Post-hackathon product direction
+
+These are **future product decisions**, not requirements that block the current
+hackathon submission:
+
+1. Build Handshake Personal as a React Native + Expo + TypeScript mobile app,
+   with Android APK builds for testing/distribution and an eventual Play Store
+   AAB/iOS distribution path.
+2. Keep Handshake Business as the web experience for organizations.
+3. Keep a shared Handshake Core/API so security and verification logic is not
+   duplicated across clients.
+4. Move from explicit internal tools to automated orchestration in Personal:
+   Handshake should select appropriate checks and expose one understandable result.
+5. Add real accounts, device enrollment/revocation, persistent storage and
+   production-grade abuse controls before any real consumer security claim.
 
 ## Cut list (in this order, only if behind)
 
@@ -88,6 +125,11 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 ## Definition of done (overall)
 
 - Public URL works from a phone.
+- Core verification flow works for real on two devices.
+- Any live AI feature shown in the demo actually calls the configured backend.
 - Demo video (2–3 min) uploaded and linked on Devpost.
 - Repo public with README that a judge can follow to run the app.
 - Submission completed ≥ 4 h before the deadline, with buffer for Devpost issues.
+
+**A presentation-only mockup is not sufficient as the definition of done for the
+core product.**
