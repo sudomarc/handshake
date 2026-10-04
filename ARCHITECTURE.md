@@ -117,6 +117,22 @@ device registration (2FA); secrets encrypted at rest with key management;
 per-user rate limiting and abuse monitoring; audit logging; a review of the LLM
 provider's data-retention and no-training policies (see SECURITY.md).
 
+## Mobile hackathon boundary
+
+The mobile client should consume the existing API instead of duplicating server
+security logic. During the hackathon:
+
+- create the mobile app in an isolated `mobile/` project;
+- keep the root Next.js app intact unless a minimal API/compatibility/correctness
+  fix is required;
+- keep secrets, TOTP derivation, validation and rate limiting server-side;
+- use the existing `lib/schemas.ts` contracts as the starting point;
+- treat the current web application as a reference implementation for the
+  mobile client.
+
+The Personal mobile UX should be simpler than the current web prototype and
+should not expose the existing AI/security routes as a technical toolbox.
+
 ## Key decisions (with one-line rationale)
 
 1. **Standard TOTP via `otplib`, no custom crypto** — the brief demands it; TOTP is the boring, proven choice.
@@ -136,7 +152,21 @@ provider's data-retention and no-training policies (see SECURITY.md).
 12. **Automated Personal UX** — internal checks should be orchestrated by
     Handshake rather than exposed as a toolbox when feasible.
 
-## Route map (current state, J1–J5)
+## Client map
+
+```
+Handshake Core / API
+       │
+       ├── Handshake Personal — React Native + Expo + TypeScript (hackathon)
+       │
+       └── Handshake Business — Next.js + TypeScript (post-hackathon)
+
+Current root web app:
+- preserved as the existing web prototype/API reference;
+- not broadly rewritten during the mobile sprint.
+```
+
+## Route map (current web prototype, J1–J5)
 
 ```
 GET  /                     home: Verify a person / My trusted people / Other tools
