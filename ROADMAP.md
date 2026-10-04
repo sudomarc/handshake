@@ -6,6 +6,30 @@
 Devpost note: planned maintenance Oct 7, 6:00 AM UTC / 2:00 AM ET — irrelevant to
 us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 
+## Verified ForgeHacks submission requirements
+
+Source checked against the current Devpost pages on 2026-10-04:
+- https://forgehacks-2026.devpost.com/
+- https://forgehacks-2026.devpost.com/rules
+
+ForgeHacks requires:
+- a **working AI-powered project** addressing a real-world problem;
+- a public **demo video of 2–4 minutes max** showing the problem and how the
+  project works;
+- a GitHub repository with source code and a clear README;
+- written project information covering problem/target users, technical approach,
+  and real-world impact;
+- supporting screenshots, architecture diagram, or deployment/testing link.
+
+The judging rubric explicitly includes **Execution & Completeness**:
+working demo, polish, usability, and how much was shipped. Missing the required
+video or code makes a submission ineligible.
+
+This project therefore follows a strict evidence rule:
+**never present a simulated click-through or prerecorded result as live
+functionality.** A prerecorded clip or screenshot is a fallback/presentation
+aid unless the live feature is independently verified.
+
 ## Product and demo principles
 
 - **Working demo first.** The submission must demonstrate a genuinely working
@@ -93,7 +117,13 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 
 - [ ] Full manual test pass on the public URL (fresh browser, mobile)
 - [ ] Recreate demo pair right before the demo (storage may be ephemeral)
-- [ ] Final 2–3 min video
+- [ ] Final public demo video, **2–4 min maximum**
+- [ ] Video clearly shows the problem and how Handshake works
+- [ ] Final README/project description includes target users, technical approach,
+      real-world impact, and the correct track
+- [ ] Confirm GitHub repo is publicly accessible and contains source code + clear README
+- [ ] Add deployment/testing link and supporting screenshots/architecture evidence
+- [ ] Explicitly label live features, fallbacks, and future/unshipped features
 - [ ] **Submit on Devpost before 12:00 PM EDT** (target: by noon)
 - [ ] Stop. Buffer day (Oct 10) is untouched.
 
@@ -127,9 +157,12 @@ hackathon submission:
 - Public URL works from a phone.
 - Core verification flow works for real on two devices.
 - Any live AI feature shown in the demo actually calls the configured backend.
-- Demo video (2–3 min) uploaded and linked on Devpost.
+- Public demo video (2–4 min max) uploaded and linked on Devpost.
 - Repo public with README that a judge can follow to run the app.
 - Submission completed ≥ 4 h before the deadline, with buffer for Devpost issues.
 
 **A presentation-only mockup is not sufficient as the definition of done for the
 core product.**
+
+The video itself is a presentation artifact, but it must demonstrate the
+working product honestly rather than manufacture the appearance of functionality.
