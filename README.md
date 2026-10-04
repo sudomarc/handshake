@@ -136,16 +136,21 @@ Full step-by-step script, roles, preflight checks and fallbacks:
 
 ## Product direction
 
-Handshake is currently a mobile-first web prototype so the core flow can be
-tested quickly and demonstrated reliably.
+Handshake is currently a working Next.js web prototype, but the **hackathon
+deliverable is now Handshake Personal**, a real mobile app for families and
+individuals. The existing web app is being preserved as the working web
+prototype/API client and reference implementation; it is not being converted
+into the main hackathon client.
 
 The intended product split is:
 
-- **Handshake Personal** — a future mobile app for families and individuals,
-  with a deliberately simple experience.
-- **Handshake Business** — a future web platform for organizations, where
-  desktop dashboards and administration are more appropriate.
-- **Handshake Core** — shared server-side trust and verification capabilities.
+- **Handshake Personal** — the primary ForgeHacks deliverable: a mobile app for
+  families and individuals, with a deliberately simple and increasingly
+  automated experience.
+- **Handshake Business** — the post-hackathon web product for organizations,
+  where desktop dashboards and administration are more appropriate.
+- **Handshake Core** — shared server-side trust and verification capabilities
+  used by both clients.
 
 For Personal, the long-term UX goal is **automation rather than a toolbox**:
 users should not have to decide whether to run Pressure Check, Personal Question,
