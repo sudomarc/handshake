@@ -17,21 +17,66 @@ type ApiError = {
   };
 };
 
+const verdictConfig: Record<
+  PressureResult["verdict"],
+  { label: string; icon: React.ReactNode; color: "success" | "danger" | "warning" }
+> = {
+  likely_human: {
+    label: "Likely human",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    ),
+    color: "success",
+  },
+  likely_clone: {
+    label: "Likely clone",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m-2 2l2 2m-2-2h.01M12 22a10 10 0 110-20a10 10 0 010 20z"
+        />
+      </svg>
+    ),
+    color: "danger",
+  },
+  uncertain: {
+    label: "Uncertain",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
+        />
+      </svg>
+    ),
+    color: "warning",
+  },
+};
+
+const colorStyles = {
+  success: "bg-green-500/10 border-green-500/30 text-green-300",
+  danger: "bg-red-500/10 border-red-500/30 text-red-300",
+  warning: "bg-amber-500/10 border-amber-500/30 text-amber-300",
+};
+
 export default function AnalyzePage() {
   const [transcript, setTranscript] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<PressureResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
-
-  const verdictColors: Record<
-    PressureResult["verdict"],
-    { bg: string; text: string; label: string }
-  > = {
-    likely_human: { bg: "bg-green-900/30", text: "text-green-300", label: "Likely human" },
-    likely_clone: { bg: "bg-red-900/30", text: "text-red-300", label: "Likely clone" },
-    uncertain: { bg: "bg-amber-900/30", text: "text-amber-300", label: "Uncertain" },
-  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,105 +138,217 @@ export default function AnalyzePage() {
 
   return (
     <PageShell title="Pressure check">
-      <p className="text-lg leading-7 text-neutral-300">
-        Paste what the caller said — a transcript or message — and see if it shows pressure tactics
-        like artificial urgency, secrecy, or demands for immediate payment.
-      </p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        <div>
-          <label htmlFor="transcript" className="block text-sm font-medium text-neutral-300 mb-2">
-            Transcript or message
-          </label>
-          <textarea
-            id="transcript"
-            value={transcript}
-            onChange={handleChange}
-            disabled={isSubmitting}
-            rows={8}
-            maxLength={4000}
-            placeholder="e.g., Mom, it's me. I'm in trouble. I need $500 right now — don't tell anyone."
-            className={`w-full rounded-2xl border px-4 py-3 bg-neutral-900 text-neutral-50 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-white ${
-              fieldError ? "border-red-500" : "border-neutral-700"
-            }`}
-            aria-describedby={fieldError ? "transcript-error" : "transcript-hint"}
-            aria-invalid={fieldError ? "true" : "false"}
-          />
-          {fieldError && (
-            <p id="transcript-error" className="mt-1 text-sm text-red-400" role="alert">
-              {fieldError}
-            </p>
-          )}
-          {!fieldError && (
-            <p id="transcript-hint" className="mt-1 text-sm text-neutral-500">
-              {transcript.length}/4000 characters
-            </p>
-          )}
+      <div className="section animate-in">
+        {/* Header */}
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-3 py-1 text-sm font-medium text-sky-400">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+            Pressure check
+          </div>
+          <p className="text-lg text-neutral-300">
+            Paste what the caller said to see if it shows pressure tactics.
+          </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-2xl bg-white/10 px-6 py-3 font-medium text-neutral-50 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-        >
-          {isSubmitting ? "Analyzing…" : "Check for pressure"}
-        </button>
-
-        {error && (
-          <div
-            className="rounded-2xl bg-red-900/30 border border-red-700 p-4 text-red-300"
-            role="alert"
-            aria-live="assertive"
-          >
-            {error}
+        {/* Input form */}
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div>
+            <label htmlFor="transcript" className="label">
+              Transcript or message
+            </label>
+            <textarea
+              id="transcript"
+              value={transcript}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={7}
+              maxLength={4000}
+              placeholder="e.g., Mom, it's me. I'm in trouble. I need $500 right now — don't tell anyone."
+              className={`textarea ${fieldError ? "input-error" : ""}`}
+              aria-describedby={fieldError ? "transcript-error" : "transcript-hint"}
+              aria-invalid={fieldError ? "true" : "false"}
+            />
+            {fieldError && (
+              <p id="transcript-error" className="error-text flex items-center gap-1" role="alert">
+                <svg
+                  className="h-4 w-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
+                  />
+                </svg>
+                {fieldError}
+              </p>
+            )}
+            {!fieldError && (
+              <p id="transcript-hint" className="hint text-right">
+                {transcript.length}/4000 characters
+              </p>
+            )}
           </div>
-        )}
 
-        {result && (
-          <section
-            className="rounded-2xl border p-4 space-y-4"
-            aria-live="polite"
-            aria-label="Analysis result"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Result</h2>
-              <span
-                className={`rounded-full px-3 py-1 text-sm font-medium ${
-                  verdictColors[result.verdict].bg
-                } ${verdictColors[result.verdict].text}`}
+          <button type="submit" disabled={isSubmitting} className="btn-primary btn-lg btn-block">
+            {isSubmitting ? (
+              <>
+                <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Analyzing…
+              </>
+            ) : (
+              <>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+                Check for pressure
+              </>
+            )}
+          </button>
+
+          {error && (
+            <div
+              className="alert-danger flex items-center gap-2"
+              role="alert"
+              aria-live="assertive"
+            >
+              <svg
+                className="h-5 w-5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {verdictColors[result.verdict].label}
-              </span>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
+                />
+              </svg>
+              {error}
             </div>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl bg-neutral-900 p-4 text-center">
-                <p className="text-xs text-neutral-400 uppercase tracking-wide">Pressure score</p>
-                <p className="text-4xl font-bold tabular-nums">{result.pressureScore}</p>
-                <p className="text-xs text-neutral-500">/ 100</p>
+          {/* Result */}
+          {result && (
+            <section className="animate-in" aria-live="polite" aria-label="Analysis result">
+              <div className="card p-5 space-y-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Result</h2>
+                  <span
+                    className={`badge ${colorStyles[verdictConfig[result.verdict].color]} flex items-center gap-1.5`}
+                  >
+                    {verdictConfig[result.verdict].icon}
+                    {verdictConfig[result.verdict].label}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl bg-neutral-900/50 p-5 text-center">
+                    <p className="text-xs text-neutral-400 uppercase tracking-wide mb-1">
+                      Pressure score
+                    </p>
+                    <p className="text-4xl font-bold tabular-nums text-neutral-50">
+                      {result.pressureScore}
+                    </p>
+                    <p className="text-xs text-neutral-500">/ 100</p>
+                  </div>
+                  <div className="rounded-xl bg-neutral-900/50 p-5 text-center">
+                    <p className="text-xs text-neutral-400 uppercase tracking-wide mb-1">
+                      Human likelihood
+                    </p>
+                    <p className="text-4xl font-bold tabular-nums text-neutral-50">
+                      {result.humanLikelihood}
+                    </p>
+                    <p className="text-xs text-neutral-500">/ 100</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
+                    <svg
+                      className="h-4 w-4 text-sky-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Reasoning
+                  </h3>
+                  <p className="text-neutral-300 whitespace-pre-wrap leading-7">
+                    {result.reasoning}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <svg
+                      className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
+                      />
+                    </svg>
+                    <div>
+                      <p className="font-medium text-amber-300">Advisory signal</p>
+                      <p className="text-sm text-amber-400 mt-1">
+                        This is an additional warning signal, not a guarantee. Always verify with
+                        the rotating code.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="rounded-xl bg-neutral-900 p-4 text-center">
-                <p className="text-xs text-neutral-400 uppercase tracking-wide">Human likelihood</p>
-                <p className="text-4xl font-bold tabular-nums">{result.humanLikelihood}</p>
-                <p className="text-xs text-neutral-500">/ 100</p>
-              </div>
-            </div>
+            </section>
+          )}
 
-            <div>
-              <h3 className="text-sm font-medium text-neutral-300 mb-2">Reasoning</h3>
-              <p className="text-neutral-300 whitespace-pre-wrap">{result.reasoning}</p>
-            </div>
-
-            <p className="text-xs text-neutral-500">
-              This is an advisory signal, not a guarantee. Always verify with the rotating code.
-            </p>
-          </section>
-        )}
-
-        <p className="text-xs text-neutral-500 text-center">
-          Your transcript is sent to Featherless AI for analysis and is not stored by this app.
-        </p>
-      </form>
+          <p className="text-xs text-neutral-500 text-center">
+            Your transcript is sent to Featherless AI for analysis and is not stored by this app.
+          </p>
+        </form>
+      </div>
     </PageShell>
   );
 }
