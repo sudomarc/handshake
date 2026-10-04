@@ -8,7 +8,7 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 
 ## Day plan
 
-### J1 — Sat Oct 3: idea, repo, docs ✅ (this day)
+### J1 — Sat Oct 3: idea, repo, docs ✅
 
 - [x] Idea + scenario validated ("mom, send money" voice-clone scam)
 - [x] Vibe-coding instructions repo fetched and applied (see AGENTS-level rules)
@@ -18,7 +18,7 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 - [x] **You:** register on Devpost (forgehacks-2026.devpost.com) + join Discord
 - [x] **You:** redeem $25 Featherless credits (Discord) → API key → `.env.local`
 
-### J2 — Sun Oct 4: rotating codes end to end
+### J2 — Sun Oct 4: rotating codes end to end ✅
 
 - [x] Pair creation (server derives + holds the pair secret)
 - [x] "My codes" screen (caller side): current code + countdown
@@ -27,40 +27,44 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 - [x] Manual test: two devices, same code, wrong code rejected, rotation works
 - **Definition of done:** the code flow works live on two devices, no manual state.
 
-### J3 — Mon Oct 5: hardening + public URL
+### J3 — Mon Oct 5: hardening + public URL ✅
 
 - [x] Rate limiting on code verify (attempts per window per pair)
 - [x] Rotation-boundary handling (current ± previous window)
-- [x] Error states: malformed input, rate limited, not configured — plain language (no "unknown pair": pair secrets are derived, so every well-formed pair ID is valid by design)
+- [x] Error states: malformed input, rate limited, not configured — plain language
 - [ ] Vercel deploy, public URL tested from a mobile network
 - **Definition of done:** a stranger with the URL cannot break or spam the demo.
 
-### J4 — Tue Oct 6: AI features
+### J4 — Tue Oct 6: AI features ✅
 
-- [ ] Pressure check: transcript in → risk level + tactics out (zod-validated JSON)
-- [ ] Personal challenge: saved context → one question (zod-validated JSON)
-- [ ] Prompt-injection fence: transcript is data, model has no tools, output capped
-- [ ] Failure path: invalid model output → one retry → safe error state
-- [ ] Manual test: scammy transcript flagged, benign transcript low-risk, injected
-      instruction in transcript ignored
+- [x] Pressure check: transcript in → risk level + tactics out (zod-validated JSON)
+- [x] Personal challenge: saved context → one question (zod-validated JSON)
+- [x] Prompt-injection fence: transcript is data, model has no tools, output capped
+- [x] Failure path: invalid model output → one retry → safe error state
+- [x] Manual test: scammy transcript flagged, benign transcript low-risk, injected instruction ignored
 - **Definition of done:** both features survive a hostile transcript without leaking internals.
 
-### J5 — Wed Oct 7: contrast demo + first video
+### J5 — Wed Oct 7: Personal-first redesign + contrast demo (in progress)
 
+- [x] Home page: primary "Verify a person", secondary "My trusted people", tertiary AI tools
+- [x] Circle → "My trusted people" with human language (parent, sibling, partner, friend)
+- [x] Verify flow: clear instructions, huge code, prominent input, actionable verdicts
+- [x] My codes: huge code for caller, minimal distractions, clear countdown
+- [x] CodeDisplay: larger code for caller (text-9xl), centered progress bar
+- [x] VerifyForm: actionable verdict messages ("Verified"/"Not verified", do not send money guidance)
+- [x] CreatePair: human language ("Add a trusted person", "parent, sibling, partner")
+- [x] Demo mode page (`/demo`): creates pair, shows both /verify and /codes links side-by-side
 - [ ] Clone my own voice (consent; Featherless voice cloning or equivalent)
 - [ ] Run the clone through a commercial deepfake detector; record the result
 - [ ] Build the contrast: detector says "human" → Handshake says "not you"
 - [ ] Record demo video (first pass, 2–3 min) — early, not last
 - [ ] Upload fallback video (unlisted)
-- **Definition of done:** the contrast is real, observed, and on record. If the
-  detector flags the clone as fake, pick a better clone or detector before
-  claiming the contrast — never script a result we didn't observe.
+- **Definition of done:** the contrast is real, observed, and on record.
 
 ### J6 — Thu Oct 8: polish + first-hour + story
 
 - [ ] First-hour screen (static checklist)
-- [ ] UX polish: contrast, focus states, font sizes, plain language, no jargon
-      in UI (no "deepfake", no "TOTP")
+- [ ] UX polish: contrast, focus states, font sizes, plain language, no jargon in UI
 - [ ] README final pass + Devpost project story written
 - **Definition of done:** a first-time user completes the verify flow unaided on a phone.
 
@@ -75,14 +79,11 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 ## Cut list (in this order, only if behind)
 
 1. **Personal challenge** (feature 3) — second LLM feature, highest added risk.
-2. **Pressure check** (feature 2) — first LLM feature, but the demo still works
-   on codes + contrast without it.
+2. **Pressure check** (feature 2) — first LLM feature, but the demo still works on codes + contrast without it.
 3. **Visual polish** (animations, extra screens) — keep it functional and clean.
-4. **First-hour screen** — last to cut: it is a static page and cheap; ship a
-   simplified version if needed.
+4. **First-hour screen** — last to cut: it is a static page and cheap; ship a simplified version if needed.
 
-**Never cut:** trusted circle + rotating codes, the contrast demo, the video,
-the Devpost submission.
+**Never cut:** trusted circle + rotating codes, the contrast demo, the video, the Devpost submission.
 
 ## Definition of done (overall)
 
