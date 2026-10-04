@@ -133,6 +133,60 @@ security logic. During the hackathon:
 The Personal mobile UX should be simpler than the current web prototype and
 should not expose the existing AI/security routes as a technical toolbox.
 
+## Future call-aware orchestration (design only)
+
+This section describes the intended post-hackathon behavior. It is **not
+implemented by the current web prototype**.
+
+### Session model
+
+```
+Call / supported communication starts
+                │
+                ▼
+      Handshake session context
+   trusted person + device + consent
+                │
+                ▼
+       Orchestration / policy
+        ┌───────┼────────┐
+        ▼       ▼        ▼
+     rotating  optional  pressure
+       code    challenge  analysis
+        │       │        │
+        └───────┼────────┘
+                ▼
+        one clear outcome
+     Protected / Verify / Risk
+```
+
+The orchestrator should choose the smallest useful set of checks from the signals
+actually available. It should not require the user to open individual technical
+tools, and it should not claim access to data that the operating system has not
+granted.
+
+### Platform boundary
+
+Call-state awareness, background execution, carrier-call audio and transcription
+access vary by platform and call type. Implementation must therefore begin with
+a feasibility spike against real OS capabilities and an explicit permission
+model. The product must never simulate unrestricted call interception or hidden
+recording.
+
+### Privacy boundary
+
+The default product should be user-controlled and privacy-preserving: explicit
+session consent, a clear indication when protection is active, minimal data
+collection, no hidden recording, and short-lived handling of transcripts or
+call-derived data unless the user explicitly chooses persistence.
+
+### API boundary
+
+The mobile client should continue consuming shared server-side trust and
+verification capabilities. Call-aware orchestration belongs above the existing
+verification primitives; it should not duplicate TOTP or security logic inside
+the mobile UI.
+
 ## Key decisions (with one-line rationale)
 
 1. **Standard TOTP via `otplib`, no custom crypto** — the brief demands it; TOTP is the boring, proven choice.
@@ -151,6 +205,8 @@ should not expose the existing AI/security routes as a technical toolbox.
     after the hackathon, with shared verification/security logic.
 12. **Automated Personal UX** — internal checks should be orchestrated by
     Handshake rather than exposed as a toolbox when feasible.
+13. **Call-aware orchestration is post-hackathon** — protect the working MVP
+    while validating mobile OS capabilities before deep telephony integration.
 
 ## Client map
 
