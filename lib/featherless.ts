@@ -49,7 +49,15 @@ async function chatCompletionWithRetry(
       }
 
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      const message = data.choices?.[0]?.message;
+      let content = message?.content || message?.reasoning;
+      
+      // Try to extract JSON from reasoning if it contains chain-of-thought
+      if (content && !content.trim().startsWith("{")) {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) content = jsonMatch[0];
+      }
+      
       if (!content) throw new Error("Empty response from Featherless");
 
       let parsed: unknown;
