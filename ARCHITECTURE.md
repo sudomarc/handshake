@@ -127,6 +127,10 @@ provider's data-retention and no-training policies (see SECURITY.md).
 6. **No agent for the first-hour screen** — it is static advice; an agent would add risk with no benefit (per brief).
 7. **Flat `app/`, no `src/`** — the project is small; shortest import paths win.
 8. **Personal-first UX** — primary action is "Verify a person", not technical features.
+9. **Working-demo honesty** — the hackathon core must work for real; presentation
+   fallbacks are allowed only when clearly identified as fallbacks.
+10. **Future client split** — Personal is mobile-first, Business is web-first,
+    while verification/security logic remains in the shared core.
 
 ## Route map (current state, J1–J5)
 
