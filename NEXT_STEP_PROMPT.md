@@ -1,402 +1,372 @@
-# Next Step — Build Handshake Personal Mobile for ForgeHacks
+# NEXT STEP — BUILD HANDSHAKE PERSONAL MOBILE FOR FORGEHACKS
 
 Repository: `sudomarc/handshake`
 
 ## Objective
 
-Build the **Handshake Personal mobile app** as the primary user-facing
-deliverable for ForgeHacks 2026.
+The **primary ForgeHacks 2026 deliverable is Handshake Personal**, a real mobile
+application for families and individuals.
 
-The existing Next.js web app must remain intact. Do **not** convert the root web
-app into React Native and do not replace the web implementation.
+Build the mobile client without replacing the existing Next.js application.
 
-Create an isolated mobile client, preferably under:
+Create an isolated Expo project under:
 
 `mobile/`
 
-The mobile app should use:
+The existing root web application remains in place and should be treated as the
+current working prototype/API reference. Do not migrate it to React Native and do
+not broadly rewrite it during this task.
 
+## Competition constraint
+
+ForgeHacks requires a **working AI-powered project** addressing a real-world
+problem, plus a public 2–4 minute demo video, source code/README, project
+description and supporting evidence. Execution & Completeness explicitly values
+working demo, polish and usability.
+
+Primary rule source:
+https://forgehacks-2026.devpost.com/rules
+
+Therefore the mobile app must be a genuine working implementation, not a
+click-through simulation.
+
+## Technology
+
+Use:
 - React Native
 - Expo
 - TypeScript
 - Expo Router
 
-Use the current stable Expo/React Native versions documented by the official Expo
-and React Native documentation at implementation time. Do not hard-code an old
-SDK version from this prompt.
+Use the **current stable Expo SDK and compatible React Native version** from the
+official docs at implementation time. Do not copy an obsolete SDK version from
+this prompt.
 
 Official references:
 - https://docs.expo.dev/
 - https://docs.expo.dev/guides/typescript/
 - https://docs.expo.dev/router/introduction/
-- https://reactnative.dev/docs/typescript
+- https://reactnative.dev/docs/typescript/
 
-## Product decision
+## Product split
 
-The hackathon target is **Personal**, not Business.
+### Handshake Personal — NOW / HACKATHON
 
-### Personal
 Mobile app for:
 - families;
 - individuals;
 - trusted relatives/friends;
-- people who may be vulnerable to voice-clone/social-engineering scams.
+- users vulnerable to social-engineering scams.
 
-### Business
-Do NOT build the Business product in this task.
+### Handshake Business — AFTER HACKATHON
 
-The current Next.js web app will be preserved for later evolution into the
-Business web product.
+Web product for:
+- organizations;
+- teams;
+- administrators.
 
-## Critical scope rule
+Do not build Business now.
 
-The mobile app must be a **real working application**, not a visual mockup.
+The existing Next.js web application will become the starting point for Business
+after the hackathon.
 
-The core flow must actually work against the existing backend:
+### Handshake Core
 
-create/use trusted pair
-→ caller and receiver use two devices
-→ same rotating code
-→ claimed code submitted
-→ real server verification
-→ Verified / Not verified
+Reuse the current server/API and security logic.
 
-Do not replace this with fake local state or success animations.
+Do not duplicate TOTP/secret/security logic inside the client.
 
-## Preserve the existing web app
+## Preserve the web prototype
 
-Before changing anything:
+Before coding:
 
 1. Read `AGENTS.md`.
 2. Read `ARCHITECTURE.md`.
 3. Read `SECURITY.md`.
 4. Read `ROADMAP.md`.
 5. Read `HACKATHON.md`.
-6. Read the current web API routes and schemas.
-7. Read the official Expo/React Native documentation relevant to the selected
-   architecture.
+6. Read current API routes and `lib/schemas.ts`.
+7. Read local Next.js documentation required by `AGENTS.md`.
+8. Read official Expo and React Native documentation.
 
-The root Next.js application is a valuable existing implementation.
+Do not broadly rewrite the root web app.
 
-Do not:
-- rewrite the web app as mobile;
-- remove web routes;
-- duplicate or rewrite server-side security logic unnecessarily;
-- weaken the existing TOTP implementation;
-- expose `FEATHERLESS_API_KEY`;
-- expose `PAIR_DERIVATION_KEY`.
+Root web changes are allowed only for an actual:
+- API compatibility issue;
+- correctness bug;
+- security issue;
+- shared contract improvement.
 
-Only make root web changes when required for API compatibility, shared contract
-clarity, a real bug fix, or a security fix.
+If you touch root web code, explain why and run its regression checks.
 
-## Existing backend contract
+## Existing backend
 
-Current API routes include:
-
+Current routes:
 - `POST /api/circle`
 - `GET /api/code/current?pairId=...`
 - `POST /api/code/verify`
 - `POST /api/analyze`
 - `POST /api/challenge`
 
-Current response contracts are defined in:
-
+Contracts:
 `lib/schemas.ts`
 
-Do not invent a second incompatible API.
+Core flow:
 
-The mobile client should consume the existing API where possible.
+```
+create/use trusted pair
+       ↓
+two devices
+       ↓
+same rotating code
+       ↓
+claimed code submitted
+       ↓
+server verification
+       ↓
+Verified / Not verified
+```
 
-## Environment configuration
+Use the real API. Do not create a second incompatible backend.
 
-The mobile app needs a configurable API base URL.
+## API base URL
 
-Do not hard-code:
-`localhost`
-
-Support a public/deployed URL and a local-network development URL.
-
-Example concept:
+Use a configurable Expo environment variable, for example:
 
 `EXPO_PUBLIC_API_BASE_URL`
 
-Validate the value and document how to use it.
+It must support:
+- local network development;
+- deployed/public API.
 
-Do not place server secrets in Expo environment variables.
+Never hard-code `localhost`.
 
-## Mobile UX principle
+Never put:
+- `FEATHERLESS_API_KEY`
+- `PAIR_DERIVATION_KEY`
+- TOTP secrets
 
-The user should not see Handshake as a toolbox.
+in mobile environment variables.
 
-Avoid exposing the internal architecture as:
+## Personal UX
 
-- Pressure Check
-- Personal Question
-- TOTP
-- AI analysis
-- security engine
+Personal should not feel like a toolbox.
 
-as separate choices on the main flow.
+The main experience should be:
 
-The user should primarily think:
+> **Verify a person**
 
-> **I want to verify this person.**
+not:
 
-Handshake should handle the underlying checks automatically wherever the available
-signals/data allow it.
+> choose Pressure Check / Personal Question / TOTP / AI tool.
 
-For this first mobile implementation, the genuinely available core signal is
-the trusted-pair rotating-code verification.
+Handshake should orchestrate internal checks where the necessary data exists.
 
-Do NOT pretend that the mobile app can automatically listen to arbitrary cellular
-call audio. That capability is platform-dependent and is not present in the
-current backend.
+For the first mobile MVP, the real mandatory signal is the trusted-pair rotating
+code.
 
-## Required mobile screens
+Do NOT pretend the app can automatically intercept arbitrary cellular-call audio.
 
-Implement a polished but focused Personal MVP.
+Do NOT claim automatic cellular deepfake detection that is not implemented.
 
-### 1. Home
+## Required screens
 
-Primary action:
+### Home
 
+Primary:
 **Verify a person**
 
 Secondary:
-
 **My trusted people**
 
-Do not expose a large "Other tools" menu on the main Personal experience.
+Avoid a prominent "Other tools" section in the Personal main flow.
 
-### 2. Trusted people
+### Trusted people
 
-Show trusted relationships using human language.
+Show trusted relationships in human language.
 
-The user should understand:
-- who the trusted person is;
-- why the relationship exists;
-- how to start verification.
+Allow creation/use of the trusted pair using the existing API.
 
-Do not make the raw 32-character pair ID the visual center of the experience.
+Do not make the raw 32-character pair ID the center of the UI.
 
-### 3. Add trusted person
+### Verify
 
-Create the pair through the existing API.
-
-Give clear instructions for establishing the relationship on the two devices.
-
-If the current API cannot store a human-readable contact name, do not fake server
-persistence. Keep any local display metadata explicitly local and document that
-limitation.
-
-### 4. Verification flow
-
-A receiver starts:
-
-**Verify this person**
-
-Then:
-
-- clear instruction;
-- current rotating code;
-- code input;
+Receiver flow:
+- person/relationship context where available;
+- simple instruction;
+- current code;
+- claimed-code input;
 - check action;
-- loading state;
-- real Verified state;
-- real Not verified state;
-- rate-limit/error state.
+- loading;
+- real Verified;
+- real Not verified;
+- rate-limited/error states.
 
-The final result must be visually dominant.
-
-For Not verified, clearly advise:
+Failure guidance must clearly say:
 
 **Do not send money. Hang up and call the person back using a number you already
 know.**
 
-### 5. Caller code screen
+### Caller code
 
-Optimize for a person reading the code aloud:
-
+Dedicated screen optimized for reading aloud:
 - huge digits;
-- excellent contrast;
-- countdown;
-- minimal distractions;
-- readable on a phone held at arm's length.
-
-### 6. Demo path
-
-Provide a reliable way to create/use a demo pair so two devices can test the
-real API flow.
-
-This can be separate from normal Personal onboarding if necessary, but it must
-not fake verification.
-
-## Design requirements
-
-The current web prototype had a weak dark/black visual language.
-
-Do not copy that visual system blindly into mobile.
-
-Create a real mobile design system with:
-
 - strong contrast;
+- countdown;
+- progress;
+- minimal distractions.
+
+### Demo
+
+Provide a reliable way to create/use a demo pair for two-device testing without
+faking results.
+
+## AI features
+
+Do not force the current AI routes into the main Personal navigation.
+
+They are internal signals for the automated future architecture.
+
+For the hackathon:
+- only show an AI feature as live if it really calls the configured backend;
+- otherwise label it future or clearly identified fallback;
+- never fabricate an AI result.
+
+## Design
+
+The current web UI uses a very dark/black visual language and has known visual
+weaknesses.
+
+Do not reproduce that design mechanically.
+
+Create a proper mobile design system:
+- high contrast;
 - accessible typography;
-- clear primary action;
-- clear semantic success/error states;
-- calm visual hierarchy;
-- touch-friendly controls;
-- generous spacing;
-- polished loading states;
-- no unnecessary decorative effects.
+- large touch targets;
+- calm safety-oriented visual language;
+- strong action hierarchy;
+- clear success/error states;
+- polished loading/empty states;
+- restrained, purposeful motion only.
 
-The app must look like a consumer trust/safety product, not a developer dashboard.
+The result should look like a credible consumer safety product.
 
-Do not spend most of the task on visual decoration before the real verification
-flow works.
+## Local persistence
 
-## State persistence
+Persist the pair data needed for the MVP locally using an appropriate secure
+storage mechanism.
 
-For the hackathon MVP, decide explicitly how the mobile client remembers trusted
-pair information.
+Do not claim production-grade account/device security.
 
-A secure local storage mechanism is preferable for pair identifiers because the
-current architecture treats the pair ID as a membership secret.
-
-Do not claim full account/device security: the backend currently has no real
-user accounts or device enrollment.
+The current backend has no real user accounts or device enrollment.
 
 ## Android APK
 
 The hackathon needs a genuinely testable Android build.
 
-Use Expo/EAS according to current official documentation.
-
-Expo documents that Android APK artifacts can be produced by configuring an EAS
-build profile with `android.buildType: "apk"`, while AAB is the normal Play
-Store artifact:
+Expo/EAS documents APK builds through an EAS profile using
+`android.buildType: "apk"`:
 
 https://docs.expo.dev/build-reference/apk/
 
-Prepare at minimum:
+Configure a build profile for APK testing/demo.
 
-- development/test workflow;
-- an Android APK build profile;
-- application name/icon/splash configuration;
-- reproducible build instructions.
-
-Do not claim that an APK has been built unless the build actually succeeds.
+Do not report an APK as available until the build has actually succeeded.
 
 ## Validation
 
-After implementation, run all relevant checks.
-
-At minimum:
-
 ### Web regression
-
-`npm run lint`
-`npm run build`
-`npm run format:check`
+Run:
+```
+npm run lint
+npm run build
+npm run format:check
+```
 
 ### Mobile
+Run the mobile project's typecheck/lint/build checks.
 
-Use the package manager scripts actually created for the mobile app.
+Start Expo and test on a real Android device or emulator.
 
-Also run TypeScript checking.
-
-Start the Expo development server and perform an actual device/emulator test.
-
-## Real two-device test
-
-This is mandatory before declaring the mobile MVP complete.
+### Mandatory two-device test
 
 Device A:
-- Personal mobile app;
-- receiver flow.
+- Handshake Personal mobile receiver flow.
 
 Device B:
-- Personal mobile app;
-- caller flow.
-
-Both must use the same pair.
+- Handshake Personal mobile caller flow.
 
 Verify:
+1. same pair;
+2. same current code;
+3. code rotation;
+4. correct code → real Verified;
+5. wrong code → real Not verified;
+6. rate limit/error behavior.
 
-1. same current code appears;
-2. code rotates;
-3. correct claimed code returns Verified;
-4. incorrect claimed code returns Not verified;
-5. rate limiting still works;
-6. errors are human-readable.
+### APK test
 
-## APK verification
+If an APK is built:
+1. install it on a real Android device/emulator;
+2. point it to the actual API;
+3. run the two-device flow;
+4. record the build artifact/link;
+5. report failures honestly.
 
-If an EAS APK is built:
+## Security
 
-1. install it on a real Android device or emulator;
-2. configure the real API base URL;
-3. run the same two-device verification test;
-4. record the build identifier/link;
-5. do not call it release-ready unless it has actually been tested.
-
-## Security constraints
-
-Never move these into the mobile client:
-
+Never move secrets/client-only:
 - `FEATHERLESS_API_KEY`
 - `PAIR_DERIVATION_KEY`
-- TOTP secrets
-- server-only prompt logic
+- raw TOTP secrets
+- server-side prompt logic.
 
-The mobile app may receive short-lived rotating codes and submitted verdicts
-according to the existing API contract.
+Do not disable:
+- zod validation;
+- rate limiting;
+- server-side verification;
+- prompt fences;
+- server-side secret handling.
 
-Do not disable existing rate limiting, zod validation, or server-side checks.
+## Out of scope
 
-## What is explicitly out of scope
-
-Do NOT build now:
-
-- Handshake Business dashboard;
-- company management;
+Do not build:
+- Business dashboard;
 - billing;
 - enterprise administration;
-- full production authentication;
-- production-grade device management;
+- full production auth;
+- production device management;
 - arbitrary cellular-call audio interception;
-- fake automatic voice analysis;
-- a second incompatible backend;
-- a Play Store release process beyond what is necessary to build/test an APK.
+- fake automatic voice/deepfake detection;
+- Play Store submission;
+- a second backend.
 
 ## Definition of done
 
-The task is complete only when:
-
+Complete only when:
 - `mobile/` contains a real Expo/React Native/TypeScript app;
-- root Next.js web prototype still builds;
-- mobile home/trusted people/verification/caller flows exist;
-- mobile talks to the real existing API;
-- two real devices can complete a real verification;
-- correct and incorrect codes produce real server-backed results;
+- root web app still passes regression checks;
+- Home/Trusted People/Verify/Caller Code flows exist;
+- mobile uses the existing real API;
+- two-device verification works for real;
+- correct/wrong codes produce real server-backed verdicts;
 - Android APK build configuration exists;
-- APK/build is actually tested if claimed;
+- APK testing is reported honestly;
 - no server secret is exposed;
-- lint/type/build checks pass;
-- final diff has been inspected.
+- final diff is inspected.
 
 ## Final report
 
 Return:
-
 1. mobile architecture;
 2. files created/modified;
-3. API integration details;
-4. UI/UX changes;
-5. commands executed;
-6. real device/emulator tests;
+3. API integration;
+4. UI/UX decisions;
+5. commands/tests executed;
+6. emulator/device results;
 7. APK build result;
-8. any web changes and why they were necessary;
+8. root-web changes and justification;
 9. known limitations;
-10. exact next step.
+10. next step.
 
-Never report a feature as complete unless it was actually implemented and tested.
+Never call a feature complete unless it was actually implemented and tested.
