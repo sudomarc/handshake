@@ -97,33 +97,43 @@ built during the hackathon.
 
 ## Current Handshake strategy
 
-### Live prototype
+### Hackathon deliverable — Handshake Personal mobile
 
-Keep the following genuinely working:
+The **primary user-facing hackathon product is Handshake Personal**, a real
+mobile app for families and individuals.
 
-- Trusted Circle;
+The mobile app must genuinely demonstrate:
+
+- trusted-person setup/pair creation;
 - rotating codes;
 - two-device verification;
-- Verified / Not verified result;
-- AI features that are actually configured and tested if included in the demo;
-- public testing/deployment evidence.
+- real **Verified / Not verified** results;
+- the AI feature(s) actually included in the demo, when their backend is
+  configured and tested;
+- a usable Android build (APK) for testing/demo.
 
-### Future direction
+The current Next.js web app remains in the repository as the existing working
+web prototype and API/reference client. Do not discard or broadly rewrite it
+during the mobile implementation.
 
-These may be shown as product vision, but should be labeled as future work:
+### Post-hackathon direction
 
-- Handshake Personal React Native + Expo + TypeScript app;
-- Android APK/AAB distribution and iOS distribution;
-- Handshake Business web platform;
-- shared Handshake Core;
-- automated orchestration where Handshake selects internal checks;
+After the hackathon:
+
+- **Handshake Business** becomes the dedicated web product for organizations;
+- **Handshake Personal** continues as the mobile product;
+- both clients use a shared Handshake Core/API;
+- Personal moves toward automated orchestration rather than exposing internal
+  security/AI tools as separate user choices;
 - production accounts, device enrollment/revocation, persistent storage and
-  production-grade abuse controls.
+  production-grade abuse controls are added before any real consumer-security
+  claim.
 
 ## Final submission checklist
 
-- [ ] Working core verified on two devices.
-- [ ] Public demo URL/testing link available where applicable.
+- [ ] Handshake Personal mobile core verified on two devices.
+- [ ] Android APK/build artifact or equivalent testable mobile build available.
+- [ ] Public demo/testing evidence available where applicable.
 - [ ] Public 2–4 minute video uploaded.
 - [ ] Video explains the problem and demonstrates how Handshake works.
 - [ ] GitHub repository is accessible and contains source code + clear README.
