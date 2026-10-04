@@ -1,0 +1,9 @@
+{
+  "root": true,
+  "extends": ["expo"],
+  "ignorePatterns": ["node_modules", ".expo", "dist"],
+  "rules": {
+    "import/no-unresolved": "off",
+    "import/namespace": "off"
+  }
+}

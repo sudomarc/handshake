@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0c0f"
       },
-      "package": "com.sudomarc.handshake",
-      "edgeToEdgeEnabled": true
+      "package": "com.sudomarc.handshake"
     },
     "plugins": [
       "expo-router",

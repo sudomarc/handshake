@@ -9,7 +9,7 @@
     "build:android": "eas build --platform android",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:android:production": "eas build --platform android --profile production",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -34,6 +34,7 @@
     "@types/react-native": "^0.73.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-expo": "~7.0.0",
     "prettier": "^3.2.0",

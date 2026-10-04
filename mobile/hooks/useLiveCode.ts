@@ -1,143 +1,95 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 
-const REFRESH_EVERY_MS = 10_000;
-const TICK_INTERVAL_MS = 500;
+const TICK_MS = 500;
 
-type LiveCodeState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | {
-      status: "ready";
-      code: string;
-      secondsRemaining: number;
-      periodSeconds: number;
-      windowStart: number;
-    };
+export interface LiveCode {
+  status: "loading" | "ready" | "error";
+  code: string;
+  secondsRemaining: number;
+  periodSeconds: number;
+  error: string | null;
+}
 
 interface Snapshot {
   code: string;
   remaining: number;
-  windowStart: number;
   periodSeconds: number;
   fetchedAt: number;
 }
 
-interface UseLiveCodeResult {
-  status: "loading" | "error" | "ready";
-  code: string;
-  secondsRemaining: number;
-  periodSeconds: number;
-  windowStart: number;
-  error: string | null;
-}
+const INITIAL: LiveCode = {
+  status: "loading",
+  code: "",
+  secondsRemaining: 0,
+  periodSeconds: 30,
+  error: null,
+};
 
-export function useLiveCode(pairId: string) {
-  const [state, setState] = useState<{
-    status: "loading" | "error" | "ready";
-    code: string;
-    secondsRemaining: number;
-    periodSeconds: number;
-    windowStart: number;
-    error: string | null;
-  }>({
-    status: "loading",
-    code: "000000",
-    secondsRemaining: 0,
-    periodSeconds: 30,
-    windowStart: 0,
-    error: null,
-  });
-
-  const cancelledRef = useRef(false);
-  const snapshotRef = useRef<{
-    code: string;
-    remaining: number;
-    windowStart: number;
-    periodSeconds: number;
-    fetchedAt: number;
-  } | null>(null);
+/** Fetches the current code once, counts down locally, and re-fetches when the window ends. */
+export function useLiveCode(pairId: string): LiveCode & { retry: () => void } {
+  const [state, setState] = useState<LiveCode>(INITIAL);
+  const snapshotRef = useRef<Snapshot | null>(null);
+  const loadingRef = useRef(false);
+  const aliveRef = useRef(true);
 
   const load = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.100.35:3000"}/api/code/current?pairId=${encodeURIComponent(pairId)}`,
-        {
-          cache: "no-store",
-        },
-      );
-      if (!res.ok) throw new Error("Failed to load code");
-      const json = await res.json();
-      if (json.code && json.secondsRemaining !== undefined) {
-        return {
-          code: json.code,
-          remaining: json.secondsRemaining,
-          windowStart: json.windowStart,
-          periodSeconds: json.periodSeconds,
-          fetchedAt: Date.now(),
-        };
-      }
+      const res = await api.getCurrentCode(pairId);
+      if (!aliveRef.current) return;
+      snapshotRef.current = {
+        code: res.code,
+        remaining: res.secondsRemaining,
+        periodSeconds: res.periodSeconds,
+        fetchedAt: Date.now(),
+      };
+      setState({
+        status: "ready",
+        code: res.code,
+        secondsRemaining: res.secondsRemaining,
+        periodSeconds: res.periodSeconds,
+        error: null,
+      });
     } catch (error) {
-      if (error instanceof Error) {
-        return { error: error.message };
-      }
-      return { error: "Failed to load code" };
+      if (!aliveRef.current) return;
+      snapshotRef.current = null;
+      setState({
+        ...INITIAL,
+        status: "error",
+        error: error instanceof Error ? error.message : "Could not load the code.",
+      });
+    } finally {
+      loadingRef.current = false;
     }
-    return null;
   }, [pairId]);
 
-  const tick = useCallback(() => {
-    const snapshot = snapshotRef.current;
-    if (!snapshot) return;
-    const now = Date.now();
-    const elapsed = (now - snapshot.fetchedAt) / 1000;
-    const left = Math.max(0, Math.ceil(snapshot.remaining - elapsed));
-    setState({
-      status: "ready",
-      code: snapshot.code,
-      secondsRemaining: left,
-      periodSeconds: 30,
-      windowStart: snapshot.windowStart,
-      error: null,
-    });
-    if (left === 0) {
-      load();
-    }
-  }, []);
+  useEffect(() => {
+    aliveRef.current = true;
+    snapshotRef.current = null;
+    setState(INITIAL);
+    void load();
 
-  const load = useCallback(async () => {
-    try {
-      const snapshot = await fetch(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://192.168.100.35:3000"}/api/code/current?pairId=${encodeURIComponent(pairId)}`,
-        {
-          cache: "no-store",
-        },
-      );
-      if (!res.ok) throw new Error("Failed to load code");
-      const json = await res.json();
-      if (json.code && json.secondsRemaining !== undefined) {
-        return {
-          code: json.code,
-          remaining: json.secondsRemaining,
-          windowStart: json.windowStart,
-          periodSeconds: json.periodSeconds,
-          fetchedAt: Date.now(),
-        };
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        return { error: error.message };
-      }
-      return { error: "Failed to load code" };
-    }
-    return null;
-  }, [pairId]);
+    const timer = setInterval(() => {
+      const snap = snapshotRef.current;
+      if (!snap) return;
+      const elapsed = (Date.now() - snap.fetchedAt) / 1000;
+      const left = Math.max(0, Math.ceil(snap.remaining - elapsed));
+      setState((prev) => (prev.status === "ready" ? { ...prev, secondsRemaining: left } : prev));
+      if (left === 0) void load();
+    }, TICK_MS);
 
-  return {
-    status: "loading",
-    code: "000000",
-    secondsRemaining: 0,
-    periodSeconds: 30,
-    windowStart: 0,
-    error: null,
-  };
+    return () => {
+      aliveRef.current = false;
+      clearInterval(timer);
+    };
+  }, [load]);
+
+  const retry = useCallback(() => {
+    setState(INITIAL);
+    void load();
+  }, [load]);
+
+  return { ...state, retry };
 }

@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { PairId, PairMeta } from "@/lib/apiTypes";
+import type { PairMeta } from "@/lib/apiTypes";
 
 const PAIRS_KEY = "handshake_pairs";
 const ACTIVE_PAIR_KEY = "handshake_active_pair";
