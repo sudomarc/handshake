@@ -112,16 +112,49 @@ committed).
 
 ## The demo
 
-A voice clone of the developer is made, passed to a commercial deepfake detector
-(that says "human"), then used in a live scam scenario. The clone **fails**
-Handshake: it cannot say the rotating code or answer the personal challenge,
-while the real person verifies in seconds. The contrast is the whole story.
+Handshake is being built as a **working hackathon prototype**, not a simulated
+click-through. The core verification flow is expected to work for real:
+
+1. create a trusted pair;
+2. open the receiver flow on one device;
+3. open the caller code on another device;
+4. receive the same rotating code on both devices;
+5. enter the claimed code;
+6. get a real **Verified** or **Not verified** result.
+
+The AI features should also call the configured Featherless endpoint when they are
+presented as working features. A screenshot, prerecorded clip, or visual mockup
+may be used as a **fallback or presentation aid**, but it must never be described
+as a live feature when it is not actually connected and working.
+
+The voice-clone contrast is also evidence-driven: only claim a detector result
+that was actually observed and recorded. If the detector does not produce the
+expected result, change the demo story rather than scripting a fictional result.
 
 Full step-by-step script, roles, preflight checks and fallbacks:
 [DEMO_SCRIPT.md](./DEMO_SCRIPT.md).
 
-## Honest limitations
+## Product direction
 
+Handshake is currently a mobile-first web prototype so the core flow can be
+tested quickly and demonstrated reliably.
+
+The intended product split is:
+
+- **Handshake Personal** — a future mobile app for families and individuals,
+  with a deliberately simple experience.
+- **Handshake Business** — a future web platform for organizations, where
+  desktop dashboards and administration are more appropriate.
+- **Handshake Core** — shared server-side trust and verification capabilities.
+
+For Personal, the long-term UX goal is **automation rather than a toolbox**:
+users should not have to decide whether to run Pressure Check, Personal Question,
+or another internal control. Handshake should determine which verification signals
+are appropriate and present one clear result. The current prototype keeps these
+controls explicit because that is simpler and safer to demonstrate while the
+underlying orchestration is still being designed.
+
+## Honest limitations
 - **Demo-grade storage.** Pair data lives in simple server-side local storage.
   On the hosted demo it may reset (serverless file systems are ephemeral), which
   is why the demo creates a fresh pair right before the show. A production
