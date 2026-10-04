@@ -1,10 +1,14 @@
 # Demo Script
 
-**Goal (one sentence):** show a convincing voice clone that a commercial
-detector calls "human", then show it failing Handshake — while the real person
-verifies in seconds.
+**Goal (one sentence):** show a convincing voice clone or scam scenario, then
+show the real Handshake verification flow working and producing an observed
+result.
 
-Target length: 2–3 min live or recorded. This script assumes **the developer
+**Evidence rule:** only state a detector result if it was actually observed and
+recorded. If the detector does not produce the expected result, do not invent or
+simulate it; use the observed result and adapt the narration.
+
+Target length: 2–3 min; ForgeHacks permits a public demo video of up to 4 minutes. This script assumes **the developer
 solo, driving two devices**; a friend on Device A is a bonus, not a requirement.
 
 ## Roles & devices
@@ -23,7 +27,8 @@ hosted storage is empty — creation takes seconds).
 - [ ] Public URL opens on a **mobile network** (not just Wi-Fi), both screens
 - [ ] Fresh pair created; Device A and Device B show the **same** code
 - [ ] Clone audio file plays cleanly through the chosen speaker
-- [ ] Detector result for the clone is recorded (video or screenshot) — J5
+- [ ] If a detector result is used in the story, the observed result is recorded
+      (video or screenshot) — J5
 - [ ] Fallback video uploaded (unlisted) and link copied
 - [ ] One test transcript through Pressure check works (LLM key healthy)
 - [ ] Browser: no other tabs, volume up, phone on quiet
