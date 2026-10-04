@@ -129,8 +129,12 @@ provider's data-retention and no-training policies (see SECURITY.md).
 8. **Personal-first UX** — primary action is "Verify a person", not technical features.
 9. **Working-demo honesty** — the hackathon core must work for real; presentation
    fallbacks are allowed only when clearly identified as fallbacks.
-10. **Future client split** — Personal is mobile-first, Business is web-first,
-    while verification/security logic remains in the shared core.
+10. **Hackathon client priority** — Personal mobile is the primary hackathon
+    deliverable; the existing web prototype is preserved.
+11. **Post-hackathon web product** — Business becomes the dedicated web experience
+    after the hackathon, with shared verification/security logic.
+12. **Automated Personal UX** — internal checks should be orchestrated by
+    Handshake rather than exposed as a toolbox when feasible.
 
 ## Route map (current state, J1–J5)
 
