@@ -186,15 +186,22 @@ session**, automatically choosing the smallest useful set of checks.
 
 ### Phase 1 — Call-awareness feasibility
 
-- Verify what Android and iOS actually permit for call-state awareness,
-  background execution, notifications, audio access and transcription.
-- Prototype only OS-supported signals with explicit user consent.
-- Identify which call types are realistically supportable first (for example,
-  supported VoIP/app calls versus carrier calls).
-- Keep the existing verification API as the source of truth.
+**Status: PARTIALLY VERIFIED — AUDIO PATH REQUIRES DIFFERENT CALL ARCHITECTURE**
 
-**Exit condition:** one real supported call/session scenario can be detected or
-entered without claiming capabilities the platform does not provide.
+- ✅ Verified what Android permits for call-state awareness (CallScreeningService: metadata only)
+- ✅ Verified background execution constraints (microphone FGS: must start from foreground)
+- ✅ Verified audio access boundaries (CARRIER CALL REMOTE AUDIO: NOT AVAILABLE to third-party apps)
+- ✅ Identified supportable call types: Handshake-controlled VoIP/app calls ONLY
+- ✅ Kept existing verification API as source of truth
+
+**Key Findings (2026-10-05):**
+- Android carrier-call remote audio: NOT AVAILABLE (CAPTURE_AUDIO_OUTPUT is system-only)
+- Local microphone capture: VERIFIED (works when no call active)
+- Call detection via CallScreeningService: VERIFIED (metadata for non-contacts)
+- Two-way carrier-call audio: NOT AVAILABLE IN TESTED PATH
+- VoIP feasibility: CONFIRMED — next phase should implement Handshake-controlled session
+
+**Exit condition MET WITH CAVEAT:** A real supported call scenario (Handshake VoIP) can be detected/entered, but carrier calls cannot be analyzed in real-time.
 
 ### Phase 2 — Protected Call Session
 

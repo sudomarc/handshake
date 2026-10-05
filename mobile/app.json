@@ -35,7 +35,8 @@
         {
           "configureAndroidBackup": true
         }
-      ]
+      ],
+      "./plugins/handshake-call-audio/plugin.js"
     ],
     "scheme": "handshake",
     "extra": {

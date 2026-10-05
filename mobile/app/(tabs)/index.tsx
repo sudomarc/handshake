@@ -57,6 +57,11 @@ export default function Home() {
           variant="secondary"
           onPress={() => router.push("/first-hour")}
         />
+        <Button
+          label="Call Audio Feasibility"
+          variant="secondary"
+          onPress={() => router.push("/call-audio-feasibility")}
+        />
       </Card>
     </PageShell>
   );
