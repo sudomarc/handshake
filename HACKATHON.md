@@ -154,3 +154,23 @@ After the hackathon:
 - [ ] Screenshots/architecture/deployment evidence included.
 - [ ] Every live claim is backed by an actual test.
 - [ ] Fallback footage is clearly treated as fallback.
+
+## Submission checklist status (audit 2026-10-05)
+
+Tags: **VERIFIED** / **OWNER-REPORTED** (no evidence in repo) / **NOT VERIFIED** / **OPEN**.
+
+- Public repository — **VERIFIED** (`sudomarc/handshake`, GitHub API `private: false`).
+- Source code + README — **VERIFIED** present; README needs a final pass (ROADMAP F4) — **OPEN**.
+- Working build — **OWNER-REPORTED** (Vercel backend, EAS APK, Samsung A17). Mobile
+  type check and lint pass (**VERIFIED**). Evidence link/screenshots — **OPEN**.
+- Two-physical-device validation — **NOT VERIFIED**.
+- Demo script — aligned with the real mobile product (this audit) — rehearsal **OPEN**.
+- Public 2–4 min video — **OPEN**.
+- Written description (problem/target users, technical approach, impact) — **OPEN**.
+- Track — README states **AI + Cybersecurity**; confirm the same selection on Devpost — **OPEN**.
+- Links to collect for Devpost: repository URL, video URL, deployed API URL
+  (`https://handshake-pi-amber.vercel.app`, from `mobile/eas.json`), APK/EAS build
+  link, screenshots, architecture diagram.
+- Deadline — Sat Oct 10, 2026, 12:00 PM EDT; target submission Fri Oct 9.
+- Judging — keep the story on the working core (rotating-code verification on two
+  phones); present Pressure check as advisory text analysis only.

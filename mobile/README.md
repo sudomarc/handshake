@@ -79,7 +79,6 @@ mobile/
 - **Verify a Person**: Real-time TOTP code verification against backend
 - **My Trusted People**: Manage trusted relationships
 - **Caller Code**: Large code display for reading aloud
-- **Demo Mode**: Side-by-side view for demo presentations
 - Live code polling with server-anchored countdown
 - Rate limiting handled on server
 - Secure storage for pair IDs using expo-secure-store

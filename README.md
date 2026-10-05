@@ -136,39 +136,69 @@ Full step-by-step script, roles, preflight checks and fallbacks:
 
 ## Product direction
 
-Handshake is currently a working Next.js web prototype, but the **hackathon
-deliverable is now Handshake Personal**, a real mobile app for families and
-individuals. The existing web app is being preserved as the working web
-prototype/API client and reference implementation; it is not being converted
-into the main hackathon client.
+Handshake is currently a working Next.js web prototype plus a **Handshake
+Personal** mobile client. The hackathon deliverable is the Personal mobile
+product for families and individuals; the existing web app is preserved as the
+working web prototype/API client and reference implementation.
 
 The intended product split is:
 
-- **Handshake Personal** — the primary ForgeHacks deliverable: a mobile app for
-  families and individuals, with a deliberately simple and increasingly
-  automated experience.
-- **Handshake Business** — the post-hackathon web product for organizations,
-  where desktop dashboards and administration are more appropriate.
-- **Handshake Core** — shared server-side trust and verification capabilities
-  used by both clients.
+- **Handshake Personal** — mobile protection for individuals and trusted circles.
+- **Handshake Business** — the post-hackathon web product for organizations.
+- **Handshake Core** — shared server-side trust and verification capabilities.
 
-For Personal, the long-term UX goal is **automation rather than a toolbox**:
-users should not have to decide whether to run Pressure Check, Personal Question,
-or another internal control. Handshake should determine which verification signals
-are appropriate and present one clear result.
+### Personal UX direction
 
-The stronger long-term vision is **call-aware protection**. During a supported
-call session, Handshake should automatically prepare the trusted-person context,
-start the relevant verification flow, and invoke additional checks when useful
-signals are available. The user should experience this as one protection layer
-around the call, not as a sequence of separate tools.
+The long-term Personal experience is **automation rather than a toolbox**.
 
-The current prototype keeps these controls explicit because that is simpler and
-safer to demonstrate while orchestration and mobile OS capabilities are still
-being validated. The roadmap treats call-aware/background behavior as a
-post-hackathon phase; no capability is considered live until it is verified on
-the target platform.
+When there is no call, Handshake should be a calm trust center showing protection
+status, trusted people, recent activity and privacy/settings controls.
 
+When a supported call or communication session begins, Handshake should enter a
+**Call Protection Mode** that feels like **Android + Handshake**, not a second
+phone application. The intended user-facing states are **Protected**, **Verify**
+and **Risk**.
+
+Pressure Check, Personal Challenge and rotating-code verification should become
+internal capabilities selected by Handshake rather than tools the user must
+manually open one by one.
+
+### Real-time call analysis direction
+
+For a call type where the platform legitimately exposes an analyzable audio stream,
+the intended pipeline is:
+
+**audio → voice-activity detection → short rolling buffer → speech-to-text →
+incremental risk analysis → risk engine → Protected / Verify / Risk → contextual
+action.**
+
+The LLM should analyze transcript chunks and derived context, not receive the raw
+audio stream continuously. Target latency is roughly 1–2 seconds for a meaningful
+risk update, but this is a future design target, not a measured performance claim.
+Pressure analysis remains advisory: it is not a voice-clone detector and cannot
+prove that a caller is genuine or fake.
+
+### Android platform boundary
+
+Android's CallScreeningService can support call screening/caller-ID integration,
+while deeper in-call or controlled VoIP architectures may be needed when an app
+must own the audio streams. A microphone foreground service can continue microphone
+capture under Android's permission and background-execution rules, but
+RECORD_AUDIO alone does not establish access to both sides of a carrier call.
+
+The first technical step after the hackathon is a **native Android audio-feasibility
+prototype** on the target Samsung A17. It should test incoming/outgoing carrier
+calls, microphone, remote-audio availability, speakerphone, earpiece, Bluetooth,
+foreground/background execution and the stream actually exposed to the chosen
+native audio API.
+
+Until this feasibility gate is passed, Handshake must not claim automatic
+interception of every phone call, two-way carrier-call audio access, live
+real-time phone-call analysis, cloned-voice detection or invisible background
+listening.
+
+See [ROADMAP.md](./ROADMAP.md) for the complete call-protection UX,
+real-time-analysis pipeline, Android integration layers and phased plan.
 ## Honest limitations
 - **Demo-grade storage.** Pair data lives in simple server-side local storage.
   On the hosted demo it may reset (serverless file systems are ephemeral), which

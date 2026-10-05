@@ -14,6 +14,22 @@ result.
   secrecy, payment requests, authority impersonation). It does not analyze
   audio and is not a voice-clone detector. Never claim cloned-voice detection.
 
+**Wording rules (audit 2026-10-05):**
+
+- Say: "Pressure check looks for manipulation tactics in a text transcript. It is
+  advisory." Never say it detects a cloned voice, and never present its output as
+  proof that a caller is real or fake.
+- The mobile result screen currently shows a label (*Likely human* / *Likely clone /
+  scam pressure* / *Uncertain*), a pressure score, a "human likelihood" number and a
+  short reasoning (see ROADMAP finding F1). Read out the **pressure score and the
+  reasoning only**; do not read the label or the "human likelihood" as a verdict
+  about the voice. A calm transcript scoring low means "little pressure in this text",
+  not "this person is genuine".
+- *Personal question* returns a generic question on mobile (no private context can be
+  entered). Skip it, or describe it as a generic extra question — not as personalized.
+- The wrong code in step 5 is typed by the presenter as role-play; the
+  **Not verified** verdict itself is a real server check.
+
 **Evidence rule:** only state a result if it was actually observed and
 recorded. If a feature does not produce the expected result, do not invent or
 simulate it; use the observed result and adapt the narration.
@@ -64,9 +80,11 @@ before the demo.
    code → **Not verified** (red). "Same voice. Different verdict — because we
    verify the person's phone, not the voice."
 6. **(30 s) Pressure check.** On Device B, open **Pressure check**, paste the
-   call transcript → pressure score + tactics (urgency, secrecy, immediate
-   payment, authority impersonation) appear as structured cards. One line: "and
-   before you answer, this flags the manipulation tactics in what they said."
+   call transcript → the app shows a pressure score and a short written reasoning
+   (urgency, secrecy, payment pressure, authority impersonation, if the model
+   found them). Only describe what actually appears on screen. One line: "and
+   before you answer, this flags the manipulation tactics in what they said — it
+   is advisory, and it does not listen to the voice."
 7. **(20 s, optional) Contrast beat.** Only if you have a *recorded external*
    voice-detection result: show it and narrate the thesis — "Detection is an
    arms race. Verification isn't." Frame it as an outside reference, never as a
