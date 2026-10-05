@@ -23,6 +23,7 @@ function copyNativeFiles() {
     'CallScreeningServiceImpl.kt',
     'AudioCaptureManager.kt',
     'VADProcessor.kt',
+    'CallAudioPackage.kt',
   ];
 
   for (const file of files) {

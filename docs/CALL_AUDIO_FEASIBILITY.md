@@ -1,4 +1,4 @@
-# Call Audio Feasibility — Final Report
+# Call Audio Feasibility — Technical Prototype Report
 
 **Date:** 2026-10-05
 **Target Device:** Samsung A17 (Android 14+)
@@ -33,6 +33,8 @@
 | `InCallService` | ❌ NOT VIABLE | Requires becoming default dialer (`ROLE_DIALER`) — replaces entire phone app UX. |
 | `ConnectionService` | ❌ NOT APPLICABLE | Only for VoIP calls owned by the app, not carrier calls. |
 | `AudioRecord` (MIC) | ✅ IMPLEMENTED | Local microphone capture works when no call active. |
+| `AudioRecord` (VOICE_RECOGNITION) | ✅ IMPLEMENTED | Alternative audio source, same limitation as MIC. |
+| `AudioRecord` (VOICE_COMMUNICATION) | ✅ IMPLEMENTED | For VoIP use cases, same limitation. |
 | `AudioRecord` (VOICE_UPLINK/DOWNLINK/VOICE_CALL) | ❌ BLOCKED | Requires `CAPTURE_AUDIO_OUTPUT` — system-only permission. |
 | Microphone Foreground Service | ✅ IMPLEMENTED | Works when started from foreground. Cannot start from background on Android 14+. |
 | Phone Call Foreground Service | ❌ NOT APPLICABLE | Requires `MANAGE_OWN_CALLS` or default dialer role. |
@@ -104,7 +106,7 @@
 | Test | Status | Notes |
 |------|--------|-------|
 | TypeScript compilation | ✅ PASS | `npm run typecheck` clean |
-| ESLint | ✅ PASS | Only 1 unused var warning |
+| ESLint | ✅ PASS | No errors |
 | Native module registration | ✅ PASS | Package added to MainApplication |
 | Manifest permissions/services | ✅ PASS | All declared correctly |
 | Prebuild generation | ✅ PASS | Android project generates cleanly |
@@ -255,7 +257,7 @@ Carrier calls remain out of scope for real-time audio analysis. The product shou
 | Command | Result |
 |---------|--------|
 | `cd mobile && npm run typecheck` | ✅ PASS |
-| `cd mobile && npm run lint` | ✅ PASS (1 warning) |
+| `cd mobile && npm run lint` | ✅ PASS |
 | `cd mobile && npx expo prebuild --platform android --clean` | ✅ PASS |
 
 ### Device Tests Required (Samsung A17)

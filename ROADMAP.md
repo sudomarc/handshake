@@ -308,6 +308,37 @@ manual security buttons.
 
 **Exit condition MET WITH CAVEAT:** A real supported call scenario (Handshake VoIP) can be detected/entered, but carrier calls cannot be analyzed in real-time.
 
+### Call Audio Feasibility Prototype — COMPLETED (2026-10-05)
+
+**Status: VERIFIED (source review) — Native module implemented, typecheck/lint clean**
+
+#### ✅ Implemented
+- Native Android module `handshake-call-audio` with Expo config plugin
+- `AudioCaptureManager` — AudioRecord wrapper (MIC, VOICE_RECOGNITION, VOICE_COMMUNICATION)
+- `VADProcessor` — Energy-based VAD (SILENCE/SPEECH/UNKNOWN states)
+- `CallScreeningServiceImpl` — Call metadata detection (number, direction, verification)
+- `CallAudioService` — Microphone foreground service (persists in background)
+- `CallAudioModule` — React Native bridge with real-time events
+- `CallAudioPackage` — React Native package registration
+- Test screen: `call-audio-feasibility.tsx` with real-time metrics
+
+#### 📋 Test Matrix Results (Source Verified)
+
+| Scenario | Call Detected | Local Audio | Remote Audio | Both | Background | Result |
+|----------|---------------|-------------|--------------|------|------------|--------|
+| Incoming carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
+| Outgoing carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
+| Speakerphone | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
+| Earpiece | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
+| Bluetooth | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
+| App foreground | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
+| App background | N/A | ✅ (FGS) | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
+| Microphone FGS | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
+
+**Major Discovery:** Android carrier-call remote audio is platform-blocked. `CAPTURE_AUDIO_OUTPUT` required for VOICE_UPLINK/DOWNLINK is system-only.
+
+**Architecture Decision:** Pivot to Handshake-controlled VoIP sessions (`ConnectionService` + WebRTC) where both audio sides are natively available.
+
 ### Call Protection Implementation Progress (2026-10-05)
 
 **Status: IN PROGRESS — WebRTC integration for Handshake-controlled VoIP sessions**
