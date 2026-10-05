@@ -308,6 +308,60 @@ manual security buttons.
 
 **Exit condition MET WITH CAVEAT:** A real supported call scenario (Handshake VoIP) can be detected/entered, but carrier calls cannot be analyzed in real-time.
 
+### Call Protection Implementation Progress (2026-10-05)
+
+**Status: IN PROGRESS — WebRTC integration for Handshake-controlled VoIP sessions**
+
+#### ✅ Completed
+- WebRTC dependency added (`react-native-webrtc@118.0.7`, `@config-plugins/react-native-webrtc@9.0.0`)
+- Expo config plugin configured with microphone/camera permissions
+- Native Android permissions: CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, BLUETOOTH, WAKE_LOCK
+- Backend signaling API: `/api/call/session`, `/api/call/offer`, `/api/call/answer`, `/api/call/ice`, `/api/call/session/:id`, `/api/call/end`
+- Call session store with in-memory session management (30-min TTL)
+- WebRTC call manager with peer connection, ICE candidate handling, connection state monitoring
+- Call Protection UI screen (`/call/protection`) with:
+  - Create protected call / Join call via session ID
+  - Real-time call state display (connecting/connected/ended)
+  - Local and remote audio stream visualization
+  - Mute/unmute, end call controls
+  - Protection status badges (Identity ✓, Call Active, Risk Low)
+- Device ID generation and secure storage via expo-crypto + expo-secure-store
+- TypeScript compilation clean, ESLint clean
+
+#### 🔄 In Progress / Next Steps
+- Build development APK and test on Samsung A17
+- Two-device WebRTC call test (Device A = Samsung A17, Device B = emulator/second device)
+- Verify local audio track transmission
+- Verify remote audio track reception
+- Verify two-way audio communication
+- Test background/foreground behavior during active call
+- Test call establishment reliability (ICE, NAT traversal)
+
+#### 📋 Planned
+- VAD integration (reuse existing VADProcessor from native module)
+- Real-time audio frame access for analysis pipeline
+- STT integration (on-device Whisper.cpp or cloud)
+- Pressure Check integration as internal capability
+- Risk engine with Protected/Verify/Risk states
+- Automatic orchestration based on available signals
+
+**Current Architecture:**
+```
+Handshake Personal (Expo)
+    ↓
+WebRTC (react-native-webrtc)
+    ↓
+Signaling via REST API (existing backend)
+    ↓
+PeerConnection (audio-only)
+    ↓
+Local + Remote MediaStream tracks
+    ↓
+Analysis-ready audio (pending VAD integration)
+```
+
+**Target for next validation:** Real two-device WebRTC call with two-way audio confirmed on Samsung A17.
+
 **When there is no call**, Handshake should behave like a calm Personal trust
 center:
 

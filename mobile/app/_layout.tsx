@@ -21,6 +21,7 @@ export default function RootLayout() {
         <Stack.Screen name="analyze" options={{ title: "Pressure check" }} />
         <Stack.Screen name="first-hour" options={{ title: "The first hour" }} />
         <Stack.Screen name="call-audio-feasibility" options={{ title: "Call Audio Feasibility" }} />
+        <Stack.Screen name="call/protection" options={{ title: "Call Protection" }} />
       </Stack>
     </SafeAreaProvider>
   );

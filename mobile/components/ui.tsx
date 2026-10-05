@@ -7,6 +7,7 @@ import {
   View,
   type StyleProp,
   type ViewStyle,
+  type TextStyle,
 } from "react-native";
 import { colors, MIN_TOUCH } from "@/lib/theme";
 
@@ -14,12 +15,12 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
   return <View style={[s.card, style]}>{children}</View>;
 }
 
-export function H2({ children }: { children: ReactNode }) {
-  return <Text style={s.h2}>{children}</Text>;
+export function H2({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Text style={[s.h2, style]}>{children}</Text>;
 }
 
-export function Body({ children, muted }: { children: ReactNode; muted?: boolean }) {
-  return <Text style={[s.body, muted && { color: colors.muted }]}>{children}</Text>;
+export function Body({ children, muted, style }: { children: ReactNode; muted?: boolean; style?: StyleProp<TextStyle> }) {
+  return <Text style={[s.body, muted && { color: colors.muted }, style]}>{children}</Text>;
 }
 
 interface ButtonProps {
@@ -28,9 +29,10 @@ interface ButtonProps {
   variant?: "primary" | "secondary" | "danger";
   busy?: boolean;
   disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function Button({ label, onPress, variant = "primary", busy, disabled }: ButtonProps) {
+export function Button({ label, onPress, variant = "primary", busy, disabled, style }: ButtonProps) {
   const inactive = disabled || busy;
   return (
     <Pressable
@@ -41,6 +43,7 @@ export function Button({ label, onPress, variant = "primary", busy, disabled }: 
       disabled={inactive}
       style={({ pressed }) => [
         s.btn,
+        style,
         variant === "primary" && { backgroundColor: colors.accent },
         variant === "secondary" && { borderWidth: 1, borderColor: colors.border },
         variant === "danger" && { borderWidth: 1, borderColor: colors.danger },
@@ -78,6 +81,10 @@ export function ErrorBox({ message }: { message: string }) {
   );
 }
 
+export function Mono({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Text style={[s.mono, style]}>{children}</Text>;
+}
+
 const s = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
@@ -89,6 +96,7 @@ const s = StyleSheet.create({
   },
   h2: { color: colors.text, fontSize: 20, fontWeight: "600" },
   body: { color: colors.textSoft, fontSize: 16, lineHeight: 24 },
+  mono: { fontFamily: 'monospace', fontSize: 14 },
   btn: {
     minHeight: MIN_TOUCH + 4,
     borderRadius: 14,

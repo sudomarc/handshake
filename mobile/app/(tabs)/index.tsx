@@ -62,6 +62,11 @@ export default function Home() {
           variant="secondary"
           onPress={() => router.push("/call-audio-feasibility")}
         />
+        <Button
+          label="Call Protection"
+          variant="secondary"
+          onPress={() => router.push("/call/protection")}
+        />
       </Card>
     </PageShell>
   );
