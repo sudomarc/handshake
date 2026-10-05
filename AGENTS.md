@@ -24,4 +24,45 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Current product direction
 
-Handshake Personal is the primary hackathon client. The long-term UX direction is an automated, user-controlled trust layer around supported communication sessions. Call-aware/background behavior is a future phase and must be validated against real mobile OS capabilities before being described as implemented.
+Handshake Personal is the primary hackathon client. The long-term UX direction is
+an automated, user-controlled trust layer around supported communication
+sessions. Outside a call, Personal should be a calm trust center; during a
+supported call/session, it should use a minimal **Call Protection Mode** with a
+single understandable state such as **Protected / Verify / Risk**.
+
+Pressure Check, Personal Challenge and rotating-code verification are capabilities
+to be orchestrated rather than a manual toolbox. The intended orchestration is:
+
+```text
+communication session
+  ↓
+available trust / context / transcript / audio signals
+  ↓
+smallest useful verification or risk check
+  ↓
+Protected / Verify / Risk
+  ↓
+contextual action
+```
+
+Real-time call analysis is a future capability and is **not implemented merely by
+requesting RECORD_AUDIO**. Android's microphone foreground services can continue
+microphone capture under explicit permission and platform restrictions, but that
+does not prove access to both sides of a carrier call. CallScreeningService is for
+call screening/caller-ID integration, not a generic two-way call-audio feed.
+Deeper in-call or controlled VoIP architectures may be required when application
+ownership of call audio is necessary.
+
+Before implementing real-time analysis, build and test a native Android feasibility
+prototype on the target device to establish what audio is actually available for
+incoming/outgoing carrier calls, speakerphone, earpiece, Bluetooth, foreground and
+background states. Do not implement the full audio→STT→risk pipeline until that
+gate is passed.
+
+Do not claim automatic interception of every call, two-way carrier-call capture,
+real-time live phone-call analysis, cloned-voice detection, invisible background
+listening, or Android/iOS parity until each capability is independently verified
+on-device.
+
+Call analysis must remain explicit, user-controlled and privacy-preserving. Never
+build covert surveillance or fabricate platform access.
