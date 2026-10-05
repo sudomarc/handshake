@@ -259,29 +259,77 @@ Carrier calls remain out of scope for real-time audio analysis. The product shou
 | `cd mobile && npm run typecheck` | ✅ PASS |
 | `cd mobile && npm run lint` | ✅ PASS |
 | `cd mobile && npx expo prebuild --platform android --clean` | ✅ PASS |
+| `node mobile/plugins/handshake-call-audio/plugin.test.js` | ✅ PASS (7/7) |
 
-### Device Tests Required (Samsung A17)
+---
 
-```bash
-# Build development APK
-cd mobile && eas build --platform android --profile development
+## NEXT STEP — Install via ADB + Device Test (Samsung A17)
 
-# Install on device
-adb install <apk-path>
+The A17 (`RFGL516YXCB`, `SM-A175F`, Android 16 / API 36, `arm64-v8a`) is connected
+and authorized over ADB. The previous EAS build (`250db385`) ran against stale
+commit `7caeebd` (before the Kotlin registration fixes) and is ignored.
 
-# Test procedure:
-# 1. Open "Call Audio Feasibility" screen
-# 2. Press "Start MIC" → speak → verify frames/VAD
-# 3. Press "Start Foreground MIC" → home screen → verify capture continues
-# 4. Make cellular call → observe frames go to 0/silence
-# 5. Enable Call Screening → receive call from unknown number → verify event
+### Environment
+
+```powershell
+# JDK 17
+$env:JAVA_HOME = "$env:LOCALAPPDATA\Programs\Eclipse Adoptium\jdk17"
+$env:PATH      = "$env:JAVA_HOME\bin;$env:PATH"
+
+# Android SDK + platform-tools (adb)
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+$env:PATH         = "$env:ANDROID_HOME\platform-tools;$env:PATH"
+
+# Verify device
+adb devices -l   # expect: RFGL516YXCB device ... model:SM_A175F
 ```
+
+### 1. Build the debug APK (local Gradle, no EAS)
+
+```powershell
+cd mobile\android
+.\gradlew.bat :app:assembleDebug
+# output: mobile\android\app\build\outputs\apk\debug\app-debug.apk
+```
+
+### 2. Install over ADB
+
+```powershell
+adb install -r mobile\android\app\build\outputs\apk\debug\app-debug.apk
+adb shell pm list packages | findstr sudomarc.handshake   # expect: package:com.sudomarc.handshake
+adb logcat -c
+adb shell am start -n com.sudomarc.handshake/.MainActivity
+```
+
+### 3. Device test procedure
+
+| # | Action | Expected (verified only if observed) |
+|---|--------|--------------------------------------|
+| 1 | App cold start | MainActivity launches, no native crash |
+| 2 | Open "Call Audio Feasibility" screen | Screen renders, permission prompt for RECORD_AUDIO |
+| 3 | Press "Start MIC" → speak | Frame counter increases, VAD reacts |
+| 4 | Press "Start Foreground MIC" → Home screen | Capture continues while app backgrounded |
+| 5 | Make a carrier call while capturing | Frames go silent / 0 — confirms platform-blocked carrier audio |
+| 6 | Enable Call Screening → call from unknown number | `CallScreeningServiceImpl` event logged |
+
+```powershell
+# Watch native logs during the test
+adb logcat -c
+adb logcat | Select-String "CallAudio|CallScreening|handshake"
+```
+
+### 4. Record results
+
+Update **Results** and **Remaining Unknowns** in this document with observed
+values only. Do not mark a step verified without on-device evidence (log line,
+screenshot, or captured metric).
 
 ---
 
 ## Git
 
-Commit: (pending — changes not committed per instructions)
+- `c3bebed` fix(android): correct Kotlin CallAudioPackage registration
+- (this commit) fix: idempotent config plugin + Kotlin/telecom API correctness, ADB install docs
 
 ---
 

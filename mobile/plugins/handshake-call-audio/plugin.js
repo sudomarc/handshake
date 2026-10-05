@@ -5,6 +5,19 @@ const path = require('path');
 const PACKAGE_NAME = 'com.sudomarc.handshake';
 const NATIVE_DIR = 'plugins/handshake-call-audio/android';
 
+const PACKAGE_CLASS = 'CallAudioPackage';
+const PACKAGE_IMPORT_PATH = `com.sudomarc.handshake.callaudio.${PACKAGE_CLASS}`;
+
+const ESCAPED_IMPORT_PATH = PACKAGE_IMPORT_PATH.replace(/\./g, '\\.');
+const IMPORT_STATEMENT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*$`, 'm');
+const STRIP_IMPORT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*\\r?\\n`, 'gm');
+const ADD_LINE_RE = /^[ \t]*packages\.add\([^\n]*$/m;
+const IMPORT_LINE_RE = /^[ \t]*import[ \t]+[^\n]*$/gm;
+const PACKAGE_LINE_RE = /^[ \t]*package[ \t]+[^\n]*$/m;
+const PACKAGE_LIST_RETURN_RE = /^[ \t]*return[ \t]+(?:new[ \t]+)?PackageList\([^\n]*$/m;
+
+const REGISTRATION_INDENT = '            ';
+
 function getNativeSourcePath(relativePath) {
   return path.join(__dirname, 'android', relativePath);
 }
@@ -33,6 +46,114 @@ function copyNativeFiles() {
       fs.copyFileSync(sourcePath, targetPath);
     }
   }
+}
+
+function isKotlinSource(contents, filePath) {
+  if (typeof filePath === 'string' && /\.kt$/i.test(filePath)) {
+    return true;
+  }
+  if (typeof filePath === 'string' && /\.java$/i.test(filePath)) {
+    return false;
+  }
+  return /^\s*class\s+MainApplication\s*:\s*Application\s*\(/m.test(contents);
+}
+
+function buildImportStatement(isKotlin) {
+  return isKotlin ? `import ${PACKAGE_IMPORT_PATH}` : `import ${PACKAGE_IMPORT_PATH};`;
+}
+
+function buildRegistration(isKotlin) {
+  return isKotlin
+    ? `packages.add(${PACKAGE_CLASS}())`
+    : `packages.add(new ${PACKAGE_CLASS}());`;
+}
+
+function insertImport(contents, statement) {
+  const importLines = [...contents.matchAll(IMPORT_LINE_RE)];
+  if (importLines.length > 0) {
+    const last = importLines[importLines.length - 1];
+    const at = last.index + last[0].length;
+    return contents.slice(0, at) + `\n${statement}` + contents.slice(at);
+  }
+
+  const packageLine = PACKAGE_LINE_RE.exec(contents);
+  if (!packageLine) {
+    return null;
+  }
+  const at = packageLine.index + packageLine[0].length;
+  return contents.slice(0, at) + `\n\n${statement}` + contents.slice(at);
+}
+
+function stripImports(contents) {
+  return contents.replace(STRIP_IMPORT_RE, '');
+}
+
+// An existing import is only reusable when it sits after the package declaration;
+// anything earlier is a corrupt placement produced by an earlier buggy run.
+function findReusableImport(contents) {
+  const found = IMPORT_STATEMENT_RE.exec(contents);
+  const packageLine = PACKAGE_LINE_RE.exec(contents);
+  if (!found || !packageLine || found.index < packageLine.index) {
+    return null;
+  }
+  return found;
+}
+
+function findReusableRegistration(contents) {
+  const found = ADD_LINE_RE.exec(contents);
+  const packageLine = PACKAGE_LINE_RE.exec(contents);
+  if (!found || !packageLine || found.index < packageLine.index) {
+    return null;
+  }
+  return found;
+}
+
+function replaceAt(contents, match, replacement) {
+  return contents.slice(0, match.index) + replacement + contents.slice(match.index + match[0].length);
+}
+
+// Rewrites a matched line in place, keeping its original indentation and line ending
+// so that CRLF sources stay byte-identical and the plugin never reflows the file.
+function replaceLineAt(contents, match, statement) {
+  const indent = /^[ \t]*/.exec(match[0])[0];
+  const eol = /\r?\n?$/.exec(match[0])[0];
+  return replaceAt(contents, match, `${indent}${statement}${eol}`);
+}
+
+function insertRegistration(contents, statement) {
+  const returnLine = PACKAGE_LIST_RETURN_RE.exec(contents);
+  if (!returnLine) {
+    return null;
+  }
+  return contents.slice(0, returnLine.index) + `${REGISTRATION_INDENT}${statement}\n` + contents.slice(returnLine.index);
+}
+
+function patchMainApplication(contents, { isKotlin }) {
+  let out = contents;
+
+  const existingImport = findReusableImport(out);
+  if (existingImport) {
+    out = replaceAt(out, existingImport, buildImportStatement(isKotlin));
+  } else {
+    const next = insertImport(stripImports(out), buildImportStatement(isKotlin));
+    if (next === null) {
+      return out;
+    }
+    out = next;
+  }
+
+  const existingRegistration = findReusableRegistration(out);
+  if (existingRegistration) {
+    out = replaceLineAt(out, existingRegistration, buildRegistration(isKotlin));
+  } else {
+    const next = insertRegistration(out, buildRegistration(isKotlin));
+    if (next === null) {
+      return out;
+    }
+    out = next;
+  }
+
+  return out;
 }
 
 function withCallAudioPlugin(config) {
@@ -74,7 +195,6 @@ function withCallAudioPlugin(config) {
         'android:name': `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
         'android:permission': 'android.permission.BIND_SCREENING_SERVICE',
         'android:exported': 'true',
-        'android:foregroundServiceType': 'microphone',
       },
       'intent-filter': [
         {
@@ -132,35 +252,8 @@ function withCallAudioPlugin(config) {
   });
 
   config = withMainApplication(config, (config) => {
-    const contents = config.modResults.contents;
-    const isKotlin = /class\\s+MainApplication\\s*:\\s*Application/.test(contents);
-
-    const packageImport = isKotlin
-      ? "import com.sudomarc.handshake.callaudio.CallAudioPackage"
-      : "import com.sudomarc.handshake.callaudio.CallAudioPackage;";
-    const packageAdd = isKotlin
-      ? "packages.add(CallAudioPackage())"
-      : "packages.add(new CallAudioPackage());";
-
-    if (!contents.includes(packageImport)) {
-      const importMatches = [...contents.matchAll(/^import\\s+.+$/gm)];
-      const insertAt = importMatches.length
-        ? importMatches[importMatches.length - 1].index + importMatches[importMatches.length - 1][0].length
-        : 0;
-      config.modResults.contents =
-        contents.slice(0, insertAt) + "\n" + packageImport + contents.slice(insertAt);
-    }
-
-    if (!config.modResults.contents.includes(packageAdd)) {
-      const updated = config.modResults.contents;
-      const packagesIndex = updated.indexOf("packages.add(");
-      if (packagesIndex !== -1) {
-        const lineEndIndex = updated.indexOf("\n", packagesIndex);
-        config.modResults.contents =
-          updated.slice(0, lineEndIndex + 1) + "            " + packageAdd + "\n" + updated.slice(lineEndIndex + 1);
-      }
-    }
-
+    const isKotlin = isKotlinSource(config.modResults.contents, config.modResults.path);
+    config.modResults.contents = patchMainApplication(config.modResults.contents, { isKotlin });
     return config;
   });
 
@@ -168,3 +261,5 @@ function withCallAudioPlugin(config) {
 }
 
 module.exports = withCallAudioPlugin;
+module.exports.patchMainApplication = patchMainApplication;
+module.exports.isKotlinSource = isKotlinSource;

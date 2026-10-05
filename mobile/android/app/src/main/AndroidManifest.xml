@@ -26,7 +26,7 @@
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
-    <service android:name="com.sudomarc.handshake.callaudio.CallScreeningServiceImpl" android:permission="android.permission.BIND_SCREENING_SERVICE" android:exported="true" android:foregroundServiceType="microphone">
+    <service android:name="com.sudomarc.handshake.callaudio.CallScreeningServiceImpl" android:permission="android.permission.BIND_SCREENING_SERVICE" android:exported="true">
       <intent-filter>
         <action android:name="android.telecom.CallScreeningService"/>
       </intent-filter>
@@ -44,6 +44,7 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="handshake"/>
         <data android:scheme="com.sudomarc.handshake"/>
+        <data android:scheme="exp+handshake"/>
       </intent-filter>
     </activity>
     <activity android:name="com.facebook.react.devsupport.DevSettingsActivity" android:exported="false"/>

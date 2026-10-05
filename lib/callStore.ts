@@ -1,8 +1,6 @@
 import { CallSession, CreateCallSessionRequest, CallOffer, CallAnswer, IceCandidate } from "@/lib/callSchemas";
 
-interface StoredCallSession extends CallSession {
-  // Additional metadata
-}
+type StoredCallSession = CallSession;
 
 class CallSessionStore {
   private sessions = new Map<string, StoredCallSession>();

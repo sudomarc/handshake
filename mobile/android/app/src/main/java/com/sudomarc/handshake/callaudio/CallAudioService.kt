@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -83,7 +84,11 @@ class CallAudioService : Service() {
         stateCallback?.invoke("RECORDING")
 
         val notification = buildNotification("Call Audio Active", "Handshake is monitoring call audio")
-        startForeground(NOTIFICATION_ID, notification, Build.VERSION_CODES.R)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
 
         captureThread = Thread({ captureLoop() }, "CallAudioCapture").apply { start() }
         Log.i(TAG, "Foreground audio capture started")

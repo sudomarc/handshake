@@ -13,8 +13,8 @@ import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.soloader.SoLoader
 
 import expo.modules.ApplicationLifecycleDispatcher
-import com.sudomarc.handshake.callaudio.CallAudioPackage
 import expo.modules.ReactNativeHostWrapper
+import com.sudomarc.handshake.callaudio.CallAudioPackage
 
 class MainApplication : Application(), ReactApplication {
 
