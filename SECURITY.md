@@ -37,6 +37,11 @@ the pair is locked for the rest of that window (implemented in J3: HTTP 429 with
 `Retry-After`, plus 30 attempts/minute per client IP). That bounds guessing to
 5/1,000,000 per window per pair.
 
+**Audit 2026-10-05.** Behaviour confirmed locally: 5 attempts allowed per pair per
+30 s window, the next one returns 429 with `Retry-After`. The in-memory,
+per-instance limitation below still exists and is classified as post-hackathon
+hardening (see ROADMAP).
+
 **Residual risk.** Counters are in memory, per server instance. On serverless
 hosting several instances can run at once, so the real limit can be a small
 multiple of 5. Someone who knows the pair ID can also burn the 5 attempts and
@@ -95,12 +100,21 @@ password.
 **Mitigation.** zod max-length on the transcript, per-IP-ish rate limiting at
 the route level (J3/J4), output token cap on model calls.
 **Residual risk.** Full abuse protection is a production concern.
+**Known gap (audit 2026-10-05).** `/api/analyze` and `/api/challenge` key their
+limiter on the caller-supplied `pairId`. Pairs are stateless, so any 32-hex string
+is accepted and starts a fresh bucket: 40 of 40 requests with random `pairId`s
+reached the AI stage, whereas repeating one `pairId` was limited after 10. Someone
+who finds the public URL can therefore burn AI credits. Not fixed during the
+feature freeze; fix is to also key on the client address (post-hackathon).
 
 ### T7 — Data loss (storage)
 
-Not a confidentiality threat: the serverless file system may reset, losing the
-demo's pair list. Reliability impact only — the demo recreates the pair on the
-fly (seconds). Documented in the README.
+Pair secrets are derived, not stored (T3), so there is no server-side pair list to
+lose. The mobile app keeps its list of pair IDs in the device's secure storage;
+uninstalling the app loses it, and the pair is simply recreated or re-joined.
+Consequence of the stateless design (observed 2026-10-05): the server cannot know
+whether a `pairId` was ever "created" — an unknown but well-formed `pairId` yields
+`not-verified`, never a 404.
 
 ## What we do NOT mitigate (honest gaps)
 
@@ -110,6 +124,10 @@ fly (seconds). Documented in the README.
   person to read the code to them defeats the code check. UI guidance: never
   read a code to a caller you don't already trust; the personal challenge is a
   second layer.
+- **Pressure check can reassure falsely.** The model only sees a text transcript. A
+  calm, convincing scam script can score low or be labelled "likely human". The
+  output is advisory about pressure tactics only; it says nothing about who is
+  speaking. See ROADMAP finding F1.
 - **No accounts/auth in the demo.** Anyone with a pair ID can use that pair.
   Production would need real authentication and device registration.
 - **LLM provider data handling.** Transcripts are sent to Featherless for

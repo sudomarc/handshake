@@ -30,6 +30,110 @@ This project therefore follows a strict evidence rule:
 functionality.** A prerecorded clip or screenshot is a fallback/presentation
 aid unless the live feature is independently verified.
 
+## Finalization / freeze status (audited 2026-10-05)
+
+**From now on: no new features.** Minimum change, maximum certainty.
+Status tags: **VERIFIED** (observed during the 2026-10-05 audit), **OWNER-REPORTED**
+(stated by the developer, no evidence in the repository), **NOT VERIFIED**,
+**KNOWN LIMITATION**. This section supersedes the unchecked boxes of J6/J7 below
+until they are re-checked with evidence.
+
+### COMPLETED
+
+- **VERIFIED** — `mobile/` Expo app (SDK 51, Expo Router) with the Personal flows:
+  trusted people, *My code*, *Verify a call*, Pressure check, Personal question,
+  The first hour. `tsc --noEmit`: 0 errors. ESLint: 0 problems.
+- **VERIFIED (source review)** — *Verify a call* never renders the live code
+  (`mobile/app/verify/[pairId].tsx`, `mobile/components/VerifyForm.tsx`). *My code*
+  shows it with a countdown, refetches at rotation, and has an error state with
+  *Try again* (`useLiveCode.ts`, `CodeDisplay.tsx`). Verify errors keep the form
+  usable (`VerifyForm.tsx`). Not yet observed on a device.
+- **VERIFIED locally** (Next dev server, throwaway `PAIR_DERIVATION_KEY`, no AI key):
+  - `POST /api/circle` → 201 with a 32-hex `pairId`.
+  - `GET /api/code/current` → 200 with a valid `pairId`; 400 when missing or malformed.
+  - `POST /api/code/verify` → `verified` for the current code, `not-verified` for a
+    wrong code; 400 for a malformed code, invalid JSON and empty body; the 6th
+    attempt for one pair inside a 30 s window → 429 with `Retry-After`.
+  - `POST /api/analyze`, `POST /api/challenge` → 400 on invalid input; 503
+    `not_configured` when `FEATHERLESS_API_KEY` is absent. Error bodies expose no
+    internals; server logs print variable names only, never values.
+- **VERIFIED** — secrets hygiene: a pattern scan of the full git history (GitHub
+  tokens, `sk-`/`rc_` keys, 64-hex strings, `*_KEY=` assignments) found nothing;
+  only the two `.env.example` files were ever tracked; the only `EXPO_PUBLIC_*`
+  variable is `EXPO_PUBLIC_API_BASE_URL` (a URL); no secret name is referenced
+  from `mobile/`.
+- **VERIFIED (configuration)** — EAS `preview` profile builds an APK and injects the
+  production API URL (`mobile/eas.json`).
+- **VERIFIED** — GitHub repository `sudomarc/handshake` is public (GitHub API, `private: false`).
+
+**OWNER-REPORTED, no evidence in the repository:** backend deployed on Vercel; APK
+built successfully; MVP validated on a Samsung A17; deployed routes tested. To turn
+these into VERIFIED, add the EAS build URL and screenshots/test notes to the repo.
+
+### FINAL VALIDATION (open before submission)
+
+- [ ] **Two-physical-device validation remains outstanding (NOT VERIFIED).** An API-level
+      simulation is not a substitute.
+- [ ] Test the *deployed* backend from a phone on mobile data: circle, current,
+      verify and — with the production `FEATHERLESS_API_KEY` — analyze and challenge.
+      (The audit sandbox could not reach Vercel or Featherless: `host_not_allowed`.)
+- [ ] Final APK install and full flow on device; keep evidence (build link, screenshots).
+- [ ] Owner decision on the Pressure check result wording (finding F1).
+- [ ] Rehearse `DEMO_SCRIPT.md` end to end, including one deliberate network failure.
+- [ ] README final pass (finding F4).
+- [ ] Record the 2–4 min video; submit on Devpost by Fri Oct 9 (hard deadline
+      Sat Oct 10, 12:00 PM EDT).
+
+### Audit findings (documented, deliberately not fixed)
+
+- **F1 — Pressure check labels over-claim.** `mobile/app/analyze.tsx` renders
+  *Likely human*, *Likely clone / scam pressure* and *Human likelihood n/100*, while
+  the model only sees a text transcript and the screen itself says it does not
+  detect cloned voices. A calm, well-written scam script can come back as *Likely
+  human* — false reassurance. Not a functional blocker, so not changed. Smallest
+  possible fix (label-only, no schema/API change): show the pressure score and
+  reasoning, drop the *Likely human* label and the *Human likelihood* line, and
+  rename *Likely clone* to *High pressure*. **Owner decision.** Until then, follow
+  the wording rules in `DEMO_SCRIPT.md`.
+- **F2 — Personal question is not personalized on mobile.** The screen has no input
+  for private context, so `/api/challenge` receives an empty context and returns a
+  generic question. Do not present it as using saved personal details.
+- **F3 — AI-route rate limits are bypassable.** `/api/analyze` and `/api/challenge`
+  key their limiter on the caller-supplied `pairId`; pairs are stateless, so any
+  32-hex string is accepted. Observed: 40 of 40 requests with random `pairId`s
+  passed the limiter; the same `pairId` was limited after 10. Cost-abuse exposure on
+  a public URL (Featherless credits). Post-hackathon hardening, unless credits are at
+  risk before submission.
+- **F4 — Root README is stale.** It still describes a "mobile-first web app", has a
+  browser-only architecture diagram, and says pair data lives in server-side local
+  storage, while the implementation is stateless (HMAC-derived secrets; see
+  `ARCHITECTURE.md`/`SECURITY.md` T3). `mobile/README.md` listed a "Demo Mode" that
+  does not exist; that line was removed in this audit.
+- **F5 — Expo Doctor incomplete.** 14/17 checks pass; the 3 others need
+  `api.expo.dev`, blocked in the audit sandbox (NOT VERIFIED, not a project
+  failure). Re-run on the dev machine: `cd mobile && npx expo-doctor && npx expo install --check`.
+- **F6 — Web build not reproduced here.** The production build failed only because
+  the sandbox cannot fetch Google Fonts. Type checking passes once Next has generated
+  its types; a plain `tsc` on a fresh clone reports `LayoutProps` as missing until
+  the first dev/build run (expected, not a bug).
+- **F7 — Cosmetic.** `prettier --check` flags 7 files that were already unformatted
+  before this audit (AGENTS.md, DEMO_SCRIPT.md, HACKATHON.md, README.md, ROADMAP.md,
+  `lib/featherless.ts`, `mobile/app.json`); 2 unused-variable ESLint warnings in
+  `components/CreatePair.tsx`. Left alone on purpose (no mass reformatting during freeze).
+- **F8 — `eas.json` `production` profile has no `EXPO_PUBLIC_API_BASE_URL`.** A
+  production AAB would report "server address not configured". Irrelevant to the
+  `preview` APK used for the demo; post-hackathon.
+
+### POST-HACKATHON (do not start now)
+
+- Durable/distributed rate limiting (**KNOWN LIMITATION**, confirmed still in-memory
+  per serverless instance) and server-side limiter keys that do not depend on
+  caller-chosen values (F3).
+- Call-aware automation, deeper telephony integration, background execution
+  (see the product roadmap below).
+- Accounts, device enrollment/revocation, persistent storage.
+- `production` EAS profile env (F8), Expo Doctor re-run (F5), formatting cleanup (F7).
+
 ## Product and demo principles
 
 - **Working demo first.** The submission must demonstrate a genuinely working
@@ -146,7 +250,7 @@ without destabilizing them through an unverified telephony integration.
 - [ ] Confirm GitHub repo is publicly accessible and contains source code + clear README
 - [ ] Add mobile build/testing evidence, screenshots and architecture evidence
 - [ ] Explicitly label live features, fallbacks, and future Business web product
-- [ ] **Submit on Devpost before 12:00 PM EST** (target: by noon)
+- [ ] **Submit on Devpost before 12:00 PM EDT** (target: by noon)
 - [ ] Stop. Buffer day (Oct 10) is untouched.
 
 ## Hackathon platform decision
