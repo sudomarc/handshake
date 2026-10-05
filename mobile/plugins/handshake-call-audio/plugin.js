@@ -133,24 +133,31 @@ function withCallAudioPlugin(config) {
 
   config = withMainApplication(config, (config) => {
     const contents = config.modResults.contents;
-    const packageImport = "import com.sudomarc.handshake.callaudio.CallAudioPackage;";
-    const packageAdd = "packages.add(new CallAudioPackage());";
+    const isKotlin = /class\\s+MainApplication\\s*:\\s*Application/.test(contents);
+
+    const packageImport = isKotlin
+      ? "import com.sudomarc.handshake.callaudio.CallAudioPackage"
+      : "import com.sudomarc.handshake.callaudio.CallAudioPackage;";
+    const packageAdd = isKotlin
+      ? "packages.add(CallAudioPackage())"
+      : "packages.add(new CallAudioPackage());";
 
     if (!contents.includes(packageImport)) {
-      const importIndex = contents.lastIndexOf("import ");
-      if (importIndex !== -1) {
-        const nextLineIndex = contents.indexOf("\n", importIndex);
-        config.modResults.contents =
-          contents.slice(0, nextLineIndex + 1) + packageImport + "\n" + contents.slice(nextLineIndex + 1);
-      }
+      const importMatches = [...contents.matchAll(/^import\\s+.+$/gm)];
+      const insertAt = importMatches.length
+        ? importMatches[importMatches.length - 1].index + importMatches[importMatches.length - 1][0].length
+        : 0;
+      config.modResults.contents =
+        contents.slice(0, insertAt) + "\n" + packageImport + contents.slice(insertAt);
     }
 
-    if (!contents.includes(packageAdd)) {
-      const packagesIndex = contents.indexOf("packages.add(");
+    if (!config.modResults.contents.includes(packageAdd)) {
+      const updated = config.modResults.contents;
+      const packagesIndex = updated.indexOf("packages.add(");
       if (packagesIndex !== -1) {
-        const lineEndIndex = contents.indexOf("\n", packagesIndex);
+        const lineEndIndex = updated.indexOf("\n", packagesIndex);
         config.modResults.contents =
-          contents.slice(0, lineEndIndex + 1) + "            " + packageAdd + "\n" + contents.slice(lineEndIndex + 1);
+          updated.slice(0, lineEndIndex + 1) + "            " + packageAdd + "\n" + updated.slice(lineEndIndex + 1);
       }
     }
 
