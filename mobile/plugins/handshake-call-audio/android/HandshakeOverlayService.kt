@@ -13,6 +13,9 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyCallback
+import android.telephony.TelephonyManager
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -36,15 +39,46 @@ class HandshakeOverlayService : Service() {
 
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
+    private var telephonyManager: TelephonyManager? = null
+    private var callActive = false
+
+    private val telephonyCallback: TelephonyCallback? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                override fun onCallStateChanged(state: Int) {
+                    handleCallState(state)
+                }
+            }
+        } else {
+            null
+        }
+
+    private val legacyPhoneStateListener: PhoneStateListener? =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            object : PhoneStateListener() {
+                override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                    handleCallState(state)
+                }
+            }
+        } else {
+            null
+        }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+        registerCallStateListener()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        if (intent?.action == ACTION_STOP) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -56,17 +90,73 @@ class HandshakeOverlayService : Service() {
                 intent.getStringExtra(EXTRA_TITLE) ?: "Risk detected",
                 intent.getStringExtra(EXTRA_MESSAGE) ?: "Handshake detected a suspicious interaction.",
             )
-            ACTION_STOP -> stopSelf()
-            else -> showProtected()
+            else -> renderCallState()
         }
 
         return START_STICKY
     }
 
+    private fun registerCallStateListener() {
+        try {
+            val manager = telephonyManager ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                telephonyCallback?.let { callback ->
+                    manager.registerTelephonyCallback(mainExecutor, callback)
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                legacyPhoneStateListener?.let { listener ->
+                    @Suppress("DEPRECATION")
+                    manager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+                }
+            }
+        } catch (_: SecurityException) {
+            // READ_PHONE_STATE may not have been granted. The protection pill still works.
+        } catch (_: Exception) {
+            // Keep the overlay available even if telephony callbacks are unavailable on an OEM.
+        }
+    }
+
+    private fun unregisterCallStateListener() {
+        try {
+            val manager = telephonyManager ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                telephonyCallback?.let { manager.unregisterTelephonyCallback(it) }
+            } else {
+                @Suppress("DEPRECATION")
+                legacyPhoneStateListener?.let { manager.listen(it, PhoneStateListener.LISTEN_NONE) }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun handleCallState(state: Int) {
+        when (state) {
+            TelephonyManager.CALL_STATE_RINGING,
+            TelephonyManager.CALL_STATE_OFFHOOK -> {
+                callActive = true
+                showCallActive(state == TelephonyManager.CALL_STATE_RINGING)
+            }
+            TelephonyManager.CALL_STATE_IDLE -> {
+                callActive = false
+                showProtected()
+            }
+        }
+    }
+
+    private fun renderCallState() {
+        if (callActive) {
+            showCallActive(false)
+        } else {
+            showProtected()
+        }
+    }
+
     private fun startAsForeground() {
         val notification = buildNotification(
             "Handshake Protection",
-            "Call protection is armed. Tap Handshake to manage it.",
+            if (callActive) "A phone call is active. Protection overlay is visible."
+            else "Call protection is armed.",
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
@@ -109,6 +199,43 @@ class HandshakeOverlayService : Service() {
         addOverlay(root)
     }
 
+    private fun showCallActive(ringing: Boolean) {
+        removeOverlay()
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 16, 20, 16)
+            background = roundedBackground(Color.rgb(18, 21, 26), Color.rgb(74, 222, 128), 18f)
+            elevation = 18f
+        }
+
+        val eyebrow = TextView(this).apply {
+            text = "HANDSHAKE • CALL PROTECTION"
+            setTextColor(Color.rgb(251, 191, 36))
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            letterSpacing = 0.08f
+        }
+        val title = TextView(this).apply {
+            text = if (ringing) "Incoming call detected" else "Call active"
+            setTextColor(Color.WHITE)
+            textSize = 20f
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 6, 0, 2)
+        }
+        val status = TextView(this).apply {
+            text = "Protection is active. Carrier-call audio is not being claimed as live analyzable input."
+            setTextColor(Color.rgb(212, 212, 212))
+            textSize = 13f
+            setLineSpacing(0f, 1.1f)
+        }
+
+        root.addView(eyebrow)
+        root.addView(title)
+        root.addView(status)
+        addOverlay(root)
+    }
+
     private fun showRisk(title: String, message: String) {
         removeOverlay()
 
@@ -147,7 +274,7 @@ class HandshakeOverlayService : Service() {
         }
         val dismiss = Button(this).apply {
             text = "Dismiss"
-            setOnClickListener { showProtected() }
+            setOnClickListener { renderCallState() }
         }
         val verify = Button(this).apply {
             text = "Open Handshake"
@@ -244,6 +371,7 @@ class HandshakeOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        unregisterCallStateListener()
         removeOverlay()
         stopForeground(STOP_FOREGROUND_REMOVE)
         super.onDestroy()
