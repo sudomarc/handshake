@@ -8,7 +8,7 @@ import android.util.Log
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 
-class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), AudioCaptureManager.AudioCaptureCallback {
+class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactApplicationContext), AudioCaptureManager.AudioCaptureCallback {
 
     companion object {
         private const val TAG = "CallAudioModule"
@@ -19,7 +19,7 @@ class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
         private const val EVENT_ERROR = "CallAudioError"
     }
 
-    private val audioManager = AudioCaptureManager(reactContext)
+    private val audioManager = AudioCaptureManager(reactApplicationContext)
     private var vadProcessor = VADProcessor()
     private var callScreeningService: CallScreeningServiceImpl? = null
     private var audioService: CallAudioService? = null
@@ -76,13 +76,13 @@ class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
     fun startForegroundCapture(promise: Promise) {
         Log.i(TAG, "startForegroundCapture")
         useForegroundService = true
-        val intent = Intent(reactContext, CallAudioService::class.java).apply {
+        val intent = Intent(reactApplicationContext, CallAudioService::class.java).apply {
             action = "START"
         }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            reactContext.startForegroundService(intent)
+            reactApplicationContext.startForegroundService(intent)
         } else {
-            reactContext.startService(intent)
+            reactApplicationContext.startService(intent)
         }
         promise.resolve(mapOf("status" to "foreground_started"))
     }
@@ -90,10 +90,10 @@ class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
     @ReactMethod
     fun stopForegroundCapture(promise: Promise) {
         Log.i(TAG, "stopForegroundCapture")
-        val intent = Intent(reactContext, CallAudioService::class.java).apply {
+        val intent = Intent(reactApplicationContext, CallAudioService::class.java).apply {
             action = "STOP"
         }
-        reactContext.startService(intent)
+        reactApplicationContext.startService(intent)
         useForegroundService = false
         promise.resolve(mapOf("status" to "foreground_stopped"))
     }
@@ -119,7 +119,7 @@ class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
         callScreeningService?.setCallCallback { details ->
             sendEvent(EVENT_CALL_SCREEN, mapOf(
                 "callId" to details.callId,
-                "phoneNumber" to details.phoneNumber,
+                "phoneNumber" to details.phoneNumber.orEmpty(),
                 "direction" to details.direction,
                 "isIncoming" to details.isIncoming,
                 "timestamp" to details.timestamp,
@@ -137,7 +137,7 @@ class CallAudioModule(reactContext: ReactApplicationContext) : ReactContextBaseJ
     }
 
     private fun sendEvent(eventName: String, params: Map<String, Any>) {
-        reactContext
+        reactApplicationContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
             .emit(eventName, params)
     }
