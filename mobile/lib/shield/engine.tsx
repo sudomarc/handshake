@@ -14,6 +14,7 @@ import {
   type TranscriptCheck,
 } from "@/lib/shield/capabilities";
 import type { ChallengeResponse } from "@/lib/apiTypes";
+import { callOverlayManager } from "@/lib/callOverlay";
 
 export type ShieldStatus = "safe" | "analyzing" | "threat" | "escalated";
 export type EscalationOutcome = "pass" | "fail";
@@ -150,6 +151,14 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
       setState((prev) =>
         run === runRef.current ? { ...prev, checking: false, check, status: "threat" } : prev,
       );
+      void callOverlayManager
+        .showRisk(
+          "Suspicious interaction",
+          check.result.reasoning || "Handshake detected meaningful social-engineering risk signals.",
+        )
+        .catch(() => {
+          // The in-app shield remains authoritative if cross-app overlay permission is unavailable.
+        });
       escalate(run, transcript);
     } catch (error) {
       setState((prev) =>

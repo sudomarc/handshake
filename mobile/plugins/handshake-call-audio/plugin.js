@@ -65,6 +65,8 @@ function copyNativeFiles() {
     "AudioCaptureManager.kt",
     "VADProcessor.kt",
     "CallAudioPackage.kt",
+    "HandshakeOverlayModule.kt",
+    "HandshakeOverlayService.kt",
   ];
 
   for (const file of files) {
@@ -178,6 +180,8 @@ function withCallAudioPlugin(config) {
       "android.permission.READ_PHONE_STATE",
       "android.permission.READ_CALL_LOG",
       "android.permission.ANSWER_PHONE_CALLS",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+      "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
     ];
 
     for (const perm of permissions) {
@@ -227,6 +231,23 @@ function withCallAudioPlugin(config) {
       },
     };
 
+
+    const overlayService = {
+      $: {
+        "android:name": `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
+        "android:exported": "false",
+        "android:foregroundServiceType": "specialUse",
+      },
+      property: [
+        {
+          $: {
+            "android:name": "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
+            "android:value": "User-enabled call protection overlay shown above supported communication apps",
+          },
+        },
+      ],
+    };
+
     const existingScreening = manifest.manifest.application[0].service.find(
       (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
     );
@@ -239,6 +260,14 @@ function withCallAudioPlugin(config) {
     );
     if (!existingAudio) {
       manifest.manifest.application[0].service.push(audioCaptureService);
+    }
+
+
+    const existingOverlay = manifest.manifest.application[0].service.find(
+      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
+    );
+    if (!existingOverlay) {
+      manifest.manifest.application[0].service.push(overlayService);
     }
 
     return config;
