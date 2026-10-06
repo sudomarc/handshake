@@ -5,11 +5,13 @@ import { PageShell } from '@/components/PageShell';
 import { Button, Body, H2, Mono } from '@/components/ui';
 import { usePairs } from '@/hooks/usePairs';
 import { colors } from '@/lib/theme';
+import { useShield } from '@/lib/shield/engine';
 import { WebRTCCallManager, CallState } from '@/lib/webrtc';
 import { getDeviceId } from '@/lib/deviceId';
 
 export default function CallProtection() {
   const { activePair } = usePairs();
+  const { reportCallActive } = useShield();
   const [callManager, setCallManager] = useState<WebRTCCallManager | null>(null);
   const [callState, setCallState] = useState<CallState>('idle');
   const [remoteName, setRemoteName] = useState<string>('');
@@ -73,6 +75,15 @@ export default function CallProtection() {
 
     return () => unsub();
   }, [callManager, startDurationTimer, stopDurationTimer]);
+
+  // Report call context to the global shield state engine.
+  useEffect(() => {
+    reportCallActive(callState === 'connecting' || callState === 'connected');
+  }, [callState, reportCallActive]);
+
+  useEffect(() => {
+    return () => reportCallActive(false);
+  }, [reportCallActive]);
 
   const handleStartCall = async () => {
     if (!activePair || !callManager) {

@@ -1,32 +1,18 @@
 import { useRouter } from "expo-router";
-import { Alert, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CreatePairForm } from "@/components/CreatePairForm";
 import { PageShell } from "@/components/PageShell";
-import { Body, Button, Card, H2 } from "@/components/ui";
+import { Body, Card, H2 } from "@/components/ui";
 import { usePairs } from "@/hooks/usePairs";
-import { colors } from "@/lib/theme";
+import { colors, MIN_TOUCH } from "@/lib/theme";
 
-export default function Trusted() {
+export default function TrustLedger() {
   const router = useRouter();
-  const { pairs, activePair, loading, removePair, setActive, refresh } = usePairs();
-
-  function confirmRemove(pairId: string, name?: string) {
-    Alert.alert(
-      "Remove trusted person?",
-      `${name ?? "This person"} will be removed from this phone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Remove", style: "destructive", onPress: () => void removePair(pairId) },
-      ],
-    );
-  }
+  const { pairs, activePair, loading, refresh } = usePairs();
 
   return (
-    <PageShell title="Trusted people">
-      <Body muted>
-        A trusted person is someone you know in real life. You share a private code that changes
-        every 30 seconds.
-      </Body>
+    <PageShell title="Trust Ledger">
+      <Body muted>The people you verify against. Tap a name to send a Trust Ping.</Body>
 
       {loading ? (
         <Body muted>Loading…</Body>
@@ -35,44 +21,50 @@ export default function Trusted() {
           <Body>No trusted person yet. Add one below.</Body>
         </Card>
       ) : (
-        pairs.map((p) => (
-          <Card key={p.pairId}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <H2>{p.name ?? "Trusted person"}</H2>
-              {activePair?.pairId === p.pairId ? (
-                <Text style={{ color: colors.accent, fontWeight: "600" }}>Active</Text>
-              ) : null}
-            </View>
-            <Button
-              label="Verify a call"
+        pairs.map((p) => {
+          const isActive = activePair?.pairId === p.pairId;
+          const name = p.name ?? "Trusted person";
+          return (
+            <Pressable
+              key={p.pairId}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${name}`}
               onPress={() =>
                 router.push({ pathname: "/verify/[pairId]", params: { pairId: p.pairId } })
               }
-            />
-            <Button
-              label="Show my code"
-              variant="secondary"
-              onPress={() =>
-                router.push({ pathname: "/codes/[pairId]", params: { pairId: p.pairId } })
-              }
-            />
-            {activePair?.pairId !== p.pairId ? (
-              <Button
-                label="Make active"
-                variant="secondary"
-                onPress={() => void setActive(p.pairId)}
-              />
-            ) : null}
-            <Button
-              label="Remove"
-              variant="danger"
-              onPress={() => confirmRemove(p.pairId, p.name)}
-            />
-          </Card>
-        ))
+              style={({ pressed }) => [s.row, pressed && { opacity: 0.8 }]}
+            >
+              <View style={s.rowMain}>
+                <H2>{name}</H2>
+                {isActive ? <Text style={s.active}>Active</Text> : null}
+              </View>
+              <Text style={s.chevron} accessibilityElementsHidden>
+                ›
+              </Text>
+            </Pressable>
+          );
+        })
       )}
 
       <CreatePairForm onChanged={() => void refresh()} />
     </PageShell>
   );
 }
+
+const s = StyleSheet.create({
+  row: {
+    minHeight: MIN_TOUCH + 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  rowMain: { flexDirection: "row", alignItems: "center", gap: 12, flexShrink: 1 },
+  active: { color: colors.accent, fontWeight: "600", fontSize: 14 },
+  chevron: { color: colors.muted, fontSize: 24, marginLeft: 12 },
+});

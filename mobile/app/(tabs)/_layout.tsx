@@ -19,11 +19,11 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: "Verify", tabBarIcon: ({ color }) => <Glyph char="✓" color={color} /> }}
+        options={{ title: "Shield", tabBarIcon: ({ color }) => <Glyph char="◉" color={color} /> }}
       />
       <Tabs.Screen
         name="trusted"
-        options={{ title: "Trusted", tabBarIcon: ({ color }) => <Glyph char="☺" color={color} /> }}
+        options={{ title: "Trust", tabBarIcon: ({ color }) => <Glyph char="☺" color={color} /> }}
       />
     </Tabs>
   );
