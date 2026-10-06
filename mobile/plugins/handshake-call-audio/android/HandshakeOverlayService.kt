@@ -150,7 +150,7 @@ class HandshakeOverlayService : Service() {
             setOnClickListener { showProtected() }
         }
         val verify = Button(this).apply {
-            text = "Verify identity"
+            text = "Open Handshake"
             setOnClickListener {
                 val launch = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
