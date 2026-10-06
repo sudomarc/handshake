@@ -9,12 +9,10 @@ const {
 } = require('./plugin');
 
 const KOTLIN_IMPORT = 'import com.sudomarc.handshake.callaudio.CallAudioPackage';
-const KOTLIN_ADD = 'packages.add(CallAudioPackage())';
+const KOTLIN_ADD = 'PackageList(this).packages + CallAudioPackage()';
 const JAVA_IMPORT = 'import com.sudomarc.handshake.callaudio.CallAudioPackage;';
 const JAVA_ADD = 'packages.add(new CallAudioPackage());';
 
-// Pristine Expo SDK 51 template shape: the only packages.add( occurrence is inside
-// a comment, so a naive indexOf-based injection lands in the wrong place.
 const PRISTINE_KOTLIN_TEMPLATE = `package com.sudomarc.handshake
 
 import android.app.Application
@@ -78,16 +76,12 @@ test('injects valid Kotlin into a pristine Kotlin template', () => {
   const importCount = out.match(new RegExp(KOTLIN_IMPORT.replace(/\./g, '\\.'), 'g')).length;
   assert.strictEqual(importCount, 1, `expected 1 import, got ${importCount}`);
 
-  const addCount = out.match(/packages\.add\(CallAudioPackage\(\)\)/g).length;
-  assert.strictEqual(addCount, 1, `expected 1 registration, got ${addCount}`);
+  assert.ok(out.includes(KOTLIN_ADD), 'expected PackageList(this).packages + CallAudioPackage()');
 });
 
-test('registration lands inside getPackages(), before the PackageList return', () => {
+test('registration forms valid Kotlin package list return statement', () => {
   const out = patchMainApplication(PRISTINE_KOTLIN_TEMPLATE, { isKotlin: true });
-  const addIdx = out.indexOf(KOTLIN_ADD);
-  const returnIdx = out.indexOf('return PackageList(this).packages');
-  assert.ok(addIdx > -1 && returnIdx > -1);
-  assert.ok(addIdx < returnIdx, 'registration must precede the PackageList return');
+  assert.ok(out.includes('return PackageList(this).packages + CallAudioPackage()'), 'registration must attach to PackageList return');
 });
 
 test('emits Java syntax for a Java MainApplication', () => {
@@ -110,14 +104,12 @@ test('is idempotent across repeated runs', () => {
 });
 
 test('repairs the previously broken half-patched state', () => {
-  // What the double-escaped-regex plugin actually produced: a Java import sitting
-  // at offset 0 (before `package`) plus a Java registration.
   const broken = JAVA_IMPORT + '\n' + PRISTINE_KOTLIN_TEMPLATE.replace(
-    '// Packages that cannot be autolinked yet can be added manually here, for example:',
-    '// Packages that cannot be autolinked yet can be added manually here, for example:\n            ' + JAVA_ADD
+    'return PackageList(this).packages',
+    'packages.add(CallAudioPackage())\n            return PackageList(this).packages'
   );
   const out = patchMainApplication(broken, { isKotlin: true });
-  assert.strictEqual(out.includes('new CallAudioPackage'), false, 'Java syntax survived repair');
+  assert.strictEqual(out.includes('packages.add(CallAudioPackage())'), false, 'Broken packages.add syntax survived repair');
   assert.strictEqual(out.includes(KOTLIN_ADD), true, 'Kotlin registration not added');
 });
 

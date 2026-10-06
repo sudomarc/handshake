@@ -11,10 +11,15 @@ const PACKAGE_IMPORT_PATH = `com.sudomarc.handshake.callaudio.${PACKAGE_CLASS}`;
 const ESCAPED_IMPORT_PATH = PACKAGE_IMPORT_PATH.replace(/\./g, '\\.');
 const IMPORT_STATEMENT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*$`, 'm');
 const STRIP_IMPORT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*\\r?\\n`, 'gm');
-const ADD_LINE_RE = /^[ \t]*packages\.add\([^\n]*$/m;
 const IMPORT_LINE_RE = /^[ \t]*import[ \t]+[^\n]*$/gm;
 const PACKAGE_LINE_RE = /^[ \t]*package[ \t]+[^\n]*$/m;
-const PACKAGE_LIST_RETURN_RE = /^[ \t]*return[ \t]+(?:new[ \t]+)?PackageList\([^\n]*$/m;
+
+const KOTLIN_REGISTRATION_RE = /return\s+PackageList\(this\)\.packages\s*\+\s*CallAudioPackage\(\)/m;
+const KOTLIN_RETURN_RE = /([ \t]*)return\s+PackageList\(this\)\.packages/m;
+const KOTLIN_BROKEN_ADD_RE = /^[ \t]*packages\.add\((?:new\s+)?CallAudioPackage\(\)\);?\r?\n?/gm;
+
+const JAVA_ADD_RE = /^[ \t]*packages\.add\(new\s+CallAudioPackage\(\)\);?$/m;
+const JAVA_RETURN_RE = /^[ \t]*return[ \t]+(?:new[ \t]+)?PackageList\([^\n]*$/m;
 
 const REGISTRATION_INDENT = '            ';
 
@@ -62,12 +67,6 @@ function buildImportStatement(isKotlin) {
   return isKotlin ? `import ${PACKAGE_IMPORT_PATH}` : `import ${PACKAGE_IMPORT_PATH};`;
 }
 
-function buildRegistration(isKotlin) {
-  return isKotlin
-    ? `packages.add(${PACKAGE_CLASS}())`
-    : `packages.add(new ${PACKAGE_CLASS}());`;
-}
-
 function insertImport(contents, statement) {
   const importLines = [...contents.matchAll(IMPORT_LINE_RE)];
   if (importLines.length > 0) {
@@ -88,19 +87,8 @@ function stripImports(contents) {
   return contents.replace(STRIP_IMPORT_RE, '');
 }
 
-// An existing import is only reusable when it sits after the package declaration;
-// anything earlier is a corrupt placement produced by an earlier buggy run.
 function findReusableImport(contents) {
   const found = IMPORT_STATEMENT_RE.exec(contents);
-  const packageLine = PACKAGE_LINE_RE.exec(contents);
-  if (!found || !packageLine || found.index < packageLine.index) {
-    return null;
-  }
-  return found;
-}
-
-function findReusableRegistration(contents) {
-  const found = ADD_LINE_RE.exec(contents);
   const packageLine = PACKAGE_LINE_RE.exec(contents);
   if (!found || !packageLine || found.index < packageLine.index) {
     return null;
@@ -112,22 +100,6 @@ function replaceAt(contents, match, replacement) {
   return contents.slice(0, match.index) + replacement + contents.slice(match.index + match[0].length);
 }
 
-// Rewrites a matched line in place, keeping its original indentation and line ending
-// so that CRLF sources stay byte-identical and the plugin never reflows the file.
-function replaceLineAt(contents, match, statement) {
-  const indent = /^[ \t]*/.exec(match[0])[0];
-  const eol = /\r?\n?$/.exec(match[0])[0];
-  return replaceAt(contents, match, `${indent}${statement}${eol}`);
-}
-
-function insertRegistration(contents, statement) {
-  const returnLine = PACKAGE_LIST_RETURN_RE.exec(contents);
-  if (!returnLine) {
-    return null;
-  }
-  return contents.slice(0, returnLine.index) + `${REGISTRATION_INDENT}${statement}\n` + contents.slice(returnLine.index);
-}
-
 function patchMainApplication(contents, { isKotlin }) {
   let out = contents;
 
@@ -136,21 +108,35 @@ function patchMainApplication(contents, { isKotlin }) {
     out = replaceAt(out, existingImport, buildImportStatement(isKotlin));
   } else {
     const next = insertImport(stripImports(out), buildImportStatement(isKotlin));
-    if (next === null) {
-      return out;
+    if (next !== null) {
+      out = next;
     }
-    out = next;
   }
 
-  const existingRegistration = findReusableRegistration(out);
-  if (existingRegistration) {
-    out = replaceLineAt(out, existingRegistration, buildRegistration(isKotlin));
-  } else {
-    const next = insertRegistration(out, buildRegistration(isKotlin));
-    if (next === null) {
-      return out;
+  if (isKotlin) {
+    out = out.replace(KOTLIN_BROKEN_ADD_RE, '');
+
+    if (!KOTLIN_REGISTRATION_RE.test(out)) {
+      const returnMatch = KOTLIN_RETURN_RE.exec(out);
+      if (returnMatch) {
+        out = replaceAt(
+          out,
+          returnMatch,
+          `${returnMatch[1]}return PackageList(this).packages + ${PACKAGE_CLASS}()`
+        );
+      }
     }
-    out = next;
+  } else {
+    const existingRegistration = JAVA_ADD_RE.exec(out);
+    if (!existingRegistration) {
+      const returnLine = JAVA_RETURN_RE.exec(out);
+      if (returnLine) {
+        out =
+          out.slice(0, returnLine.index) +
+          `${REGISTRATION_INDENT}packages.add(new ${PACKAGE_CLASS}());\n` +
+          out.slice(returnLine.index);
+      }
+    }
   }
 
   return out;
@@ -160,7 +146,6 @@ function withCallAudioPlugin(config) {
   config = withAndroidManifest(config, (config) => {
     const manifest = config.modResults;
 
-    // Add permissions
     const permissions = [
       'android.permission.RECORD_AUDIO',
       'android.permission.FOREGROUND_SERVICE',
@@ -182,7 +167,6 @@ function withCallAudioPlugin(config) {
       }
     }
 
-    // Add CallScreeningService
     if (!manifest.manifest.application) {
       manifest.manifest.application = [{}];
     }
@@ -238,14 +222,9 @@ function withCallAudioPlugin(config) {
   });
 
   config = withAppBuildGradle(config, (config) => {
-    const content = config.modResults.contents;
-    if (!content.includes('handshake-call-audio')) {
-      // Add any native dependencies if needed
-    }
     return config;
   });
 
-  // Copy native files after prebuild
   config = withProjectBuildGradle(config, (config) => {
     copyNativeFiles();
     return config;
