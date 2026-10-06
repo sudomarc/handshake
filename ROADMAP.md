@@ -159,12 +159,11 @@ containing both fixes has been re-tested on the device.
 - **F2 — Personal question is not personalized on mobile.** The screen has no input
   for private context, so `/api/challenge` receives an empty context and returns a
   generic question. Do not present it as using saved personal details.
-- **F3 — AI-route rate limits are bypassable.** `/api/analyze` and `/api/challenge`
-  key their limiter on the caller-supplied `pairId`; pairs are stateless, so any
-  32-hex string is accepted. Observed: 40 of 40 requests with random `pairId`s
-  passed the limiter; the same `pairId` was limited after 10. Cost-abuse exposure on
-  a public URL (Featherless credits). Post-hackathon hardening, unless credits are at
-  risk before submission.
+- **F3 — AI-route rate limits (RESOLVED 2026-10-06).** Previously, `/api/analyze`
+  and `/api/challenge` only keyed rate limiting on caller-supplied `pairId`. Both
+  endpoints now enforce secondary client IP rate limiting (`analyze:ip:...` and
+  `challenge:ip:...`, capped at 10 requests/minute per client IP), preventing
+  rate-limit bypass via random `pairId` generation.
 - **F4 — Root README is stale.** It still describes a "mobile-first web app", has a
   browser-only architecture diagram, and says pair data lives in server-side local
   storage, while the implementation is stateless (HMAC-derived secrets; see
@@ -188,8 +187,7 @@ containing both fixes has been re-tested on the device.
 ### POST-HACKATHON (do not start now)
 
 - Durable/distributed rate limiting (**KNOWN LIMITATION**, confirmed still in-memory
-  per serverless instance) and server-side limiter keys that do not depend on
-  caller-chosen values (F3).
+  per serverless instance).
 - Call-aware automation, deeper telephony integration, background execution
   (see the product roadmap below).
 - Accounts, device enrollment/revocation, persistent storage.

@@ -15,10 +15,13 @@ export async function POST(req: NextRequest) {
     const raw: unknown = await req.json().catch(() => null);
     const body = analysisRequestSchema.parse(raw);
 
-    // Rate limit: 10 requests per minute per pair/IP to control costs
-    const pairKey = body.pairId ? `analyze:pair:${body.pairId}` : `analyze:ip:${clientKey(req)}`;
-    const rl = consume(pairKey, 10, 60_000);
-    if (!rl.allowed) throw new RateLimitError(rl.retryAfterSeconds);
+    // Rate limit: 10 requests per minute per pair and per client IP to control costs (SECURITY.md, T6)
+    if (body.pairId) {
+      const perPair = consume(`analyze:pair:${body.pairId}`, 10, 60_000);
+      if (!perPair.allowed) throw new RateLimitError(perPair.retryAfterSeconds);
+    }
+    const perClient = consume(`analyze:ip:${clientKey(req)}`, 10, 60_000);
+    if (!perClient.allowed) throw new RateLimitError(perClient.retryAfterSeconds);
 
     const result = await analyzePressure(body.transcript);
     return NextResponse.json(pressureCheckResponseSchema.parse(result));

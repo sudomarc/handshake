@@ -27,6 +27,9 @@ import {
   PairNotFoundError,
   RateLimitError,
 } from "../lib/errors";
+import { NextRequest } from "next/server";
+import { POST as analyzePOST } from "../app/api/analyze/route";
+import { POST as challengePOST } from "../app/api/challenge/route";
 import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
@@ -279,5 +282,96 @@ describe("lib/callSchemas & lib/callStore", () => {
     // End session
     const ended = await callSessionStore.endSession(session.sessionId);
     assert.equal(ended?.status, "ended");
+  });
+});
+
+describe("app/api rate limiting (F3 prevention)", () => {
+  beforeEach(() => {
+    resetRateLimits();
+  });
+
+  test("analyze route enforces IP rate limit when random pairIds are supplied", async () => {
+    const origConsoleError = console.error;
+    console.error = () => {};
+    try {
+      const ip = "192.168.1.100";
+      // Send 10 requests with 10 different pairIds from the same IP
+      for (let i = 0; i < 10; i++) {
+        const randomPairId = `a1b2c3d4e5f60718293a4b5c6d7e8f${i.toString().padStart(2, "0")}`;
+        const req = new NextRequest("http://localhost/api/analyze", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": ip,
+          },
+          body: JSON.stringify({
+            pairId: randomPairId,
+            transcript: "Mom please send money urgently",
+          }),
+        });
+        const res = await analyzePOST(req);
+        // It should either pass rate limiting (and fail later on missing Featherless key -> 503) or return 503
+        assert.notEqual(res.status, 429, `Request ${i + 1} should be permitted by rate limiter`);
+      }
+
+      // 11th request with an 11th distinct pairId from the same IP must trigger 429 RateLimitError
+      const req11 = new NextRequest("http://localhost/api/analyze", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": ip,
+        },
+        body: JSON.stringify({
+          pairId: "f9e8d7c6b5a403928172635443322110",
+          transcript: "Another transcript",
+        }),
+      });
+      const res11 = await analyzePOST(req11);
+      assert.equal(res11.status, 429);
+    } finally {
+      console.error = origConsoleError;
+    }
+  });
+
+  test("challenge route enforces IP rate limit when random pairIds are supplied", async () => {
+    const origConsoleError = console.error;
+    console.error = () => {};
+    try {
+      const ip = "192.168.1.101";
+      // Send 10 requests with 10 different pairIds from the same IP
+      for (let i = 0; i < 10; i++) {
+        const randomPairId = `b2c3d4e5f60718293a4b5c6d7e8f90${i.toString().padStart(2, "0")}`;
+        const req = new NextRequest("http://localhost/api/challenge", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-forwarded-for": ip,
+          },
+          body: JSON.stringify({
+            pairId: randomPairId,
+            context: "Childhood pet name Rover",
+          }),
+        });
+        const res = await challengePOST(req);
+        assert.notEqual(res.status, 429, `Request ${i + 1} should be permitted by rate limiter`);
+      }
+
+      // 11th request with an 11th distinct pairId from the same IP must trigger 429
+      const req11 = new NextRequest("http://localhost/api/challenge", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": ip,
+        },
+        body: JSON.stringify({
+          pairId: "e8d7c6b5a4039281726354433221100f",
+          context: "Childhood pet name Rover",
+        }),
+      });
+      const res11 = await challengePOST(req11);
+      assert.equal(res11.status, 429);
+    } finally {
+      console.error = origConsoleError;
+    }
   });
 });

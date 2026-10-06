@@ -79,3 +79,44 @@
 1. Re-verify release APK on device after CI build completes.
 2. Review remaining audit findings (F1/F2/F3) and Devpost submission checklist items.
 3. Rehearse `DEMO_SCRIPT.md` end to end.
+
+## 2026-10-06 (Run 3)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS.
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS.
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS.
+
+### Work Completed & Priority
+- **Priority 4 (Continuous Improvement Loop - Security & Cost Protection):**
+  - Resolved Audit Finding F3 in `ROADMAP.md` and `SECURITY.md`: updated `/api/analyze` and `/api/challenge` API routes to enforce dual rate limiting (both per-`pairId` and per-client IP via `x-forwarded-for`), capping requests at 10/min per IP.
+  - Added unit test cases in `tests/lib.test.ts` to simulate multiple requests with random/varying `pairId` values from the same client IP, verifying that requests after the 10th are blocked with HTTP 429.
+
+### Changes
+- `app/api/analyze/route.ts`: Added `clientKey(req)` rate-limiting bucket (`analyze:ip:...`, 10 req/min) alongside `pairId` bucket.
+- `app/api/challenge/route.ts`: Added `clientKey(req)` rate-limiting bucket (`challenge:ip:...`, 10 req/min) alongside `pairId` bucket.
+- `tests/lib.test.ts`: Added unit tests verifying client IP rate limit enforcement for both `/api/analyze` and `/api/challenge`.
+- `SECURITY.md`: Updated threat model section T6 documenting resolution of finding F3.
+- `ROADMAP.md`: Marked audit finding F3 as resolved.
+- `docs/NIGHTLY_LOG.md`: Appended run 3 entry.
+
+### Gates & Results
+- `npm test`: PASS (23/23 tests passed: 16 library & API tests + 7 plugin tests).
+- Root lint & build (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+
+### Known Risks & Open Findings
+- On-device test findings from `docs/DEVICE_TEST_REPORT_2026-10-06.md`:
+  - Release APK re-verification on device outstanding after CI build completes.
+  - Two-device WebRTC call flow remains untested due to lack of second physical device / emulator.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Two-device WebRTC call test.
+
+### Plan for Tomorrow
+1. Re-verify release APK on device after CI build completes.
+2. Review owner decisions on remaining audit findings (F1/F2) and Devpost submission checklist items.
+3. Rehearse `DEMO_SCRIPT.md` end to end.
