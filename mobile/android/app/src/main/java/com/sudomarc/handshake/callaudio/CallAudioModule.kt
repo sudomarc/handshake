@@ -36,7 +36,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         Log.i(TAG, "startMicrophoneCapture")
         val success = audioManager.startCapture(MediaRecorder.AudioSource.MIC)
         if (success) {
-            promise.resolve(mapOf("status" to "started", "source" to "MIC"))
+            resolveWith(promise, mapOf("status" to "started", "source" to "MIC"))
         } else {
             promise.reject("AUDIO_START_FAILED", "Failed to start microphone capture")
         }
@@ -47,7 +47,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         Log.i(TAG, "startVoiceRecognitionCapture")
         val success = audioManager.startCapture(MediaRecorder.AudioSource.VOICE_RECOGNITION)
         if (success) {
-            promise.resolve(mapOf("status" to "started", "source" to "VOICE_RECOGNITION"))
+            resolveWith(promise, mapOf("status" to "started", "source" to "VOICE_RECOGNITION"))
         } else {
             promise.reject("AUDIO_START_FAILED", "Failed to start voice recognition capture")
         }
@@ -58,7 +58,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         Log.i(TAG, "startVoiceCommunicationCapture")
         val success = audioManager.startCapture(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
         if (success) {
-            promise.resolve(mapOf("status" to "started", "source" to "VOICE_COMMUNICATION"))
+            resolveWith(promise, mapOf("status" to "started", "source" to "VOICE_COMMUNICATION"))
         } else {
             promise.reject("AUDIO_START_FAILED", "Failed to start voice communication capture")
         }
@@ -69,7 +69,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         Log.i(TAG, "stopCapture")
         audioManager.stopCapture()
         vadProcessor.reset()
-        promise.resolve(mapOf("status" to "stopped"))
+        resolveWith(promise, mapOf("status" to "stopped"))
     }
 
     @ReactMethod
@@ -84,7 +84,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         } else {
             reactApplicationContext.startService(intent)
         }
-        promise.resolve(mapOf("status" to "foreground_started"))
+        resolveWith(promise, mapOf("status" to "foreground_started"))
     }
 
     @ReactMethod
@@ -95,12 +95,12 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
         }
         reactApplicationContext.startService(intent)
         useForegroundService = false
-        promise.resolve(mapOf("status" to "foreground_stopped"))
+        resolveWith(promise, mapOf("status" to "foreground_stopped"))
     }
 
     @ReactMethod
     fun getAudioConfig(promise: Promise) {
-        promise.resolve(mapOf(
+        resolveWith(promise, mapOf(
             "sampleRate" to audioManager.getSampleRate(),
             "channels" to audioManager.getChannels(),
             "frameMs" to audioManager.getFrameMs()
@@ -109,7 +109,7 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
 
     @ReactMethod
     fun isRecording(promise: Promise) {
-        promise.resolve(mapOf("recording" to audioManager.isActive()))
+        resolveWith(promise, mapOf("recording" to audioManager.isActive()))
     }
 
     @ReactMethod
@@ -126,20 +126,51 @@ class CallAudioModule(reactApplicationContext: ReactApplicationContext) : ReactC
                 "verificationStatus" to details.verificationStatus
             ))
         }
-        promise.resolve(mapOf("status" to "enabled"))
+        resolveWith(promise, mapOf("status" to "enabled"))
     }
 
     @ReactMethod
     fun disableCallScreening(promise: Promise) {
         callScreeningService?.clearCallCallback()
         callScreeningService = null
-        promise.resolve(mapOf("status" to "disabled"))
+        resolveWith(promise, mapOf("status" to "disabled"))
     }
 
-    private fun sendEvent(eventName: String, params: Map<String, Any>) {
+    private fun sendEvent(eventName: String, params: Map<String, Any?>) {
         reactApplicationContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(eventName, params)
+            .emit(eventName, toWritableMap(params))
+    }
+
+    private fun resolveWith(promise: Promise, values: Map<String, Any?>) {
+        promise.resolve(toWritableMap(values))
+    }
+
+    private fun toWritableMap(values: Map<String, Any?>): WritableMap {
+        val result = Arguments.createMap()
+        for ((key, value) in values) {
+            when (value) {
+                null -> result.putNull(key)
+                is String -> result.putString(key, value)
+                is Boolean -> result.putBoolean(key, value)
+                is Int -> result.putInt(key, value)
+                is Float -> result.putDouble(key, value.toDouble())
+                is Double -> result.putDouble(key, value)
+                is Long -> result.putDouble(key, value.toDouble())
+                is ShortArray -> {
+                    val arr = Arguments.createArray()
+                    for (sample in value) arr.pushInt(sample.toInt())
+                    result.putArray(key, arr)
+                }
+                is IntArray -> {
+                    val arr = Arguments.createArray()
+                    for (item in value) arr.pushInt(item)
+                    result.putArray(key, arr)
+                }
+                else -> result.putString(key, value.toString())
+            }
+        }
+        return result
     }
 
     override fun onAudioData(data: ShortArray, timestamp: Long) {

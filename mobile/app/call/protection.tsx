@@ -228,30 +228,32 @@ export default function CallProtection() {
 
             <View style={s.videoContainer}>
               {remoteStreamUrl && (
-                <RTCView
-                  style={s.remoteVideo}
-                  streamURL={remoteStreamUrl}
-                  objectFit="cover"
-                >
+                <View style={s.remoteVideoWrap}>
+                  <RTCView
+                    style={s.remoteVideo}
+                    streamURL={remoteStreamUrl}
+                    objectFit="cover"
+                  />
                   <View style={s.videoOverlay}>
                     <Text style={s.videoLabel}>Remote Audio Active</Text>
                     <Mono>{callManager?.getRemoteStream() ? 'Receiving' : 'Connecting...'}</Mono>
                   </View>
-                </RTCView>
+                </View>
               )}
 
               {localStreamUrl && (
-                <RTCView
-                  style={s.localVideo}
-                  streamURL={localStreamUrl}
-                  objectFit="cover"
-                  mirror={true}
-                >
+                <View style={s.localVideoWrap}>
+                  <RTCView
+                    style={s.videoFill}
+                    streamURL={localStreamUrl}
+                    objectFit="cover"
+                    mirror={true}
+                  />
                   <View style={s.videoOverlay}>
                     <Text style={s.videoLabel}>Local Audio</Text>
                     <Mono>{isMuted ? 'MUTED' : 'ACTIVE'}</Mono>
                   </View>
-                </RTCView>
+                </View>
               )}
             </View>
 
@@ -359,11 +361,14 @@ const s = StyleSheet.create({
     flexDirection: 'column',
     backgroundColor: colors.bg,
   },
-  remoteVideo: {
+  remoteVideoWrap: {
     flex: 1,
     position: 'relative',
   },
-  localVideo: {
+  remoteVideo: {
+    flex: 1,
+  },
+  localVideoWrap: {
     width: 120,
     height: 160,
     position: 'absolute',
@@ -373,6 +378,9 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.border,
     overflow: 'hidden',
+  },
+  videoFill: {
+    flex: 1,
   },
   videoOverlay: {
     position: 'absolute',

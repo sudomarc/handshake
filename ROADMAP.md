@@ -70,14 +70,75 @@ until they are re-checked with evidence.
 built successfully; MVP validated on a Samsung A17; deployed routes tested. To turn
 these into VERIFIED, add the EAS build URL and screenshots/test notes to the repo.
 
+### ON-DEVICE TEST RESULTS (2026-10-06)
+
+Real ADB test pass against the release APK built by CI run `37408976681`
+(head_sha `1bba6c6`) on a Samsung SM-A175F, Android 16 / API 36. Full log and
+crash traces: `docs/DEVICE_TEST_REPORT_2026-10-06.md`. This section supersedes
+the "Call Protection Implementation Progress" claims below, which were
+source-reviewed only.
+
+**VERIFIED on device:**
+
+- App startup, Home/Personal screen, tab navigation — no fatal at launch.
+- Trusted-person flow against the **deployed** backend: create connection →
+  pair `849d3b149d0cf133d5c9018995147c38`, "Mom" active.
+- Rotating-code generation: `771 794` → `537 378` across a window boundary.
+- Verification: wrong code → *Not verified* + guidance; correct code →
+  **Verified**.
+- Microphone permission dialog shown and granted (`RECORD_AUDIO` and
+  `FOREGROUND_SERVICE_MICROPHONE` both `granted=true`).
+- Pressure check: real model output, scam transcript → *Likely clone / scam
+  pressure*, `95/100`.
+- Personal question: real model output returned.
+- WebRTC native init, and Call Protection up to
+  `pc ctor → getUserMedia(audio) → addTrack → createOffer → setLocalDescription
+  → ICE gathering`.
+
+**FAILED on device (fatal crashes, both reproduced):**
+
+- **Call Protection** dies with
+  `ClassCastException: RTCVideoViewManager cannot be cast to ViewGroupManager`.
+  Cause: children rendered inside `<RTCView>` in `mobile/app/call/protection.tsx`
+  (`RTCVideoViewManager` extends `SimpleViewManager`, so RN cannot manage
+  children). The offer is never POSTed, so remote audio, mute, end call and
+  connection-state transitions are untestable. **Code bug.**
+- **Call Audio Feasibility** dies with
+  `RuntimeException: Cannot convert argument of type class java.util.LinkedHashMap`
+  at `CallAudioModule.getAudioConfig`. Cause: promises/events resolved with
+  plain Kotlin `Map`/`ShortArray` instead of `WritableMap`/`WritableArray`.
+  **Code bug.**
+- Pressure check returned one transient HTTP 400 (`That input doesn't look
+  right`); an identical retry succeeded. Not reproducible.
+
+**BLOCKED:** two-device WebRTC call (only one device attached, no emulator
+installed); everything after the SDP offer (blocked by the Call Protection
+crash); rebuild/re-verify (no local JDK, CI is the only build path).
+
+**Fixes applied but NOT yet built or verified on device:**
+
+- `mobile/app/call/protection.tsx` — overlay moved out of `<RTCView>`.
+- `mobile/android/.../callaudio/CallAudioModule.kt` — added
+  `resolveWith`/`toWritableMap` marshalling for every promise and event.
+
+Nothing in this section may be presented as working functionality until an APK
+containing both fixes has been re-tested on the device.
+
 ### FINAL VALIDATION (open before submission)
 
 - [ ] **Two-physical-device validation remains outstanding (NOT VERIFIED).** An API-level
-      simulation is not a substitute.
+      simulation is not a substitute. No second device or emulator was available
+      on 2026-10-06.
 - [ ] Test the *deployed* backend from a phone on mobile data: circle, current,
       verify and — with the production `FEATHERLESS_API_KEY` — analyze and challenge.
-      (The audit sandbox could not reach Vercel or Featherless: `host_not_allowed`.)
+      (The audit sandbox could not reach Vercel or Featherless: `host_not_allowed`.
+      2026-10-06: circle/current/verify/analyze/challenge all passed **from the phone
+      on Wi-Fi**; mobile data still untested.)
 - [ ] Final APK install and full flow on device; keep evidence (build link, screenshots).
+      2026-10-06: core flows pass (see ON-DEVICE TEST RESULTS); Call Protection and
+      Call Audio Feasibility crash and must be retested after the fixes are built.
+- [ ] Rebuild with the two crash fixes, reinstall over ADB, retest Call Protection
+      and Call Audio Feasibility.
 - [ ] Owner decision on the Pressure check result wording (finding F1).
 - [ ] Rehearse `DEMO_SCRIPT.md` end to end, including one deliberate network failure.
 - [ ] README final pass (finding F4).
@@ -240,6 +301,8 @@ without destabilizing them through an unverified telephony integration.
 
 - [ ] Full manual test pass on the mobile app
 - [ ] Test the Android APK on a real device/emulator
+      (2026-10-06: core flows pass on the Samsung A17; Call Protection and Call
+      Audio Feasibility crash — see ON-DEVICE TEST RESULTS. Not complete.)
 - [ ] Real two-device verification test using the mobile app
 - [ ] Keep the web prototype/API healthy after any compatibility fix
 - [ ] Record the cleanest real mobile demo
@@ -341,9 +404,14 @@ manual security buttons.
 
 ### Call Protection Implementation Progress (2026-10-05)
 
-**Status: IN PROGRESS — WebRTC integration for Handshake-controlled VoIP sessions**
+**Status: IMPLEMENTED IN SOURCE — CRASHES ON DEVICE (see ON-DEVICE TEST RESULTS, 2026-10-06)**
 
-#### ✅ Completed
+The items below were **source-reviewed only** when written. The 2026-10-06 device
+test found that the active-call screen crashes (`ClassCastException` on
+`<RTCView>`) before any remote media can be established, so none of the call-flow
+behaviour downstream of local capture is verified yet.
+
+#### ✅ Implemented in source (source review only — not device-verified)
 - WebRTC dependency added (`react-native-webrtc@118.0.7`, `@config-plugins/react-native-webrtc@9.0.0`)
 - Expo config plugin configured with microphone/camera permissions
 - Native Android permissions: CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, BLUETOOTH, WAKE_LOCK
@@ -359,10 +427,19 @@ manual security buttons.
 - Device ID generation and secure storage via expo-crypto + expo-secure-store
 - TypeScript compilation clean, ESLint clean
 
-#### 🔄 In Progress / Next Steps
-- Build development APK and test on Samsung A17
-- Two-device WebRTC call test (Device A = Samsung A17, Device B = emulator/second device)
-- Verify local audio track transmission
+> **Device reality (2026-10-06):** session creation, local mic capture,
+> `addTrack`, offer creation and ICE gathering were observed. The active-call
+> screen then crashed, so state display, local/remote stream visualization,
+> mute/unmute and end call were **never rendered**. Treat the bullet list above
+> as code that exists, not behaviour that works.
+
+#### 🔄 Blocked / Next Steps
+- **Rebuild the APK with the `<RTCView>` fix and retest Call Protection** (highest priority)
+- Rebuild and retest Call Audio Feasibility with the `CallAudioModule` bridge fix
+- Two-device WebRTC call test (Device A = Samsung A17, Device B = emulator/second
+  device) — no second device or emulator available on 2026-10-06
+- Verify local audio track transmission (captured on device; not yet observed as
+  rendered/streamed)
 - Verify remote audio track reception
 - Verify two-way audio communication
 - Test background/foreground behavior during active call
@@ -392,6 +469,8 @@ Analysis-ready audio (pending VAD integration)
 ```
 
 **Target for next validation:** Real two-device WebRTC call with two-way audio confirmed on Samsung A17.
+**Gate (2026-10-06):** blocked behind the `<RTCView>` crash fix — the call never
+gets past local ICE gathering today.
 
 **When there is no call**, Handshake should behave like a calm Personal trust
 center:
