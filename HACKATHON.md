@@ -3,6 +3,7 @@
 Last checked: **2026-10-04**
 
 Primary sources:
+
 - https://forgehacks-2026.devpost.com/
 - https://forgehacks-2026.devpost.com/rules
 

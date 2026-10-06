@@ -8,7 +8,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-
 ## Repository working rules
 
 1. Read this file and the relevant project documentation before making changes.

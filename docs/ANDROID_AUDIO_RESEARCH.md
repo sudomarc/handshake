@@ -11,6 +11,7 @@
 **Third-party apps CANNOT access carrier call audio (remote voice) on Android.**
 
 The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLINK`, `VOICE_CALL` audio sources is explicitly documented as:
+
 > "reserved for use by system components and is not available to third-party applications."
 
 ---
@@ -18,6 +19,7 @@ The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLI
 ## DOCUMENTED BY ANDROID
 
 ### CallScreeningService
+
 - **Purpose:** Screen/block incoming calls, caller ID
 - **Metadata available:** Phone number, call direction, verification status, contact match
 - **Audio access:** NONE
@@ -25,12 +27,14 @@ The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLI
 - **Role:** `ROLE_CALL_SCREENING` (user-selectable)
 
 ### InCallService
+
 - **Purpose:** Replace default phone app UI entirely
 - **Audio access:** Can observe call audio state, routing, endpoints via `CallAudioState` / `CallEndpoint`
 - **Requirements:** Must become default dialer (`ROLE_DIALER`); must handle ALL calls on device
 - **Architectural impact:** Massive — replaces system phone app
 
 ### ConnectionService
+
 - **Purpose:** VoIP integration with Telecom framework
 - **Audio access:** Only for YOUR VoIP calls (not carrier calls)
 - **Audio routing:** Can manage endpoints for own connections
@@ -38,19 +42,21 @@ The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLI
 
 ### AudioRecord Audio Sources
 
-| Source | Constant | Permission Required | Third-party Access |
-|--------|----------|---------------------|-------------------|
-| `MIC` | 1 | `RECORD_AUDIO` | ✅ YES |
-| `VOICE_RECOGNITION` | 6 | `RECORD_AUDIO` | ✅ YES |
-| `VOICE_COMMUNICATION` | 7 | `RECORD_AUDIO` | ✅ YES |
-| `UNPROCESSED` | 5 | `RECORD_AUDIO` | ✅ YES |
-| `VOICE_UPLINK` | 2 | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
-| `VOICE_DOWNLINK` | 3 | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
-| `VOICE_CALL` | 4 | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
-| `REMOTE_SUBMIX` |  | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
+| Source                | Constant | Permission Required    | Third-party Access  |
+| --------------------- | -------- | ---------------------- | ------------------- |
+| `MIC`                 | 1        | `RECORD_AUDIO`         | ✅ YES              |
+| `VOICE_RECOGNITION`   | 6        | `RECORD_AUDIO`         | ✅ YES              |
+| `VOICE_COMMUNICATION` | 7        | `RECORD_AUDIO`         | ✅ YES              |
+| `UNPROCESSED`         | 5        | `RECORD_AUDIO`         | ✅ YES              |
+| `VOICE_UPLINK`        | 2        | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
+| `VOICE_DOWNLINK`      | 3        | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
+| `VOICE_CALL`          | 4        | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
+| `REMOTE_SUBMIX`       |          | `CAPTURE_AUDIO_OUTPUT` | ❌ NO (system only) |
 
 ### Audio Sharing Rules (Android 10+)
+
 **"Voice call + ordinary app":**
+
 - The call ALWAYS receives audio
 - Ordinary app can capture audio ONLY if:
   - It is an accessibility service, OR
@@ -58,6 +64,7 @@ The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLI
 - Regular third-party app: receives SILENCE when call is active
 
 ### Foreground Service Types (Android 14+)
+
 - **microphone**: Requires `FOREGROUND_SERVICE_MICROPHONE` + `RECORD_AUDIO`
   - Cannot start from background (while-in-use restriction)
   - Must have visible activity when starting
@@ -68,14 +75,14 @@ The `CAPTURE_AUDIO_OUTPUT` permission required for `VOICE_UPLINK`, `VOICE_DOWNLI
 
 ## OBSERVABLE ON DEVICE (HYPOTHESIS — NEEDS TESTING)
 
-| Capability | Expected Result |
-|------------|-----------------|
-| Local microphone capture (`MIC`) | ✅ WORKS |
-| Local microphone during carrier call | ⚠️ Likely SILENCE (call takes priority) |
-| `VOICE_UPLINK` / `VOICE_DOWNLINK` | ❌ PERMISSION DENIED |
-| `CallScreeningService` metadata | ✅ WORKS (for unknown callers) |
-| `InCallService` audio state | ❌ REQUIRES DEFAULT DIALER |
-| Background microphone FGS | ❌ CANNOT START FROM BACKGROUND (Android 14+) |
+| Capability                           | Expected Result                               |
+| ------------------------------------ | --------------------------------------------- |
+| Local microphone capture (`MIC`)     | ✅ WORKS                                      |
+| Local microphone during carrier call | ⚠️ Likely SILENCE (call takes priority)       |
+| `VOICE_UPLINK` / `VOICE_DOWNLINK`    | ❌ PERMISSION DENIED                          |
+| `CallScreeningService` metadata      | ✅ WORKS (for unknown callers)                |
+| `InCallService` audio state          | ❌ REQUIRES DEFAULT DIALER                    |
+| Background microphone FGS            | ❌ CANNOT START FROM BACKGROUND (Android 14+) |
 
 ---
 

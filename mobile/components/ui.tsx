@@ -19,7 +19,15 @@ export function H2({ children, style }: { children: ReactNode; style?: StyleProp
   return <Text style={[s.h2, style]}>{children}</Text>;
 }
 
-export function Body({ children, muted, style }: { children: ReactNode; muted?: boolean; style?: StyleProp<TextStyle> }) {
+export function Body({
+  children,
+  muted,
+  style,
+}: {
+  children: ReactNode;
+  muted?: boolean;
+  style?: StyleProp<TextStyle>;
+}) {
   return <Text style={[s.body, muted && { color: colors.muted }, style]}>{children}</Text>;
 }
 
@@ -32,7 +40,14 @@ interface ButtonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Button({ label, onPress, variant = "primary", busy, disabled, style }: ButtonProps) {
+export function Button({
+  label,
+  onPress,
+  variant = "primary",
+  busy,
+  disabled,
+  style,
+}: ButtonProps) {
   const inactive = disabled || busy;
   return (
     <Pressable
@@ -96,7 +111,7 @@ const s = StyleSheet.create({
   },
   h2: { color: colors.text, fontSize: 20, fontWeight: "600" },
   body: { color: colors.textSoft, fontSize: 16, lineHeight: 24 },
-  mono: { fontFamily: 'monospace', fontSize: 14 },
+  mono: { fontFamily: "monospace", fontSize: 14 },
   btn: {
     minHeight: MIN_TOUCH + 4,
     borderRadius: 14,

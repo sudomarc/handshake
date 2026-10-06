@@ -7,16 +7,16 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = callOfferSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid request", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const session = await callSessionStore.setOffer(parsed.data.sessionId, parsed.data);
-    
+
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }

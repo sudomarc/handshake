@@ -1,9 +1,10 @@
-import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from "react-native";
 
 const { CallAudioModule } = NativeModules;
 
-export type AudioSource = 'MIC' | 'VOICE_RECOGNITION' | 'VOICE_COMMUNICATION';
-export type AudioState = 'IDLE' | 'RECORDING' | 'STOPPED' | 'ERROR' | 'FOREGROUND_STARTED' | 'FOREGROUND_STOPPED';
+export type AudioSource = "MIC" | "VOICE_RECOGNITION" | "VOICE_COMMUNICATION";
+export type AudioState =
+  "IDLE" | "RECORDING" | "STOPPED" | "ERROR" | "FOREGROUND_STARTED" | "FOREGROUND_STOPPED";
 
 export interface AudioConfig {
   sampleRate: number;
@@ -19,7 +20,7 @@ export interface AudioDataEvent {
 }
 
 export interface VADResult {
-  state: 'SILENCE' | 'SPEECH' | 'UNKNOWN';
+  state: "SILENCE" | "SPEECH" | "UNKNOWN";
   inputLevel: number;
   speechDetected: boolean;
   framesProcessed: number;
@@ -44,7 +45,7 @@ class CallAudioManager {
   private listeners: Map<string, Set<Function>> = new Map();
 
   constructor() {
-    if (Platform.OS === 'android' && CallAudioModule) {
+    if (Platform.OS === "android" && CallAudioModule) {
       this.emitter = new NativeEventEmitter(CallAudioModule);
     }
   }
@@ -52,7 +53,7 @@ class CallAudioManager {
   private emit(event: string, data: any) {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(cb => cb(data));
+      callbacks.forEach((cb) => cb(data));
     }
   }
 
@@ -64,11 +65,11 @@ class CallAudioManager {
 
     if (this.emitter) {
       const nativeEventMap: Record<string, string> = {
-        audioData: 'CallAudioData',
-        audioState: 'CallAudioState',
-        callScreen: 'CallScreenEvent',
-        vadResult: 'CallVADResult',
-        error: 'CallAudioError',
+        audioData: "CallAudioData",
+        audioState: "CallAudioState",
+        callScreen: "CallScreenEvent",
+        vadResult: "CallVADResult",
+        error: "CallAudioError",
       };
       const nativeEvent = nativeEventMap[event];
       if (nativeEvent) {
@@ -86,11 +87,11 @@ class CallAudioManager {
     }
     if (this.emitter) {
       const nativeEventMap: Record<string, string> = {
-        audioData: 'CallAudioData',
-        audioState: 'CallAudioState',
-        callScreen: 'CallScreenEvent',
-        vadResult: 'CallVADResult',
-        error: 'CallAudioError',
+        audioData: "CallAudioData",
+        audioState: "CallAudioState",
+        callScreen: "CallScreenEvent",
+        vadResult: "CallVADResult",
+        error: "CallAudioError",
       };
       const nativeEvent = nativeEventMap[event];
       if (nativeEvent) {
@@ -100,52 +101,52 @@ class CallAudioManager {
   }
 
   async startMicrophoneCapture(): Promise<{ status: string; source: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.startMicrophoneCapture();
   }
 
   async startVoiceRecognitionCapture(): Promise<{ status: string; source: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.startVoiceRecognitionCapture();
   }
 
   async startVoiceCommunicationCapture(): Promise<{ status: string; source: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.startVoiceCommunicationCapture();
   }
 
   async stopCapture(): Promise<{ status: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.stopCapture();
   }
 
   async startForegroundCapture(): Promise<{ status: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.startForegroundCapture();
   }
 
   async stopForegroundCapture(): Promise<{ status: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.stopForegroundCapture();
   }
 
   async getAudioConfig(): Promise<AudioConfig> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.getAudioConfig();
   }
 
   async isRecording(): Promise<{ recording: boolean }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.isRecording();
   }
 
   async enableCallScreening(): Promise<{ status: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.enableCallScreening();
   }
 
   async disableCallScreening(): Promise<{ status: string }> {
-    if (!CallAudioModule) throw new Error('Native module not available');
+    if (!CallAudioModule) throw new Error("Native module not available");
     return CallAudioModule.disableCallScreening();
   }
 }

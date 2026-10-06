@@ -6,36 +6,36 @@ source review alone unless explicitly labelled.
 
 ## Test environment
 
-| Item | Value |
-| --- | --- |
-| Device | Samsung SM-A175F (`RFGL516YXCB`) |
-| Android | 16 (API 36) |
-| ADB | 37.0.1-15733141 |
-| Build under test | `com.sudomarc.handshake` 0.1.0, installed 2026-10-06 03:49 |
-| CI source | run `37408976681`, artifact `handshake-apk`, head_sha `1bba6c6` |
-| Backend URL baked into APK | `https://handshake-pi-amber.vercel.app` |
-| Network | device on Wi-Fi |
-| Second device / emulator | none available |
+| Item                       | Value                                                           |
+| -------------------------- | --------------------------------------------------------------- |
+| Device                     | Samsung SM-A175F (`RFGL516YXCB`)                                |
+| Android                    | 16 (API 36)                                                     |
+| ADB                        | 37.0.1-15733141                                                 |
+| Build under test           | `com.sudomarc.handshake` 0.1.0, installed 2026-10-06 03:49      |
+| CI source                  | run `37408976681`, artifact `handshake-apk`, head_sha `1bba6c6` |
+| Backend URL baked into APK | `https://handshake-pi-amber.vercel.app`                         |
+| Network                    | device on Wi-Fi                                                 |
+| Second device / emulator   | none available                                                  |
 
 Repo synced to `origin/main` = `1bba6c6` before testing
 (`057e4b4 → 1bba6c6`, fast-forward).
 
 ## PASS — observed on the device
 
-| # | Test | Evidence |
-| --- | --- | --- |
-| 1 | Application startup | `MainActivity` resumed and focused; no fatal at launch |
-| 2 | Home / Personal screen | Hero, **Verify a person**, *More tools*, `Verify` / `Trusted` tabs render |
-| 3 | Trusted-person flow | **Create a new connection** → pair `849d3b149d0cf133d5c9018995147c38`, "Mom" shown as *Active* |
-| 4 | Backend connectivity | Deployed Vercel API reached from the phone (circle, current, verify, analyze, challenge) |
-| 5 | Rotating-code generation | `771 794` → `537 378` across a window boundary; server-anchored countdown observed |
-| 6 | Verification — wrong code | `111111` → **Not verified** + "do not send money / hang up and call back" guidance |
-| 7 | Verification — correct code | `967823` → **Verified** (read → type → check loop completed in <8 s) |
-| 8 | Microphone permission | System `RECORD_AUDIO` dialog appeared and was granted; `RECORD_AUDIO granted=true`, `FOREGROUND_SERVICE_MICROPHONE granted=true` |
-| 9 | Pressure check (AI) | "Hi this is Mom I need money now send it urgently and do not tell anyone" → **Likely clone / scam pressure**, pressure `95/100`, human `10/100`, with real reasoning |
-| 10 | Personal question (AI) | Returned a real question + `personal / medium` labels |
-| 11 | WebRTC library init | `jingle_peerconnection_so` loaded, `PeerConnectionFactory` initialized, audio device module created at app start |
-| 12 | Call Protection — signalling + local audio (partial) | `pc ctor` → `getUserMedia(audio)` → `MediaStream id` → `addTrack` → `createOffer OK` → `setLocalDescription OK` → `onIceGatheringChangeGATHERING` |
+| #   | Test                                                 | Evidence                                                                                                                                                             |
+| --- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Application startup                                  | `MainActivity` resumed and focused; no fatal at launch                                                                                                               |
+| 2   | Home / Personal screen                               | Hero, **Verify a person**, _More tools_, `Verify` / `Trusted` tabs render                                                                                            |
+| 3   | Trusted-person flow                                  | **Create a new connection** → pair `849d3b149d0cf133d5c9018995147c38`, "Mom" shown as _Active_                                                                       |
+| 4   | Backend connectivity                                 | Deployed Vercel API reached from the phone (circle, current, verify, analyze, challenge)                                                                             |
+| 5   | Rotating-code generation                             | `771 794` → `537 378` across a window boundary; server-anchored countdown observed                                                                                   |
+| 6   | Verification — wrong code                            | `111111` → **Not verified** + "do not send money / hang up and call back" guidance                                                                                   |
+| 7   | Verification — correct code                          | `967823` → **Verified** (read → type → check loop completed in <8 s)                                                                                                 |
+| 8   | Microphone permission                                | System `RECORD_AUDIO` dialog appeared and was granted; `RECORD_AUDIO granted=true`, `FOREGROUND_SERVICE_MICROPHONE granted=true`                                     |
+| 9   | Pressure check (AI)                                  | "Hi this is Mom I need money now send it urgently and do not tell anyone" → **Likely clone / scam pressure**, pressure `95/100`, human `10/100`, with real reasoning |
+| 10  | Personal question (AI)                               | Returned a real question + `personal / medium` labels                                                                                                                |
+| 11  | WebRTC library init                                  | `jingle_peerconnection_so` loaded, `PeerConnectionFactory` initialized, audio device module created at app start                                                     |
+| 12  | Call Protection — signalling + local audio (partial) | `pc ctor` → `getUserMedia(audio)` → `MediaStream id` → `addTrack` → `createOffer OK` → `setLocalDescription OK` → `onIceGatheringChangeGATHERING`                    |
 
 Item 12 stops at ICE gathering because of FAIL-1 below.
 
@@ -101,19 +101,19 @@ it is a real user-visible failure mode.
 
 ## BLOCKED — could not be tested
 
-| Test | Reason |
-| --- | --- |
+| Test                                                                     | Reason                                                                                  |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Two-device WebRTC call (offer/answer, remote audio track, two-way audio) | Only `RFGL516YXCB` attached; no emulator binary installed and no second physical device |
-| Remote audio track, mute/unmute, end call, connection-state transitions | Unreachable: FAIL-1 crashes before the offer is POSTed |
-| Rebuild + re-verify after the two fixes | No local JDK; the only build path is the GitHub Actions workflow |
-| Carrier-call audio claims | Not attempted — out of scope per `AGENTS.md` and the roadmap feasibility gate |
+| Remote audio track, mute/unmute, end call, connection-state transitions  | Unreachable: FAIL-1 crashes before the offer is POSTed                                  |
+| Rebuild + re-verify after the two fixes                                  | No local JDK; the only build path is the GitHub Actions workflow                        |
+| Carrier-call audio claims                                                | Not attempted — out of scope per `AGENTS.md` and the roadmap feasibility gate           |
 
 ## Fix status at time of report
 
-| Fix | File | Built? | Verified on device? |
-| --- | --- | --- | --- |
-| Remove children from `<RTCView>` | `mobile/app/call/protection.tsx` | No | No |
-| Bridge marshalling (`WritableMap`/`WritableArray`) | `mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/CallAudioModule.kt` | No | No |
+| Fix                                                | File                                                                                   | Built? | Verified on device? |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------- | ------ | ------------------- |
+| Remove children from `<RTCView>`                   | `mobile/app/call/protection.tsx`                                                       | No     | No                  |
+| Bridge marshalling (`WritableMap`/`WritableArray`) | `mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/CallAudioModule.kt` | No     | No                  |
 
 Both fixes are correctness fixes for observed fatal crashes. They must be
 rebuilt (CI `android-apk` workflow) and re-tested on the device before anything

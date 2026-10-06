@@ -1,4 +1,4 @@
-import { MediaStream, RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
+import { MediaStream, RTCIceCandidate, RTCSessionDescription } from "react-native-webrtc";
 
 interface RTCIceServer {
   urls: string | string[];
@@ -17,16 +17,16 @@ interface RTCSessionDescriptionInit {
   sdp: string;
 }
 
-type RTCSdpType = 'offer' | 'answer' | 'pranswer' | 'rollback';
+type RTCSdpType = "offer" | "answer" | "pranswer" | "rollback";
 
 interface RTCConfiguration {
   iceServers?: RTCIceServer[];
-  iceTransportPolicy?: 'relay' | 'all';
-  bundlePolicy?: 'balanced' | 'max-compat' | 'max-bundle';
-  rtcpMuxPolicy?: 'require' | 'negotiate';
+  iceTransportPolicy?: "relay" | "all";
+  bundlePolicy?: "balanced" | "max-compat" | "max-bundle";
+  rtcpMuxPolicy?: "require" | "negotiate";
   peerIdentity?: string;
   certificates?: RTCCertificate[];
-  sdpSemantics?: 'unified-plan' | 'plan-b';
+  sdpSemantics?: "unified-plan" | "plan-b";
 }
 
 declare class RTCCertificate {
@@ -36,7 +36,7 @@ declare class RTCCertificate {
 
 declare class RTCPeerConnection {
   constructor(configuration?: RTCConfiguration);
-  
+
   // Event handlers
   onicecandidate: ((event: RTCPeerConnectionIceEvent) => void) | null;
   onconnectionstatechange: (() => void) | null;
@@ -59,7 +59,7 @@ declare class RTCPeerConnection {
   getTransceivers(): RTCRtpTransceiver[];
   createDataChannel(label: string, options?: RTCDataChannelInit): RTCDataChannel;
   close(): void;
-  
+
   // Properties
   readonly localDescription: RTCSessionDescription | null;
   readonly remoteDescription: RTCSessionDescription | null;
@@ -108,29 +108,38 @@ interface RTCRtpTransceiver {
   direction: RTCRtpTransceiverDirection;
 }
 
-type RTCRtpTransceiverDirection = 'sendrecv' | 'sendonly' | 'recvonly' | 'inactive';
+type RTCRtpTransceiverDirection = "sendrecv" | "sendonly" | "recvonly" | "inactive";
 
 interface RTCDtlsTransport {
   state: RTCDtlsTransportState;
   iceTransport: RTCIceTransport | null;
 }
 
-type RTCDtlsTransportState = 'new' | 'connecting' | 'connected' | 'closed' | 'failed';
+type RTCDtlsTransportState = "new" | "connecting" | "connected" | "closed" | "failed";
 
 interface RTCIceTransport {
   state: RTCIceTransportState;
   gatheringState: RTCIceGatheringState;
 }
 
-type RTCIceTransportState = 'new' | 'checking' | 'connected' | 'completed' | 'failed' | 'disconnected' | 'closed';
+type RTCIceTransportState =
+  "new" | "checking" | "connected" | "completed" | "failed" | "disconnected" | "closed";
 
-type RTCIceConnectionState = 'new' | 'checking' | 'connected' | 'completed' | 'failed' | 'disconnected' | 'closed';
+type RTCIceConnectionState =
+  "new" | "checking" | "connected" | "completed" | "failed" | "disconnected" | "closed";
 
-type RTCIceGatheringState = 'new' | 'gathering' | 'complete';
+type RTCIceGatheringState = "new" | "gathering" | "complete";
 
-type RTCSignalingState = 'stable' | 'have-local-offer' | 'have-remote-offer' | 'have-local-pranswer' | 'have-remote-pranswer' | 'closed';
+type RTCSignalingState =
+  | "stable"
+  | "have-local-offer"
+  | "have-remote-offer"
+  | "have-local-pranswer"
+  | "have-remote-pranswer"
+  | "closed";
 
-type RTCPeerConnectionState = 'new' | 'connecting' | 'connected' | 'disconnected' | 'failed' | 'closed';
+type RTCPeerConnectionState =
+  "new" | "connecting" | "connected" | "disconnected" | "failed" | "closed";
 
 interface MediaStreamTrack {
   kind: string;
@@ -138,7 +147,7 @@ interface MediaStreamTrack {
   label: string;
   enabled: boolean;
   muted: boolean;
-  readonly readyState: 'live' | 'ended';
+  readonly readyState: "live" | "ended";
   applyConstraints(constraints: MediaTrackConstraints): Promise<void>;
   clone(): MediaStreamTrack;
   getCapabilities(): MediaTrackCapabilities;

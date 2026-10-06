@@ -48,20 +48,26 @@ export const callSessionSchema = z.object({
   status: z.enum(["pending", "active", "ended"]),
   callerDeviceId: z.string(),
   calleeDeviceId: z.string().nullable(),
-  offer: z.object({
-    type: z.literal("offer"),
-    sdp: z.string(),
-  }).nullable(),
-  answer: z.object({
-    type: z.literal("answer"),
-    sdp: z.string(),
-  }).nullable(),
-  iceCandidates: z.array(z.object({
-    candidate: z.string(),
-    sdpMid: z.string().nullable(),
-    sdpMLineIndex: z.number().nullable(),
-    fromDeviceId: z.string(),
-  })),
+  offer: z
+    .object({
+      type: z.literal("offer"),
+      sdp: z.string(),
+    })
+    .nullable(),
+  answer: z
+    .object({
+      type: z.literal("answer"),
+      sdp: z.string(),
+    })
+    .nullable(),
+  iceCandidates: z.array(
+    z.object({
+      candidate: z.string(),
+      sdpMid: z.string().nullable(),
+      sdpMLineIndex: z.number().nullable(),
+      fromDeviceId: z.string(),
+    }),
+  ),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

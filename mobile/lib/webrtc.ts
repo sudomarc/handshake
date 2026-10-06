@@ -1,19 +1,25 @@
-import { mediaDevices, RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, MediaStream } from 'react-native-webrtc';
-import { callApi } from './api';
+import {
+  mediaDevices,
+  RTCPeerConnection,
+  RTCIceCandidate,
+  RTCSessionDescription,
+  MediaStream,
+} from "react-native-webrtc";
+import { callApi } from "./api";
 
-export type CallState = 'idle' | 'connecting' | 'connected' | 'ending' | 'ended' | 'failed';
+export type CallState = "idle" | "connecting" | "connected" | "ending" | "ended" | "failed";
 
 export interface CallEvent {
-  type: 'stateChanged' | 'localStream' | 'remoteStream' | 'error' | 'iceCandidate';
+  type: "stateChanged" | "localStream" | "remoteStream" | "error" | "iceCandidate";
   payload?: any;
 }
 
 type CallEventListener = (event: CallEvent) => void;
 
 const DEFAULT_ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
 ];
 
 interface PeerConnectionWithEvents extends RTCPeerConnection {
@@ -26,7 +32,7 @@ export class WebRTCCallManager {
   private peerConnection: PeerConnectionWithEvents | null = null;
   private localStream: MediaStream | null = null;
   private remoteStream: MediaStream | null = null;
-  private state: CallState = 'idle';
+  private state: CallState = "idle";
   private listeners: Set<CallEventListener> = new Set();
   private sessionId: string | null = null;
   private deviceId: string;
@@ -44,13 +50,13 @@ export class WebRTCCallManager {
   }
 
   private emit(event: CallEvent): void {
-    this.listeners.forEach(listener => listener(event));
+    this.listeners.forEach((listener) => listener(event));
   }
 
   private setState(newState: CallState): void {
     if (this.state !== newState) {
       this.state = newState;
-      this.emit({ type: 'stateChanged', payload: newState });
+      this.emit({ type: "stateChanged", payload: newState });
     }
   }
 
@@ -64,86 +70,84 @@ export class WebRTCCallManager {
 
   async startCall(pairId: string, callerName?: string): Promise<string> {
     try {
-      this.setState('connecting');
-      
+      this.setState("connecting");
+
       // Create session on server
-      const response = await callApi.post('/api/call/session', {
+      const response = await callApi.post("/api/call/session", {
         pairId,
         callerId: this.deviceId,
         callerName,
       });
-      
-      this.sessionId = response.sessionId || '';
-      
+
+      this.sessionId = response.sessionId || "";
+
       // Initialize peer connection
       await this.createPeerConnection(true);
-      
+
       // Create offer
       const offer = await this.peerConnection!.createOffer({});
       await this.peerConnection!.setLocalDescription(offer);
-      
+
       // Send offer to server
-      await callApi.post('/api/call/offer', {
+      await callApi.post("/api/call/offer", {
         sessionId: this.sessionId!,
         offer: offer.toJSON(),
         fromDeviceId: this.deviceId,
       });
-      
+
       // Start polling for answer and ICE candidates
       this.startPolling();
-      
+
       return this.sessionId!;
     } catch (error) {
-      this.setState('failed');
-      this.emit({ type: 'error', payload: error });
+      this.setState("failed");
+      this.emit({ type: "error", payload: error });
       throw error;
     }
   }
 
   async joinCall(sessionId: string): Promise<void> {
     try {
-      this.setState('connecting');
+      this.setState("connecting");
       this.sessionId = sessionId;
-      
+
       // Get session details
       const session = await callApi.get(`/api/call/session/${sessionId}?deviceId=${this.deviceId}`);
-      
+
       if (!session.offer) {
-        throw new Error('No offer found in session');
+        throw new Error("No offer found in session");
       }
-      
+
       // Initialize peer connection
       await this.createPeerConnection(false);
-      
+
       // Set remote description (offer)
-      await this.peerConnection!.setRemoteDescription(
-        new RTCSessionDescription(session.offer)
-      );
+      await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(session.offer));
       this.hasRemoteDescription = true;
-      
+
       // Add any pending ICE candidates
       for (const candidate of session.iceCandidates) {
         await this.peerConnection!.addIceCandidate(new RTCIceCandidate(candidate));
       }
-      
+
       // Create answer
       const answer = await this.peerConnection!.createAnswer();
       await this.peerConnection!.setLocalDescription(answer);
-      
+
       // Send answer to server
-      await callApi.post('/api/call/answer', {
+      await callApi.post("/api/call/answer", {
         sessionId,
         answer: answer.toJSON(),
         fromDeviceId: this.deviceId,
       });
-      
+
       // Start polling for ICE candidates
       this.startPolling();
-      
-      this.setState('connected');
+
+      this.setState("connected");
     } catch (error) {
-      this.setState('failed');
-      this.emit({ type: 'error', payload: error });
+      this.setState("failed");
+      this.emit({ type: "error", payload: error });
       throw error;
     }
   }
@@ -151,7 +155,7 @@ export class WebRTCCallManager {
   private async createPeerConnection(isInitiator: boolean): Promise<void> {
     const config = {
       iceServers: DEFAULT_ICE_SERVERS,
-      sdpSemantics: 'unified-plan' as const,
+      sdpSemantics: "unified-plan" as const,
     };
 
     const pc = new RTCPeerConnection(config) as PeerConnectionWithEvents;
@@ -171,12 +175,12 @@ export class WebRTCCallManager {
     // Handle connection state changes
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
-      console.log('Connection state:', state);
-      
-      if (state === 'connected') {
-        this.setState('connected');
-      } else if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-        this.setState('ended');
+      console.log("Connection state:", state);
+
+      if (state === "connected") {
+        this.setState("connected");
+      } else if (state === "disconnected" || state === "failed" || state === "closed") {
+        this.setState("ended");
         this.cleanup();
       }
     };
@@ -185,7 +189,7 @@ export class WebRTCCallManager {
     pc.ontrack = (event: any) => {
       if (event.streams && event.streams[0]) {
         this.remoteStream = event.streams[0];
-        this.emit({ type: 'remoteStream', payload: this.remoteStream });
+        this.emit({ type: "remoteStream", payload: this.remoteStream });
       }
     };
 
@@ -195,18 +199,18 @@ export class WebRTCCallManager {
       video: false,
     });
 
-    this.localStream.getTracks().forEach(track => {
+    this.localStream.getTracks().forEach((track) => {
       pc.addTrack(track, this.localStream!);
     });
 
-    this.emit({ type: 'localStream', payload: this.localStream });
+    this.emit({ type: "localStream", payload: this.localStream });
   }
 
   private async sendIceCandidate(candidate: any): Promise<void> {
     if (!this.sessionId) return;
 
     try {
-      await callApi.post('/api/call/ice', {
+      await callApi.post("/api/call/ice", {
         sessionId: this.sessionId,
         candidate: {
           candidate: candidate.candidate,
@@ -216,7 +220,7 @@ export class WebRTCCallManager {
         fromDeviceId: this.deviceId,
       });
     } catch (error) {
-      console.error('Failed to send ICE candidate:', error);
+      console.error("Failed to send ICE candidate:", error);
     }
   }
 
@@ -230,15 +234,17 @@ export class WebRTCCallManager {
       }
 
       try {
-        const session = await callApi.get(`/api/call/session/${this.sessionId}?deviceId=${this.deviceId}`);
-        
+        const session = await callApi.get(
+          `/api/call/session/${this.sessionId}?deviceId=${this.deviceId}`,
+        );
+
         // Check for answer if we're the initiator
         if (session.answer && !this.hasRemoteDescription) {
           await this.peerConnection!.setRemoteDescription(
-            new RTCSessionDescription(session.answer)
+            new RTCSessionDescription(session.answer),
           );
           this.hasRemoteDescription = true;
-          this.setState('connected');
+          this.setState("connected");
         }
 
         // Add new ICE candidates
@@ -251,12 +257,12 @@ export class WebRTCCallManager {
         }
 
         // Check if session ended
-        if (session.status === 'ended') {
-          this.setState('ended');
+        if (session.status === "ended") {
+          this.setState("ended");
           this.cleanup();
         }
       } catch (error) {
-        console.error('Polling error:', error);
+        console.error("Polling error:", error);
       }
     }, 2000);
   }
@@ -272,9 +278,9 @@ export class WebRTCCallManager {
     if (!this.sessionId) return;
 
     try {
-      await callApi.post('/api/call/end', { sessionId: this.sessionId });
+      await callApi.post("/api/call/end", { sessionId: this.sessionId });
     } catch (error) {
-      console.error('Failed to end call on server:', error);
+      console.error("Failed to end call on server:", error);
     } finally {
       this.cleanup();
     }
@@ -282,25 +288,25 @@ export class WebRTCCallManager {
 
   private cleanup(): void {
     this.stopPolling();
-    
+
     if (this.peerConnection) {
       // Remove event listeners by setting to null
       this.peerConnection.onicecandidate = null;
       this.peerConnection.onconnectionstatechange = null;
       this.peerConnection.ontrack = null;
-      
-      this.peerConnection.getSenders().forEach(sender => {
+
+      this.peerConnection.getSenders().forEach((sender) => {
         if (sender.track) {
           sender.track.stop();
         }
       });
-      
+
       this.peerConnection.close();
       this.peerConnection = null;
     }
 
     if (this.localStream) {
-      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
 
@@ -308,9 +314,9 @@ export class WebRTCCallManager {
     this.sessionId = null;
     this.processedIceCandidates.clear();
     this.hasRemoteDescription = false;
-    
-    if (this.state !== 'idle' && this.state !== 'ended') {
-      this.setState('ended');
+
+    if (this.state !== "idle" && this.state !== "ended") {
+      this.setState("ended");
     }
   }
 
@@ -324,7 +330,7 @@ export class WebRTCCallManager {
 
   async muteAudio(mute: boolean): Promise<void> {
     if (this.localStream) {
-      this.localStream.getAudioTracks().forEach(track => {
+      this.localStream.getAudioTracks().forEach((track) => {
         track.enabled = !mute;
       });
     }

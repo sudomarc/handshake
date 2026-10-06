@@ -7,11 +7,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = createCallSessionRequestSchema.safeParse(body);
-    
+
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid request", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

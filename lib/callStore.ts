@@ -1,4 +1,10 @@
-import { CallSession, CreateCallSessionRequest, CallOffer, CallAnswer, IceCandidate } from "@/lib/callSchemas";
+import {
+  CallSession,
+  CreateCallSessionRequest,
+  CallOffer,
+  CallAnswer,
+  IceCandidate,
+} from "@/lib/callSchemas";
 
 type StoredCallSession = CallSession;
 
@@ -24,13 +30,13 @@ class CallSessionStore {
   generateSessionId(): string {
     const array = new Uint8Array(16);
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
   }
 
   async createSession(request: CreateCallSessionRequest): Promise<CallSession> {
     const sessionId = this.generateSessionId();
     const now = Date.now();
-    
+
     const session: StoredCallSession = {
       sessionId,
       pairId: request.pairId,
@@ -63,11 +69,16 @@ class CallSessionStore {
     return sessions;
   }
 
-  async getPendingSessionForPair(pairId: string, excludeDeviceId: string): Promise<CallSession | null> {
+  async getPendingSessionForPair(
+    pairId: string,
+    excludeDeviceId: string,
+  ): Promise<CallSession | null> {
     for (const session of this.sessions.values()) {
-      if (session.pairId === pairId && 
-          session.status === "pending" && 
-          session.callerDeviceId !== excludeDeviceId) {
+      if (
+        session.pairId === pairId &&
+        session.status === "pending" &&
+        session.callerDeviceId !== excludeDeviceId
+      ) {
         return { ...session };
       }
     }
@@ -121,13 +132,16 @@ class CallSessionStore {
     return { ...session };
   }
 
-  async getIceCandidates(sessionId: string, forDeviceId: string): Promise<IceCandidate["candidate"][]> {
+  async getIceCandidates(
+    sessionId: string,
+    forDeviceId: string,
+  ): Promise<IceCandidate["candidate"][]> {
     const session = this.sessions.get(sessionId);
     if (!session) return [];
 
     return session.iceCandidates
-      .filter(c => c.fromDeviceId !== forDeviceId)
-      .map(c => ({
+      .filter((c) => c.fromDeviceId !== forDeviceId)
+      .map((c) => ({
         candidate: c.candidate,
         sdpMid: c.sdpMid,
         sdpMLineIndex: c.sdpMLineIndex,

@@ -199,7 +199,9 @@ listening.
 
 See [ROADMAP.md](./ROADMAP.md) for the complete call-protection UX,
 real-time-analysis pipeline, Android integration layers and phased plan.
+
 ## Honest limitations
+
 - **Demo-grade storage.** Pair data lives in simple server-side local storage.
   On the hosted demo it may reset (serverless file systems are ephemeral), which
   is why the demo creates a fresh pair right before the show. A production

@@ -9,10 +9,12 @@ us since we submit Oct 9, but do not schedule the final push on Oct 7 morning.
 ## Verified ForgeHacks submission requirements
 
 Source checked against the current Devpost pages on 2026-10-04:
+
 - https://forgehacks-2026.devpost.com/
 - https://forgehacks-2026.devpost.com/rules
 
 ForgeHacks requires:
+
 - a **working AI-powered project** addressing a real-world problem;
 - a public **demo video of 2–4 minutes max** showing the problem and how the
   project works;
@@ -41,12 +43,12 @@ until they are re-checked with evidence.
 ### COMPLETED
 
 - **VERIFIED** — `mobile/` Expo app (SDK 51, Expo Router) with the Personal flows:
-  trusted people, *My code*, *Verify a call*, Pressure check, Personal question,
+  trusted people, _My code_, _Verify a call_, Pressure check, Personal question,
   The first hour. `tsc --noEmit`: 0 errors. ESLint: 0 problems.
-- **VERIFIED (source review)** — *Verify a call* never renders the live code
-  (`mobile/app/verify/[pairId].tsx`, `mobile/components/VerifyForm.tsx`). *My code*
+- **VERIFIED (source review)** — _Verify a call_ never renders the live code
+  (`mobile/app/verify/[pairId].tsx`, `mobile/components/VerifyForm.tsx`). _My code_
   shows it with a countdown, refetches at rotation, and has an error state with
-  *Try again* (`useLiveCode.ts`, `CodeDisplay.tsx`). Verify errors keep the form
+  _Try again_ (`useLiveCode.ts`, `CodeDisplay.tsx`). Verify errors keep the form
   usable (`VerifyForm.tsx`). Not yet observed on a device.
 - **VERIFIED locally** (Next dev server, throwaway `PAIR_DERIVATION_KEY`, no AI key):
   - `POST /api/circle` → 201 with a 32-hex `pairId`.
@@ -84,16 +86,16 @@ source-reviewed only.
 - Trusted-person flow against the **deployed** backend: create connection →
   pair `849d3b149d0cf133d5c9018995147c38`, "Mom" active.
 - Rotating-code generation: `771 794` → `537 378` across a window boundary.
-- Verification: wrong code → *Not verified* + guidance; correct code →
+- Verification: wrong code → _Not verified_ + guidance; correct code →
   **Verified**.
 - Microphone permission dialog shown and granted (`RECORD_AUDIO` and
   `FOREGROUND_SERVICE_MICROPHONE` both `granted=true`).
-- Pressure check: real model output, scam transcript → *Likely clone / scam
-  pressure*, `95/100`.
+- Pressure check: real model output, scam transcript → _Likely clone / scam
+  pressure_, `95/100`.
 - Personal question: real model output returned.
 - WebRTC native init, and Call Protection up to
   `pc ctor → getUserMedia(audio) → addTrack → createOffer → setLocalDescription
-  → ICE gathering`.
+→ ICE gathering`.
 
 **FAILED on device (fatal crashes, both reproduced):**
 
@@ -109,7 +111,7 @@ source-reviewed only.
   plain Kotlin `Map`/`ShortArray` instead of `WritableMap`/`WritableArray`.
   **Code bug.**
 - Pressure check returned one transient HTTP 400 (`That input doesn't look
-  right`); an identical retry succeeded. Not reproducible.
+right`); an identical retry succeeded. Not reproducible.
 
 **BLOCKED:** two-device WebRTC call (only one device attached, no emulator
 installed); everything after the SDP offer (blocked by the Call Protection
@@ -129,7 +131,7 @@ containing both fixes has been re-tested on the device.
 - [ ] **Two-physical-device validation remains outstanding (NOT VERIFIED).** An API-level
       simulation is not a substitute. No second device or emulator was available
       on 2026-10-06.
-- [ ] Test the *deployed* backend from a phone on mobile data: circle, current,
+- [ ] Test the _deployed_ backend from a phone on mobile data: circle, current,
       verify and — with the production `FEATHERLESS_API_KEY` — analyze and challenge.
       (The audit sandbox could not reach Vercel or Featherless: `host_not_allowed`.
       2026-10-06: circle/current/verify/analyze/challenge all passed **from the phone
@@ -148,13 +150,13 @@ containing both fixes has been re-tested on the device.
 ### Audit findings (documented, deliberately not fixed)
 
 - **F1 — Pressure check labels over-claim.** `mobile/app/analyze.tsx` renders
-  *Likely human*, *Likely clone / scam pressure* and *Human likelihood n/100*, while
+  _Likely human_, _Likely clone / scam pressure_ and _Human likelihood n/100_, while
   the model only sees a text transcript and the screen itself says it does not
-  detect cloned voices. A calm, well-written scam script can come back as *Likely
-  human* — false reassurance. Not a functional blocker, so not changed. Smallest
+  detect cloned voices. A calm, well-written scam script can come back as _Likely
+  human_ — false reassurance. Not a functional blocker, so not changed. Smallest
   possible fix (label-only, no schema/API change): show the pressure score and
-  reasoning, drop the *Likely human* label and the *Human likelihood* line, and
-  rename *Likely clone* to *High pressure*. **Owner decision.** Until then, follow
+  reasoning, drop the _Likely human_ label and the _Human likelihood_ line, and
+  rename _Likely clone_ to _High pressure_. **Owner decision.** Until then, follow
   the wording rules in `DEMO_SCRIPT.md`.
 - **F2 — Personal question is not personalized on mobile.** The screen has no input
   for private context, so `/api/challenge` receives an empty context and returns a
@@ -363,6 +365,7 @@ manual security buttons.
 - ✅ Kept existing verification API as source of truth
 
 **Key Findings (2026-10-05):**
+
 - Android carrier-call remote audio: NOT AVAILABLE (CAPTURE_AUDIO_OUTPUT is system-only)
 - Local microphone capture: VERIFIED (works when no call active)
 - Call detection via CallScreeningService: VERIFIED (metadata for non-contacts)
@@ -376,6 +379,7 @@ manual security buttons.
 **Status: VERIFIED (source review) — Native module implemented, typecheck/lint clean**
 
 #### ✅ Implemented
+
 - Native Android module `handshake-call-audio` with Expo config plugin
 - `AudioCaptureManager` — AudioRecord wrapper (MIC, VOICE_RECOGNITION, VOICE_COMMUNICATION)
 - `VADProcessor` — Energy-based VAD (SILENCE/SPEECH/UNKNOWN states)
@@ -387,16 +391,16 @@ manual security buttons.
 
 #### 📋 Test Matrix Results (Source Verified)
 
-| Scenario | Call Detected | Local Audio | Remote Audio | Both | Background | Result |
-|----------|---------------|-------------|--------------|------|------------|--------|
-| Incoming carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Outgoing carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Speakerphone | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Earpiece | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Bluetooth | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| App foreground | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
-| App background | N/A | ✅ (FGS) | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
-| Microphone FGS | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
+| Scenario         | Call Detected             | Local Audio | Remote Audio     | Both | Background | Result         |
+| ---------------- | ------------------------- | ----------- | ---------------- | ---- | ---------- | -------------- |
+| Incoming carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌   | ❌         | LOCAL_MIC_ONLY |
+| Outgoing carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌   | ❌         | LOCAL_MIC_ONLY |
+| Speakerphone     | ✅                        | ❌ Silenced | ❌ NOT AVAILABLE | ❌   | ❌         | LOCAL_MIC_ONLY |
+| Earpiece         | ✅                        | ❌ Silenced | ❌ NOT AVAILABLE | ❌   | ❌         | LOCAL_MIC_ONLY |
+| Bluetooth        | ✅                        | ❌ Silenced | ❌ NOT AVAILABLE | ❌   | ❌         | LOCAL_MIC_ONLY |
+| App foreground   | N/A                       | ✅          | ❌ NOT AVAILABLE | ❌   | ✅         | LOCAL_MIC_ONLY |
+| App background   | N/A                       | ✅ (FGS)    | ❌ NOT AVAILABLE | ❌   | ✅         | LOCAL_MIC_ONLY |
+| Microphone FGS   | N/A                       | ✅          | ❌ NOT AVAILABLE | ❌   | ✅         | LOCAL_MIC_ONLY |
 
 **Major Discovery:** Android carrier-call remote audio is platform-blocked. `CAPTURE_AUDIO_OUTPUT` required for VOICE_UPLINK/DOWNLINK is system-only.
 
@@ -412,6 +416,7 @@ test found that the active-call screen crashes (`ClassCastException` on
 behaviour downstream of local capture is verified yet.
 
 #### ✅ Implemented in source (source review only — not device-verified)
+
 - WebRTC dependency added (`react-native-webrtc@118.0.7`, `@config-plugins/react-native-webrtc@9.0.0`)
 - Expo config plugin configured with microphone/camera permissions
 - Native Android permissions: CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, BLUETOOTH, WAKE_LOCK
@@ -434,6 +439,7 @@ behaviour downstream of local capture is verified yet.
 > as code that exists, not behaviour that works.
 
 #### 🔄 Blocked / Next Steps
+
 - **Rebuild the APK with the `<RTCView>` fix and retest Call Protection** (highest priority)
 - Rebuild and retest Call Audio Feasibility with the `CallAudioModule` bridge fix
 - Two-device WebRTC call test (Device A = Samsung A17, Device B = emulator/second
@@ -446,6 +452,7 @@ behaviour downstream of local capture is verified yet.
 - Test call establishment reliability (ICE, NAT traversal)
 
 #### 📋 Planned
+
 - VAD integration (reuse existing VADProcessor from native module)
 - Real-time audio frame access for analysis pipeline
 - STT integration (on-device Whisper.cpp or cloud)
@@ -454,6 +461,7 @@ behaviour downstream of local capture is verified yet.
 - Automatic orchestration based on available signals
 
 **Current Architecture:**
+
 ```
 Handshake Personal (Expo)
     ↓
@@ -769,6 +777,7 @@ Those are hypotheses / future capabilities until independently verified.
 ### Long-term sequencing
 
 **Phase 1 — Call-awareness feasibility**
+
 - verify Android/iOS call state, audio, background and notification capabilities;
 - determine first supported call type;
 - build the native audio feasibility prototype;
@@ -777,6 +786,7 @@ Those are hypotheses / future capabilities until independently verified.
 **Exit:** one genuinely supported communication scenario is technically proven.
 
 **Phase 2 — Protected Call Session**
+
 - connect the proven call/session signal to trusted-person context;
 - start the rotating-code verification context automatically;
 - expose a single **Protected / Verify / Risk** state;
@@ -785,6 +795,7 @@ Those are hypotheses / future capabilities until independently verified.
 **Exit:** one supported session can be protected end to end.
 
 **Phase 3 — Real-time analysis**
+
 - audio frames → VAD → rolling buffer;
 - speech-to-text;
 - incremental semantic risk analysis;
@@ -796,6 +807,7 @@ Those are hypotheses / future capabilities until independently verified.
 supported device/session, with measured behavior.
 
 **Phase 4 — Automatic orchestration**
+
 - policy layer selects verification, challenge, pressure analysis or recovery
   guidance;
 - surface evidence behind the decision without exposing internal tool mechanics.
@@ -803,6 +815,7 @@ supported device/session, with measured behavior.
 **Exit:** users experience one protection layer rather than separate tools.
 
 **Phase 5 — Production trust and privacy**
+
 - accounts;
 - device enrollment/revocation;
 - persistent storage;
@@ -811,6 +824,7 @@ supported device/session, with measured behavior.
 - security review and adversarial testing.
 
 **Phase 6 — Handshake Business**
+
 - evolve the existing Next.js web product into organization-facing controls,
   administration, verification history, policies and reporting;
 - reuse the shared Handshake Core/API.

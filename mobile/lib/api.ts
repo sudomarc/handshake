@@ -108,28 +108,47 @@ export const api = {
     }),
 
   // Call API
-  createCallSession: (pairId: string, callerId: string, callerName?: string): Promise<CreateCallSessionResponse> =>
+  createCallSession: (
+    pairId: string,
+    callerId: string,
+    callerName?: string,
+  ): Promise<CreateCallSessionResponse> =>
     request("/api/call/session", createCallSessionResponseSchema, {
       method: "POST",
       body: { pairId, callerId, callerName },
     }),
 
   getCallSession: (sessionId: string, deviceId: string): Promise<CallSession> =>
-    request(`/api/call/session/${sessionId}?deviceId=${encodeURIComponent(deviceId)}`, callSessionSchema),
+    request(
+      `/api/call/session/${sessionId}?deviceId=${encodeURIComponent(deviceId)}`,
+      callSessionSchema,
+    ),
 
-  sendOffer: (sessionId: string, offer: { type: "offer"; sdp: string }, fromDeviceId: string): Promise<CallSession> =>
+  sendOffer: (
+    sessionId: string,
+    offer: { type: "offer"; sdp: string },
+    fromDeviceId: string,
+  ): Promise<CallSession> =>
     request("/api/call/offer", callSessionSchema, {
       method: "POST",
       body: { sessionId, offer, fromDeviceId },
     }),
 
-  sendAnswer: (sessionId: string, answer: { type: "answer"; sdp: string }, fromDeviceId: string): Promise<CallSession> =>
+  sendAnswer: (
+    sessionId: string,
+    answer: { type: "answer"; sdp: string },
+    fromDeviceId: string,
+  ): Promise<CallSession> =>
     request("/api/call/answer", callSessionSchema, {
       method: "POST",
       body: { sessionId, answer, fromDeviceId },
     }),
 
-  sendIceCandidate: (sessionId: string, candidate: { candidate: string; sdpMid: string | null; sdpMLineIndex: number | null }, fromDeviceId: string): Promise<CallSession> =>
+  sendIceCandidate: (
+    sessionId: string,
+    candidate: { candidate: string; sdpMid: string | null; sdpMLineIndex: number | null },
+    fromDeviceId: string,
+  ): Promise<CallSession> =>
     request("/api/call/ice", callSessionSchema, {
       method: "POST",
       body: { sessionId, candidate, fromDeviceId },
@@ -146,7 +165,11 @@ export const api = {
 export const callApi = {
   post: async (endpoint: string, body: unknown): Promise<any> => {
     if (!API_BASE_URL) {
-      throw new ApiError(0, "not_configured", "The server address is not configured in this build.");
+      throw new ApiError(
+        0,
+        "not_configured",
+        "The server address is not configured in this build.",
+      );
     }
 
     const controller = new AbortController();
@@ -189,7 +212,11 @@ export const callApi = {
 
   get: async (endpoint: string): Promise<any> => {
     if (!API_BASE_URL) {
-      throw new ApiError(0, "not_configured", "The server address is not configured in this build.");
+      throw new ApiError(
+        0,
+        "not_configured",
+        "The server address is not configured in this build.",
+      );
     }
 
     const controller = new AbortController();

@@ -15,29 +15,29 @@
 
 ## Device & Environment
 
-| Property | Value |
-|----------|-------|
-| Device | Samsung A17 (reference) |
-| Android Version | 14+ (API 34+) |
-| Target SDK | 34 (Expo SDK 51) |
-| Build | Expo development build with native module |
-| Architecture | arm64-v8a |
+| Property        | Value                                     |
+| --------------- | ----------------------------------------- |
+| Device          | Samsung A17 (reference)                   |
+| Android Version | 14+ (API 34+)                             |
+| Target SDK      | 34 (Expo SDK 51)                          |
+| Build           | Expo development build with native module |
+| Architecture    | arm64-v8a                                 |
 
 ---
 
 ## APIs Evaluated
 
-| API | Status | Notes |
-|-----|--------|-------|
-| `CallScreeningService` | ✅ IMPLEMENTED | Call metadata only (number, direction, verification). No audio access. |
-| `InCallService` | ❌ NOT VIABLE | Requires becoming default dialer (`ROLE_DIALER`) — replaces entire phone app UX. |
-| `ConnectionService` | ❌ NOT APPLICABLE | Only for VoIP calls owned by the app, not carrier calls. |
-| `AudioRecord` (MIC) | ✅ IMPLEMENTED | Local microphone capture works when no call active. |
-| `AudioRecord` (VOICE_RECOGNITION) | ✅ IMPLEMENTED | Alternative audio source, same limitation as MIC. |
-| `AudioRecord` (VOICE_COMMUNICATION) | ✅ IMPLEMENTED | For VoIP use cases, same limitation. |
-| `AudioRecord` (VOICE_UPLINK/DOWNLINK/VOICE_CALL) | ❌ BLOCKED | Requires `CAPTURE_AUDIO_OUTPUT` — system-only permission. |
-| Microphone Foreground Service | ✅ IMPLEMENTED | Works when started from foreground. Cannot start from background on Android 14+. |
-| Phone Call Foreground Service | ❌ NOT APPLICABLE | Requires `MANAGE_OWN_CALLS` or default dialer role. |
+| API                                              | Status            | Notes                                                                            |
+| ------------------------------------------------ | ----------------- | -------------------------------------------------------------------------------- |
+| `CallScreeningService`                           | ✅ IMPLEMENTED    | Call metadata only (number, direction, verification). No audio access.           |
+| `InCallService`                                  | ❌ NOT VIABLE     | Requires becoming default dialer (`ROLE_DIALER`) — replaces entire phone app UX. |
+| `ConnectionService`                              | ❌ NOT APPLICABLE | Only for VoIP calls owned by the app, not carrier calls.                         |
+| `AudioRecord` (MIC)                              | ✅ IMPLEMENTED    | Local microphone capture works when no call active.                              |
+| `AudioRecord` (VOICE_RECOGNITION)                | ✅ IMPLEMENTED    | Alternative audio source, same limitation as MIC.                                |
+| `AudioRecord` (VOICE_COMMUNICATION)              | ✅ IMPLEMENTED    | For VoIP use cases, same limitation.                                             |
+| `AudioRecord` (VOICE_UPLINK/DOWNLINK/VOICE_CALL) | ❌ BLOCKED        | Requires `CAPTURE_AUDIO_OUTPUT` — system-only permission.                        |
+| Microphone Foreground Service                    | ✅ IMPLEMENTED    | Works when started from foreground. Cannot start from background on Android 14+. |
+| Phone Call Foreground Service                    | ❌ NOT APPLICABLE | Requires `MANAGE_OWN_CALLS` or default dialer role.                              |
 
 ---
 
@@ -103,26 +103,26 @@
 
 ## Tested
 
-| Test | Status | Notes |
-|------|--------|-------|
-| TypeScript compilation | ✅ PASS | `npm run typecheck` clean |
-| ESLint | ✅ PASS | No errors |
-| Native module registration | ✅ PASS | Package added to MainApplication |
-| Manifest permissions/services | ✅ PASS | All declared correctly |
-| Prebuild generation | ✅ PASS | Android project generates cleanly |
+| Test                          | Status  | Notes                             |
+| ----------------------------- | ------- | --------------------------------- |
+| TypeScript compilation        | ✅ PASS | `npm run typecheck` clean         |
+| ESLint                        | ✅ PASS | No errors                         |
+| Native module registration    | ✅ PASS | Package added to MainApplication  |
+| Manifest permissions/services | ✅ PASS | All declared correctly            |
+| Prebuild generation           | ✅ PASS | Android project generates cleanly |
 
 ### NOT VERIFIED (Require Samsung A17 / Android Device)
 
-| Test | Expected Result |
-|------|-----------------|
-| Microphone capture (no call) | Frames received, VAD detects speech |
-| Microphone during carrier call | **Silence** (call takes audio focus) |
-| VOICE_RECOGNITION during call | **Silence** |
-| VOICE_COMMUNICATION during call | **Silence** |
-| Foreground service background capture | Works while app visible; stops if started from background |
-| CallScreeningService incoming call | Fires for non-contacts; metadata received |
-| CallScreeningService with READ_CONTACTS | Fires for all calls |
-| Speakerphone/earpiece/Bluetooth routing | Local mic still silenced during carrier call |
+| Test                                    | Expected Result                                           |
+| --------------------------------------- | --------------------------------------------------------- |
+| Microphone capture (no call)            | Frames received, VAD detects speech                       |
+| Microphone during carrier call          | **Silence** (call takes audio focus)                      |
+| VOICE_RECOGNITION during call           | **Silence**                                               |
+| VOICE_COMMUNICATION during call         | **Silence**                                               |
+| Foreground service background capture   | Works while app visible; stops if started from background |
+| CallScreeningService incoming call      | Fires for non-contacts; metadata received                 |
+| CallScreeningService with READ_CONTACTS | Fires for all calls                                       |
+| Speakerphone/earpiece/Bluetooth routing | Local mic still silenced during carrier call              |
 
 ---
 
@@ -130,21 +130,21 @@
 
 ### Local Microphone
 
-| Condition | Result |
-|-----------|--------|
-| App foreground, no call | ✅ CAPTURES AUDIO |
-| App background (foreground service), no call | ✅ CAPTURES AUDIO |
-| Carrier call active (any audio route) | ❌ SILENCE (audio focus taken by call) |
+| Condition                                    | Result                                 |
+| -------------------------------------------- | -------------------------------------- |
+| App foreground, no call                      | ✅ CAPTURES AUDIO                      |
+| App background (foreground service), no call | ✅ CAPTURES AUDIO                      |
+| Carrier call active (any audio route)        | ❌ SILENCE (audio focus taken by call) |
 
 ### Carrier Call
 
-| Scenario | Call Detected | Local Audio | Remote Audio | Both |
-|----------|---------------|-------------|--------------|------|
-| Incoming carrier | ✅ (via CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ |
-| Outgoing carrier | ✅ (via CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ |
-| Speakerphone | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ |
-| Earpiece | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ |
-| Bluetooth | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ |
+| Scenario         | Call Detected                 | Local Audio | Remote Audio     | Both |
+| ---------------- | ----------------------------- | ----------- | ---------------- | ---- |
+| Incoming carrier | ✅ (via CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌   |
+| Outgoing carrier | ✅ (via CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌   |
+| Speakerphone     | ✅                            | ❌ Silenced | ❌ NOT AVAILABLE | ❌   |
+| Earpiece         | ✅                            | ❌ Silenced | ❌ NOT AVAILABLE | ❌   |
+| Bluetooth        | ✅                            | ❌ Silenced | ❌ NOT AVAILABLE | ❌   |
 
 ### Remote Audio
 
@@ -156,28 +156,29 @@
 - `REMOTE_SUBMIX`: Requires `CAPTURE_AUDIO_OUTPUT` — **system only**
 
 **Android Documentation Quote:**
+
 > "Capturing from VOICE_CALL source requires the Manifest.permission.CAPTURE_AUDIO_OUTPUT permission. This permission is reserved for use by system components and is not available to third-party applications."
 
 ### Foreground Service Behavior
 
-| Scenario | Result |
-|----------|--------|
-| Start from foreground activity | ✅ WORKS |
-| Start from background (Android 14+) | ❌ `ForegroundServiceStartNotAllowedException` |
-| Continue capture when app backgrounded | ✅ WORKS (if started from foreground) |
-| Microphone access while backgrounded | ✅ WORKS (while-in-use granted at start time) |
+| Scenario                               | Result                                         |
+| -------------------------------------- | ---------------------------------------------- |
+| Start from foreground activity         | ✅ WORKS                                       |
+| Start from background (Android 14+)    | ❌ `ForegroundServiceStartNotAllowedException` |
+| Continue capture when app backgrounded | ✅ WORKS (if started from foreground)          |
+| Microphone access while backgrounded   | ✅ WORKS (while-in-use granted at start time)  |
 
 ---
 
 ## Real-time Pipeline
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Audio Capture | ✅ IMPLEMENTED | 16kHz/20ms frames via AudioRecord |
-| VAD | ✅ IMPLEMENTED | Energy-based, 3 states |
-| STT | ❌ NOT IMPLEMENTED | Would need on-device (Whisper.cpp) or cloud |
-| Semantic Analysis | ❌ NOT IMPLEMENTED | Would run on transcript chunks |
-| Risk Engine | ❌ NOT IMPLEMENTED | Would consume STT output |
+| Component         | Status             | Notes                                       |
+| ----------------- | ------------------ | ------------------------------------------- |
+| Audio Capture     | ✅ IMPLEMENTED     | 16kHz/20ms frames via AudioRecord           |
+| VAD               | ✅ IMPLEMENTED     | Energy-based, 3 states                      |
+| STT               | ❌ NOT IMPLEMENTED | Would need on-device (Whisper.cpp) or cloud |
+| Semantic Analysis | ❌ NOT IMPLEMENTED | Would run on transcript chunks              |
+| Risk Engine       | ❌ NOT IMPLEMENTED | Would consume STT output                    |
 
 **Pipeline would be:** Audio → VAD → Rolling Buffer → STT → Transcript Chunks → Risk Analysis → Risk State
 
@@ -196,12 +197,14 @@
 ## Architecture Recommendation
 
 ### Option A: Deeper Android Integration (InCallService)
+
 - **What it gives:** Full call audio state, routing, potential access via system APIs
 - **What it doesn't give:** Direct carrier audio capture (still needs `CAPTURE_AUDIO_OUTPUT`)
 - **Requirements:** Become default dialer (`ROLE_DIALER`), handle ALL calls, replace phone UI
 - **Cost/Risk:** Massive architectural change; user must replace system phone app; high friction
 
 ### Option B: Handshake-Controlled VoIP/Session (RECOMMENDED)
+
 - **Architecture:** Handshake initiates/manages its own VoIP calls via `ConnectionService`
 - **Audio control:** Full access to uplink/downlink for Handshake-managed calls
 - **Integration:** Use WebRTC or similar; audio stays in-app
@@ -231,6 +234,7 @@ Carrier calls remain out of scope for real-time audio analysis. The product shou
 ## Files Changed
 
 ### New Files
+
 - `mobile/plugins/handshake-call-audio/plugin.js` — Expo config plugin
 - `mobile/plugins/handshake-call-audio/android/AudioCaptureManager.kt`
 - `mobile/plugins/handshake-call-audio/android/VADProcessor.kt`
@@ -244,6 +248,7 @@ Carrier calls remain out of scope for real-time audio analysis. The product shou
 - `docs/CALL_AUDIO_FEASIBILITY.md` — This document
 
 ### Modified Files
+
 - `mobile/app.json` — Added plugin
 - `mobile/app/_layout.tsx` — Added route
 - `mobile/app/(tabs)/index.tsx` — Added navigation button
@@ -254,12 +259,12 @@ Carrier calls remain out of scope for real-time audio analysis. The product shou
 
 ## Tests
 
-| Command | Result |
-|---------|--------|
-| `cd mobile && npm run typecheck` | ✅ PASS |
-| `cd mobile && npm run lint` | ✅ PASS |
-| `cd mobile && npx expo prebuild --platform android --clean` | ✅ PASS |
-| `node mobile/plugins/handshake-call-audio/plugin.test.js` | ✅ PASS (7/7) |
+| Command                                                     | Result        |
+| ----------------------------------------------------------- | ------------- |
+| `cd mobile && npm run typecheck`                            | ✅ PASS       |
+| `cd mobile && npm run lint`                                 | ✅ PASS       |
+| `cd mobile && npx expo prebuild --platform android --clean` | ✅ PASS       |
+| `node mobile/plugins/handshake-call-audio/plugin.test.js`   | ✅ PASS (7/7) |
 
 ---
 
@@ -303,14 +308,14 @@ adb shell am start -n com.sudomarc.handshake/.MainActivity
 
 ### 3. Device test procedure
 
-| # | Action | Expected (verified only if observed) |
-|---|--------|--------------------------------------|
-| 1 | App cold start | MainActivity launches, no native crash |
-| 2 | Open "Call Audio Feasibility" screen | Screen renders, permission prompt for RECORD_AUDIO |
-| 3 | Press "Start MIC" → speak | Frame counter increases, VAD reacts |
-| 4 | Press "Start Foreground MIC" → Home screen | Capture continues while app backgrounded |
-| 5 | Make a carrier call while capturing | Frames go silent / 0 — confirms platform-blocked carrier audio |
-| 6 | Enable Call Screening → call from unknown number | `CallScreeningServiceImpl` event logged |
+| #   | Action                                           | Expected (verified only if observed)                           |
+| --- | ------------------------------------------------ | -------------------------------------------------------------- |
+| 1   | App cold start                                   | MainActivity launches, no native crash                         |
+| 2   | Open "Call Audio Feasibility" screen             | Screen renders, permission prompt for RECORD_AUDIO             |
+| 3   | Press "Start MIC" → speak                        | Frame counter increases, VAD reacts                            |
+| 4   | Press "Start Foreground MIC" → Home screen       | Capture continues while app backgrounded                       |
+| 5   | Make a carrier call while capturing              | Frames go silent / 0 — confirms platform-blocked carrier audio |
+| 6   | Enable Call Screening → call from unknown number | `CallScreeningServiceImpl` event logged                        |
 
 ```powershell
 # Watch native logs during the test

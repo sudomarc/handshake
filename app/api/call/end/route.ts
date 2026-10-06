@@ -7,13 +7,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { sessionId } = body as { sessionId?: string };
-    
+
     if (!sessionId) {
       return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
     }
 
     const session = await callSessionStore.endSession(sessionId);
-    
+
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
