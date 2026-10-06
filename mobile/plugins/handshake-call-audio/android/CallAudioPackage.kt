@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class CallAudioPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(CallAudioModule(reactContext))
+        return listOf(CallAudioModule(reactContext), HandshakeOverlayModule(reactContext))
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
