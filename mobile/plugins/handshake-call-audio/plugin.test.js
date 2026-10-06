@@ -1,17 +1,14 @@
-const test = require('node:test');
-const assert = require('node:assert');
-const fs = require('fs');
-const path = require('path');
+const test = require("node:test");
+const assert = require("node:assert");
+const fs = require("fs");
+const path = require("path");
 
-const {
-  patchMainApplication,
-  isKotlinSource,
-} = require('./plugin');
+const { patchMainApplication, isKotlinSource } = require("./plugin");
 
-const KOTLIN_IMPORT = 'import com.sudomarc.handshake.callaudio.CallAudioPackage';
-const KOTLIN_ADD = 'packages.add(CallAudioPackage())';
-const JAVA_IMPORT = 'import com.sudomarc.handshake.callaudio.CallAudioPackage;';
-const JAVA_ADD = 'packages.add(new CallAudioPackage());';
+const KOTLIN_IMPORT = "import com.sudomarc.handshake.callaudio.CallAudioPackage";
+const KOTLIN_ADD = "PackageList(this).packages + CallAudioPackage()";
+const JAVA_IMPORT = "import com.sudomarc.handshake.callaudio.CallAudioPackage;";
+const JAVA_ADD = "packages.add(new CallAudioPackage());";
 
 // Pristine Expo SDK 51 template shape: the only packages.add( occurrence is inside
 // a comment, so a naive indexOf-based injection lands in the wrong place.
@@ -56,80 +53,105 @@ public class MainApplication extends Application implements ReactApplication {
 }
 `;
 
-test('detects Kotlin from file extension and content', () => {
-  assert.strictEqual(isKotlinSource(PRISTINE_KOTLIN_TEMPLATE, '/x/MainApplication.kt'), true);
+test("detects Kotlin from file extension and content", () => {
+  assert.strictEqual(isKotlinSource(PRISTINE_KOTLIN_TEMPLATE, "/x/MainApplication.kt"), true);
   assert.strictEqual(isKotlinSource(PRISTINE_KOTLIN_TEMPLATE, undefined), true);
-  assert.strictEqual(isKotlinSource(PRISTINE_JAVA_TEMPLATE, '/x/MainApplication.java'), false);
+  assert.strictEqual(isKotlinSource(PRISTINE_JAVA_TEMPLATE, "/x/MainApplication.java"), false);
   assert.strictEqual(isKotlinSource(PRISTINE_JAVA_TEMPLATE, undefined), false);
 });
 
-test('injects valid Kotlin into a pristine Kotlin template', () => {
+test("injects valid Kotlin into a pristine Kotlin template", () => {
   const out = patchMainApplication(PRISTINE_KOTLIN_TEMPLATE, { isKotlin: true });
 
-  assert.ok(out.includes(KOTLIN_IMPORT), 'Kotlin import missing');
-  assert.ok(out.includes(KOTLIN_ADD), 'Kotlin registration missing');
+  assert.ok(out.includes(KOTLIN_IMPORT), "Kotlin import missing");
+  assert.ok(out.includes(KOTLIN_ADD), "Kotlin registration missing");
 
-  assert.strictEqual(out.includes('new CallAudioPackage'), false, 'Java syntax leaked into Kotlin');
-  assert.strictEqual(out.includes(JAVA_IMPORT), false, 'Java import leaked into Kotlin');
+  assert.strictEqual(out.includes("new CallAudioPackage"), false, "Java syntax leaked into Kotlin");
+  assert.strictEqual(out.includes(JAVA_IMPORT), false, "Java import leaked into Kotlin");
 
-  assert.strictEqual(out.trimStart().startsWith('package com.sudomarc.handshake'), true,
-    'import was injected before the package declaration');
+  assert.strictEqual(
+    out.trimStart().startsWith("package com.sudomarc.handshake"),
+    true,
+    "import was injected before the package declaration",
+  );
 
-  const importCount = out.match(new RegExp(KOTLIN_IMPORT.replace(/\./g, '\\.'), 'g')).length;
+  const importCount = out.match(new RegExp(KOTLIN_IMPORT.replace(/\./g, "\\."), "g")).length;
   assert.strictEqual(importCount, 1, `expected 1 import, got ${importCount}`);
 
-  const addCount = out.match(/packages\.add\(CallAudioPackage\(\)\)/g).length;
-  assert.strictEqual(addCount, 1, `expected 1 registration, got ${addCount}`);
+  assert.ok(
+    out.includes("PackageList(this).packages + CallAudioPackage()"),
+    "expected PackageList(this).packages + CallAudioPackage()",
+  );
 });
 
-test('registration lands inside getPackages(), before the PackageList return', () => {
+test("registration forms valid Kotlin package list return statement", () => {
   const out = patchMainApplication(PRISTINE_KOTLIN_TEMPLATE, { isKotlin: true });
-  const addIdx = out.indexOf(KOTLIN_ADD);
-  const returnIdx = out.indexOf('return PackageList(this).packages');
-  assert.ok(addIdx > -1 && returnIdx > -1);
-  assert.ok(addIdx < returnIdx, 'registration must precede the PackageList return');
+  assert.ok(
+    out.includes("return PackageList(this).packages + CallAudioPackage()"),
+    "registration must attach to PackageList return",
+  );
 });
 
-test('emits Java syntax for a Java MainApplication', () => {
+test("emits Java syntax for a Java MainApplication", () => {
   const out = patchMainApplication(PRISTINE_JAVA_TEMPLATE, { isKotlin: false });
-  assert.ok(out.includes(JAVA_IMPORT), 'Java import missing');
-  assert.ok(out.includes(JAVA_ADD), 'Java registration missing');
-  assert.strictEqual(out.trimStart().startsWith('package com.sudomarc.handshake;'), true,
-    'import was injected before the package declaration');
+  assert.ok(out.includes(JAVA_IMPORT), "Java import missing");
+  assert.ok(out.includes(JAVA_ADD), "Java registration missing");
+  assert.strictEqual(
+    out.trimStart().startsWith("package com.sudomarc.handshake;"),
+    true,
+    "import was injected before the package declaration",
+  );
 });
 
-test('is idempotent across repeated runs', () => {
+test("is idempotent across repeated runs", () => {
   for (const template of [PRISTINE_KOTLIN_TEMPLATE, PRISTINE_JAVA_TEMPLATE]) {
     const isKotlin = isKotlinSource(template, undefined);
     const once = patchMainApplication(template, { isKotlin });
     const twice = patchMainApplication(once, { isKotlin });
     const thrice = patchMainApplication(twice, { isKotlin });
-    assert.strictEqual(twice, once, 'second run changed the output');
-    assert.strictEqual(thrice, once, 'third run changed the output');
+    assert.strictEqual(twice, once, "second run changed the output");
+    assert.strictEqual(thrice, once, "third run changed the output");
   }
 });
 
-test('repairs the previously broken half-patched state', () => {
-  // What the double-escaped-regex plugin actually produced: a Java import sitting
-  // at offset 0 (before `package`) plus a Java registration.
-  const broken = JAVA_IMPORT + '\n' + PRISTINE_KOTLIN_TEMPLATE.replace(
-    '// Packages that cannot be autolinked yet can be added manually here, for example:',
-    '// Packages that cannot be autolinked yet can be added manually here, for example:\n            ' + JAVA_ADD
-  );
+test("repairs the previously broken half-patched state", () => {
+  const broken =
+    JAVA_IMPORT +
+    "\n" +
+    PRISTINE_KOTLIN_TEMPLATE.replace(
+      "return PackageList(this).packages",
+      "packages.add(CallAudioPackage())\n            return PackageList(this).packages",
+    );
   const out = patchMainApplication(broken, { isKotlin: true });
-  assert.strictEqual(out.includes('new CallAudioPackage'), false, 'Java syntax survived repair');
-  assert.strictEqual(out.includes(KOTLIN_ADD), true, 'Kotlin registration not added');
+  assert.strictEqual(
+    out.includes("packages.add(CallAudioPackage())"),
+    false,
+    "Broken packages.add syntax survived repair",
+  );
+  assert.strictEqual(out.includes(KOTLIN_ADD), true, "Kotlin registration not added");
 });
 
-test('is a no-op on the already-correct committed MainApplication.kt', () => {
+test("is a no-op on the already-correct committed MainApplication.kt", () => {
   const committed = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'android', 'app', 'src', 'main', 'java', 'com',
-      'sudomarc', 'handshake', 'MainApplication.kt'),
-    'utf8'
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "sudomarc",
+      "handshake",
+      "MainApplication.kt",
+    ),
+    "utf8",
   );
-  assert.ok(committed.includes(KOTLIN_ADD), 'committed file should already be correct');
-  assert.strictEqual(committed.includes('new CallAudioPackage'), false);
+  assert.ok(committed.includes(KOTLIN_ADD), "committed file should already be correct");
+  assert.strictEqual(committed.includes("new CallAudioPackage"), false);
 
   const out = patchMainApplication(committed, { isKotlin: true });
-  assert.strictEqual(out, committed, 'plugin must not rewrite an already-correct file');
+  assert.strictEqual(out, committed, "plugin must not rewrite an already-correct file");
 });

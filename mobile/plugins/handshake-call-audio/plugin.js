@@ -1,42 +1,70 @@
-const { withAndroidManifest, withGradleProperties, withProjectBuildGradle, withAppBuildGradle, withMainApplication } = require('@expo/config-plugins');
-const fs = require('fs');
-const path = require('path');
+const {
+  withAndroidManifest,
+  withGradleProperties,
+  withProjectBuildGradle,
+  withAppBuildGradle,
+  withMainApplication,
+} = require("@expo/config-plugins");
+const fs = require("fs");
+const path = require("path");
 
-const PACKAGE_NAME = 'com.sudomarc.handshake';
-const NATIVE_DIR = 'plugins/handshake-call-audio/android';
+const PACKAGE_NAME = "com.sudomarc.handshake";
+const NATIVE_DIR = "plugins/handshake-call-audio/android";
 
-const PACKAGE_CLASS = 'CallAudioPackage';
+const PACKAGE_CLASS = "CallAudioPackage";
 const PACKAGE_IMPORT_PATH = `com.sudomarc.handshake.callaudio.${PACKAGE_CLASS}`;
 
-const ESCAPED_IMPORT_PATH = PACKAGE_IMPORT_PATH.replace(/\./g, '\\.');
-const IMPORT_STATEMENT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*$`, 'm');
-const STRIP_IMPORT_RE = new RegExp(`^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*\\r?\\n`, 'gm');
-const ADD_LINE_RE = /^[ \t]*packages\.add\([^\n]*$/m;
+const ESCAPED_IMPORT_PATH = PACKAGE_IMPORT_PATH.replace(/\./g, "\\.");
+const IMPORT_STATEMENT_RE = new RegExp(
+  `^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*$`,
+  "m",
+);
+const STRIP_IMPORT_RE = new RegExp(
+  `^[ \\t]*import[ \\t]+${ESCAPED_IMPORT_PATH}[ \\t]*;?[ \\t]*\\r?\\n`,
+  "gm",
+);
 const IMPORT_LINE_RE = /^[ \t]*import[ \t]+[^\n]*$/gm;
 const PACKAGE_LINE_RE = /^[ \t]*package[ \t]+[^\n]*$/m;
-const PACKAGE_LIST_RETURN_RE = /^[ \t]*return[ \t]+(?:new[ \t]+)?PackageList\([^\n]*$/m;
 
-const REGISTRATION_INDENT = '            ';
+const KOTLIN_REGISTRATION_RE =
+  /return\s+PackageList\(this\)\.packages\s*\+\s*CallAudioPackage\(\)/m;
+const KOTLIN_RETURN_RE = /([ \t]*)return\s+PackageList\(this\)\.packages/m;
+const KOTLIN_BROKEN_ADD_RE = /^[ \t]*packages\.add\((?:new\s+)?CallAudioPackage\(\)\);?\r?\n?/gm;
+
+const JAVA_ADD_RE = /^[ \t]*packages\.add\(new\s+CallAudioPackage\(\)\);?$/m;
+const JAVA_RETURN_RE = /^[ \t]*return[ \t]+(?:new[ \t]+)?PackageList\([^\n]*$/m;
+
+const REGISTRATION_INDENT = "            ";
 
 function getNativeSourcePath(relativePath) {
-  return path.join(__dirname, 'android', relativePath);
+  return path.join(__dirname, "android", relativePath);
 }
 
 function copyNativeFiles() {
-  const sourceDir = path.join(__dirname, 'android');
-  const targetDir = path.join('android', 'app', 'src', 'main', 'java', 'com', 'sudomarc', 'handshake', 'callaudio');
+  const sourceDir = path.join(__dirname, "android");
+  const targetDir = path.join(
+    "android",
+    "app",
+    "src",
+    "main",
+    "java",
+    "com",
+    "sudomarc",
+    "handshake",
+    "callaudio",
+  );
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
   const files = [
-    'CallAudioModule.kt',
-    'CallAudioService.kt',
-    'CallScreeningServiceImpl.kt',
-    'AudioCaptureManager.kt',
-    'VADProcessor.kt',
-    'CallAudioPackage.kt',
+    "CallAudioModule.kt",
+    "CallAudioService.kt",
+    "CallScreeningServiceImpl.kt",
+    "AudioCaptureManager.kt",
+    "VADProcessor.kt",
+    "CallAudioPackage.kt",
   ];
 
   for (const file of files) {
@@ -49,10 +77,10 @@ function copyNativeFiles() {
 }
 
 function isKotlinSource(contents, filePath) {
-  if (typeof filePath === 'string' && /\.kt$/i.test(filePath)) {
+  if (typeof filePath === "string" && /\.kt$/i.test(filePath)) {
     return true;
   }
-  if (typeof filePath === 'string' && /\.java$/i.test(filePath)) {
+  if (typeof filePath === "string" && /\.java$/i.test(filePath)) {
     return false;
   }
   return /^\s*class\s+MainApplication\s*:\s*Application\s*\(/m.test(contents);
@@ -60,12 +88,6 @@ function isKotlinSource(contents, filePath) {
 
 function buildImportStatement(isKotlin) {
   return isKotlin ? `import ${PACKAGE_IMPORT_PATH}` : `import ${PACKAGE_IMPORT_PATH};`;
-}
-
-function buildRegistration(isKotlin) {
-  return isKotlin
-    ? `packages.add(${PACKAGE_CLASS}())`
-    : `packages.add(new ${PACKAGE_CLASS}());`;
 }
 
 function insertImport(contents, statement) {
@@ -85,11 +107,9 @@ function insertImport(contents, statement) {
 }
 
 function stripImports(contents) {
-  return contents.replace(STRIP_IMPORT_RE, '');
+  return contents.replace(STRIP_IMPORT_RE, "");
 }
 
-// An existing import is only reusable when it sits after the package declaration;
-// anything earlier is a corrupt placement produced by an earlier buggy run.
 function findReusableImport(contents) {
   const found = IMPORT_STATEMENT_RE.exec(contents);
   const packageLine = PACKAGE_LINE_RE.exec(contents);
@@ -99,33 +119,10 @@ function findReusableImport(contents) {
   return found;
 }
 
-function findReusableRegistration(contents) {
-  const found = ADD_LINE_RE.exec(contents);
-  const packageLine = PACKAGE_LINE_RE.exec(contents);
-  if (!found || !packageLine || found.index < packageLine.index) {
-    return null;
-  }
-  return found;
-}
-
 function replaceAt(contents, match, replacement) {
-  return contents.slice(0, match.index) + replacement + contents.slice(match.index + match[0].length);
-}
-
-// Rewrites a matched line in place, keeping its original indentation and line ending
-// so that CRLF sources stay byte-identical and the plugin never reflows the file.
-function replaceLineAt(contents, match, statement) {
-  const indent = /^[ \t]*/.exec(match[0])[0];
-  const eol = /\r?\n?$/.exec(match[0])[0];
-  return replaceAt(contents, match, `${indent}${statement}${eol}`);
-}
-
-function insertRegistration(contents, statement) {
-  const returnLine = PACKAGE_LIST_RETURN_RE.exec(contents);
-  if (!returnLine) {
-    return null;
-  }
-  return contents.slice(0, returnLine.index) + `${REGISTRATION_INDENT}${statement}\n` + contents.slice(returnLine.index);
+  return (
+    contents.slice(0, match.index) + replacement + contents.slice(match.index + match[0].length)
+  );
 }
 
 function patchMainApplication(contents, { isKotlin }) {
@@ -136,21 +133,35 @@ function patchMainApplication(contents, { isKotlin }) {
     out = replaceAt(out, existingImport, buildImportStatement(isKotlin));
   } else {
     const next = insertImport(stripImports(out), buildImportStatement(isKotlin));
-    if (next === null) {
-      return out;
+    if (next !== null) {
+      out = next;
     }
-    out = next;
   }
 
-  const existingRegistration = findReusableRegistration(out);
-  if (existingRegistration) {
-    out = replaceLineAt(out, existingRegistration, buildRegistration(isKotlin));
-  } else {
-    const next = insertRegistration(out, buildRegistration(isKotlin));
-    if (next === null) {
-      return out;
+  if (isKotlin) {
+    out = out.replace(KOTLIN_BROKEN_ADD_RE, "");
+
+    if (!KOTLIN_REGISTRATION_RE.test(out)) {
+      const returnMatch = KOTLIN_RETURN_RE.exec(out);
+      if (returnMatch) {
+        out = replaceAt(
+          out,
+          returnMatch,
+          `${returnMatch[1]}return PackageList(this).packages + ${PACKAGE_CLASS}()`,
+        );
+      }
     }
-    out = next;
+  } else {
+    const existingRegistration = JAVA_ADD_RE.exec(out);
+    if (!existingRegistration) {
+      const returnLine = JAVA_RETURN_RE.exec(out);
+      if (returnLine) {
+        out =
+          out.slice(0, returnLine.index) +
+          `${REGISTRATION_INDENT}packages.add(new ${PACKAGE_CLASS}());\n` +
+          out.slice(returnLine.index);
+      }
+    }
   }
 
   return out;
@@ -160,29 +171,25 @@ function withCallAudioPlugin(config) {
   config = withAndroidManifest(config, (config) => {
     const manifest = config.modResults;
 
-    // Add permissions
     const permissions = [
-      'android.permission.RECORD_AUDIO',
-      'android.permission.FOREGROUND_SERVICE',
-      'android.permission.FOREGROUND_SERVICE_MICROPHONE',
-      'android.permission.READ_PHONE_STATE',
-      'android.permission.READ_CALL_LOG',
-      'android.permission.ANSWER_PHONE_CALLS',
+      "android.permission.RECORD_AUDIO",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+      "android.permission.READ_PHONE_STATE",
+      "android.permission.READ_CALL_LOG",
+      "android.permission.ANSWER_PHONE_CALLS",
     ];
 
     for (const perm of permissions) {
-      if (!manifest.manifest['uses-permission']) {
-        manifest.manifest['uses-permission'] = [];
+      if (!manifest.manifest["uses-permission"]) {
+        manifest.manifest["uses-permission"] = [];
       }
-      const exists = manifest.manifest['uses-permission'].some(
-        (p) => p.$['android:name'] === perm
-      );
+      const exists = manifest.manifest["uses-permission"].some((p) => p.$["android:name"] === perm);
       if (!exists) {
-        manifest.manifest['uses-permission'].push({ $: { 'android:name': perm } });
+        manifest.manifest["uses-permission"].push({ $: { "android:name": perm } });
       }
     }
 
-    // Add CallScreeningService
     if (!manifest.manifest.application) {
       manifest.manifest.application = [{}];
     }
@@ -192,20 +199,20 @@ function withCallAudioPlugin(config) {
 
     const callScreeningService = {
       $: {
-        'android:name': `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
-        'android:permission': 'android.permission.BIND_SCREENING_SERVICE',
-        'android:exported': 'true',
+        "android:name": `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
+        "android:permission": "android.permission.BIND_SCREENING_SERVICE",
+        "android:exported": "true",
       },
-      'intent-filter': [
+      "intent-filter": [
         {
-          action: [{ $: { 'android:name': 'android.telecom.CallScreeningService' } }],
+          action: [{ $: { "android:name": "android.telecom.CallScreeningService" } }],
         },
       ],
-      'meta-data': [
+      "meta-data": [
         {
           $: {
-            'android:name': 'android.telecom.CALL_SCREENING_SERVICE_UI',
-            'android:value': 'false',
+            "android:name": "android.telecom.CALL_SCREENING_SERVICE_UI",
+            "android:value": "false",
           },
         },
       ],
@@ -213,22 +220,22 @@ function withCallAudioPlugin(config) {
 
     const audioCaptureService = {
       $: {
-        'android:name': `${PACKAGE_NAME}.callaudio.CallAudioService`,
-        'android:permission': 'android.permission.BIND_FOREGROUND_SERVICE',
-        'android:exported': 'false',
-        'android:foregroundServiceType': 'microphone',
+        "android:name": `${PACKAGE_NAME}.callaudio.CallAudioService`,
+        "android:permission": "android.permission.BIND_FOREGROUND_SERVICE",
+        "android:exported": "false",
+        "android:foregroundServiceType": "microphone",
       },
     };
 
     const existingScreening = manifest.manifest.application[0].service.find(
-      (s) => s.$ && s.$['android:name'] === `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`
+      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
     );
     if (!existingScreening) {
       manifest.manifest.application[0].service.push(callScreeningService);
     }
 
     const existingAudio = manifest.manifest.application[0].service.find(
-      (s) => s.$ && s.$['android:name'] === `${PACKAGE_NAME}.callaudio.CallAudioService`
+      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallAudioService`,
     );
     if (!existingAudio) {
       manifest.manifest.application[0].service.push(audioCaptureService);
@@ -238,14 +245,9 @@ function withCallAudioPlugin(config) {
   });
 
   config = withAppBuildGradle(config, (config) => {
-    const content = config.modResults.contents;
-    if (!content.includes('handshake-call-audio')) {
-      // Add any native dependencies if needed
-    }
     return config;
   });
 
-  // Copy native files after prebuild
   config = withProjectBuildGradle(config, (config) => {
     copyNativeFiles();
     return config;
