@@ -18,7 +18,7 @@ export function CreatePair() {
       const json: unknown = await res.json();
       if (!res.ok) throw new Error("request failed");
       setPairId(createPairResponseSchema.parse(json).pairId);
-      setStep("created");
+      setStep("choosing");
     } catch {
       setError("We couldn't create the trusted person. Try again.");
     } finally {
@@ -28,6 +28,7 @@ export function CreatePair() {
 
   function handleReset() {
     setPairId(null);
+    setError(null);
     setStep("idle");
   }
 
@@ -58,7 +59,7 @@ export function CreatePair() {
         </div>
         <button
           type="button"
-          onClick={() => setStep("choosing")}
+          onClick={handleCreate}
           disabled={busy}
           className="btn-primary btn-lg btn-block"
         >
@@ -70,7 +71,7 @@ export function CreatePair() {
               d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
             />
           </svg>
-          <span>Add a trusted person</span>
+          <span>{busy ? "Creating..." : "Add a trusted person"}</span>
         </button>
         {error && (
           <p role="alert" className="error-text text-center">
@@ -128,7 +129,7 @@ export function CreatePair() {
             <span className="block text-sm text-neutral-500 mt-1">Verify the call</span>
           </Link>
         </div>
-        <button onClick={() => setStep("idle")} className="btn-ghost btn-block">
+        <button onClick={handleReset} className="btn-ghost btn-block">
           Start over
         </button>
       </div>
@@ -183,7 +184,7 @@ export function CreatePair() {
         </Link>
       </div>
 
-      <button onClick={() => setStep("idle")} className="btn-ghost btn-block">
+      <button onClick={handleReset} className="btn-ghost btn-block">
         Add another person
       </button>
     </div>

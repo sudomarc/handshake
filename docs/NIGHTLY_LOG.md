@@ -79,3 +79,45 @@
 1. Re-verify release APK on device after CI build completes.
 2. Review remaining audit findings (F1/F2/F3) and Devpost submission checklist items.
 3. Rehearse `DEMO_SCRIPT.md` end to end.
+
+## 2026-10-06 (Run 3)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS.
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS.
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS.
+  - Unit tests (`npm test`): PASS (21/21 tests passed).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things) & Priority 3 (Audit Findings):**
+  - Fixed `components/CreatePair.tsx` button flow and state management: wired `handleCreate` to `POST /api/circle` on button click so `pairId` is obtained before moving to `choosing` state (fixing `/codes/null` and `/verify/null` links) and wired `handleReset` when starting over. Cleared 2 ESLint warnings.
+  - Resolved Audit Finding F3 (AI Endpoint Rate-Limiting Vulnerability): Updated `/api/analyze` and `/api/challenge` to enforce strict IP-based rate limiting (`10 reqs/min`) alongside pair-based rate limiting (`10 reqs/min`), preventing cost-abuse credit depletion from generated/random `pairId`s.
+  - Added test case in `tests/lib.test.ts` verifying independent IP and pair bucket rate limiting.
+
+### Changes
+- `components/CreatePair.tsx`: Wired `handleCreate` to button click in `idle` step and `handleReset` in `choosing`/`created` steps.
+- `app/api/analyze/route.ts`: Added `analyze:ip:${ip}` rate limiting before checking pair rate limit (F3).
+- `app/api/challenge/route.ts`: Added `challenge:ip:${ip}` rate limiting alongside pair rate limit (F3).
+- `tests/lib.test.ts`: Added test case verifying IP and pair rate limit bucket behavior.
+
+### Gates & Results
+- `npm test`: 22/22 tests passed (15 library tests + 7 plugin tests).
+- Root lint & build (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+- Code review: `#Correct#`.
+
+### Known Risks & Open Findings
+- On-device test findings from `docs/DEVICE_TEST_REPORT_2026-10-06.md`:
+  - Release APK re-verification on device outstanding after CI build completes.
+  - Two-device WebRTC call flow remains untested due to lack of second physical device / emulator.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Two-device WebRTC call test.
+
+### Plan for Tomorrow
+1. Re-verify release APK on device after CI build completes.
+2. Review remaining audit findings (F1/F2) and Devpost submission checklist items.
+3. Rehearse `DEMO_SCRIPT.md` end to end.

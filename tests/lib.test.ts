@@ -107,6 +107,21 @@ describe("lib/rateLimit", () => {
     const r5 = consume(key, max, windowMs, now + windowMs + 1000);
     assert.equal(r5.allowed, true);
   });
+
+  test("consume manages independent IP and pair buckets", () => {
+    const ipKey = "analyze:ip:192.168.1.1";
+    const pairKey = "analyze:pair:pair-1";
+
+    // 10 requests allowed per IP
+    for (let i = 0; i < 10; i++) {
+      assert.equal(consume(ipKey, 10, 60000).allowed, true);
+    }
+    // 11th request on same IP is blocked regardless of pair key
+    assert.equal(consume(ipKey, 10, 60000).allowed, false);
+
+    // Pair bucket under a different key is still within pair limit
+    assert.equal(consume(pairKey, 10, 60000).allowed, true);
+  });
 });
 
 describe("lib/schemas", () => {
