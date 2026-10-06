@@ -51,7 +51,9 @@ jobs:
         run: npx expo prebuild --platform android --non-interactive
 
       - name: Build debug APK
-        run: ./android/gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x android/gradlew
+          ./android/gradlew :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
