@@ -1,4 +1,4 @@
-import { CallSession, CreateCallSessionRequest, CallOffer, CallAnswer, IceCandidate } from "@/lib/callSchemas";
+import { CallSession, CreateCallSessionRequest, CallOffer, CallAnswer, IceCandidate } from "./callSchemas";
 
 type StoredCallSession = CallSession;
 
@@ -9,6 +9,7 @@ class CallSessionStore {
   constructor() {
     // Clean up old sessions every 5 minutes
     this.pendingCleanup = setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    this.pendingCleanup.unref?.();
   }
 
   private cleanup() {

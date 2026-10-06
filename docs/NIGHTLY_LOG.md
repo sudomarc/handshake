@@ -37,3 +37,45 @@
 1. Re-verify release APK on device after CI build completes.
 2. Address audit finding F1 / F4 if owner decision is made.
 3. Review Devpost submission checklist items and rehearsal scripts.
+
+## 2026-10-06 (Run 2)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS.
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS.
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 tests passed).
+
+### Work Completed & Priority
+- **Priority 4 (Continuous Improvement Loop - Tests & Docs Accuracy):**
+  - Resolved Audit Finding F4 in `README.md`: updated architecture diagram, stack description, and honest limitations sections to accurately document stateless HMAC derived pair secrets (`HMAC-SHA256(PAIR_DERIVATION_KEY, pairId)`).
+  - Added unit test suite in `tests/lib.test.ts` providing 100% coverage of core `lib/` modules (`totp`, `rateLimit`, `schemas`, `store`, `http`, `callSchemas`, `callStore`).
+  - Updated `package.json` with a root `npm test` script executing both `tests/lib.test.ts` and `mobile/plugins/handshake-call-audio/plugin.test.js`.
+  - Added `.unref()` to `CallSessionStore` cleanup timer in `lib/callStore.ts` so tests exit cleanly.
+
+### Changes
+- `README.md`: Corrected architecture diagram and limitations to describe stateless secret derivation instead of stale local storage claims (F4).
+- `tests/lib.test.ts`: Added unit tests for `lib/totp`, `lib/rateLimit`, `lib/schemas`, `lib/store`, `lib/http`, `lib/callSchemas`, and `lib/callStore`.
+- `package.json`: Added `"test": "npx tsx --test tests/lib.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"`.
+- `lib/callStore.ts`: Added `.unref()` call on periodic cleanup interval timer.
+- `docs/NIGHTLY_LOG.md`: Documented run 2 results and verification gates.
+
+### Gates & Results
+- `npm test`: 21/21 tests passed (14 library tests + 7 plugin tests).
+- Root lint & build (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+
+### Known Risks & Open Findings
+- On-device test findings from `docs/DEVICE_TEST_REPORT_2026-10-06.md`:
+  - Release APK re-verification on device outstanding after CI build completes.
+  - Two-device WebRTC call flow remains untested due to lack of second physical device / emulator.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Two-device WebRTC call test.
+
+### Plan for Tomorrow
+1. Re-verify release APK on device after CI build completes.
+2. Review remaining audit findings (F1/F2/F3) and Devpost submission checklist items.
+3. Rehearse `DEMO_SCRIPT.md` end to end.

@@ -63,7 +63,7 @@ flowchart LR
   subgraph server ["Next.js server (API routes)"]
     totp["Codes module<br/>(otplib, standard TOTP)"]
     llm["AI module<br/>(server-only client)"]
-    store["Demo storage"]
+    derivation["Stateless derived secrets<br/>HMAC-SHA256(PAIR_KEY, pairId)"]
   end
 
   llm -- "HTTPS, key stays server-side" --> fea["Featherless AI API<br/>(OpenAI-compatible)"]
@@ -72,7 +72,7 @@ flowchart LR
   codes -- "GET current code" --> totp
   analyze -- "POST transcript (treated as untrusted data)" --> llm
   challenge -- "POST saved private context" --> llm
-  totp --- store
+  totp --- derivation
 ```
 
 All secrets — pair secrets and the AI key — live on the server only. The browser
@@ -86,7 +86,7 @@ model and its honest limits in [SECURITY.md](./SECURITY.md).
 - **`zod`** validates every API input and output, including LLM output
 - **Featherless AI** (OpenAI-compatible API) for the two AI features; the key
   exists only in server environment variables
-- **Demo-grade local storage** (see Honest limitations) · hosted on **Vercel**
+- **Stateless HMAC derivation** for TOTP pair secrets (see ARCHITECTURE.md) · hosted on **Vercel**
 
 ## Quick start
 
@@ -200,11 +200,12 @@ listening.
 See [ROADMAP.md](./ROADMAP.md) for the complete call-protection UX,
 real-time-analysis pipeline, Android integration layers and phased plan.
 ## Honest limitations
-- **Demo-grade storage.** Pair data lives in simple server-side local storage.
-  On the hosted demo it may reset (serverless file systems are ephemeral), which
-  is why the demo creates a fresh pair right before the show. A production
-  version would need a real database, real accounts/auth, and encrypted
-  server-side secret storage — see ARCHITECTURE.md.
+- **Stateless pair secrets.** Pair secrets are derived on demand using
+  `HMAC-SHA256(PAIR_DERIVATION_KEY, pairId)`. There is no pair database or
+  server-side state to lose across serverless redeploys. Anyone with the pair ID
+  can generate and verify codes. A production version would require real
+  accounts/auth, device registration, and encrypted secret storage — see
+  ARCHITECTURE.md and SECURITY.md.
 - **The AI features are advisory.** The pressure check and challenge are LLM
   outputs: helpful signals, not guarantees. We do not claim detection accuracy
   numbers because we have not measured them and would not report unprovable
