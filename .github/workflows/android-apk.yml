@@ -34,3 +34,5 @@ jobs:
           name: handshake-apk
           path: mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
+
+# Triggered rebuild from main.
