@@ -94,15 +94,14 @@ export const challengeResponseSchema = z.object({
 });
 export type ChallengeResponse = z.infer<typeof challengeResponseSchema>;
 
-// Mirrors pressureCheckResponseSchema in the backend (lib/schemas.ts) for POST /api/analyze.
-export const pressureVerdictSchema = z.enum(["likely_human", "likely_clone", "uncertain"]);
-export type PressureVerdict = z.infer<typeof pressureVerdictSchema>;
+export const pressureRiskLevelSchema = z.enum(["low", "medium", "high"]);
+export type PressureRiskLevel = z.infer<typeof pressureRiskLevelSchema>;
 
 export const pressureCheckResponseSchema = z.object({
   pressureScore: z.number().int().min(0).max(100),
-  humanLikelihood: z.number().int().min(0).max(100),
+  riskLevel: pressureRiskLevelSchema,
   reasoning: z.string().max(500),
-  verdict: pressureVerdictSchema,
 });
 export type PressureCheckResponse = z.infer<typeof pressureCheckResponseSchema>;
+
 
