@@ -170,6 +170,7 @@ function withCallAudioPlugin(config) {
     const manifest = config.modResults;
 
     const permissions = [
+      "android.permission.FOREGROUND_SERVICE",
       "android.permission.READ_PHONE_STATE",
       "android.permission.READ_CALL_LOG",
       "android.permission.SYSTEM_ALERT_WINDOW",
