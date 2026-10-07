@@ -208,4 +208,4 @@ the next useful action.
 
 The Android audio-feasibility research remains archived in `docs/CALL_AUDIO_FEASIBILITY.md`. It established that ordinary carrier-call remote audio is not available to the tested third-party app path. It is retained as evidence, not as a shipped feature.
 
-The former Handshake-controlled WebRTC call screen and its mobile client have been removed from the current product. Any future supported audio architecture must be independently verified before implementation.
+The former internal call prototype and experimental audio path have been removed from the current product. Any future supported audio architecture must be independently verified before implementation.
