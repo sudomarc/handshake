@@ -1,215 +1,170 @@
 import Link from "next/link";
-import { PageShell } from "@/components/PageShell";
+
+const steps = [
+  {
+    number: "01",
+    title: "Choose someone you trust",
+    text: "Create a private connection with a family member, partner, or friend.",
+  },
+  {
+    number: "02",
+    title: "Get a changing code",
+    text: "Handshake generates a short code that changes every 30 seconds.",
+  },
+  {
+    number: "03",
+    title: "Verify before you act",
+    text: "Ask the person for the current code. Match it before sending money or sensitive information.",
+  },
+];
 
 export default function Home() {
   return (
-    <PageShell title="Handshake">
-      <div className="section animate-in">
-        {/* Hero */}
-        <div className="text-center space-y-3 py-4">
-          <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-4 py-1.5 text-sm font-medium text-sky-400">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-            </span>
-            Live verification
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight text-neutral-50">
+    <main className="min-h-screen overflow-hidden">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <Link href="/" className="text-lg font-semibold tracking-tight text-white" aria-label="Handshake home">
+          Handshake
+        </Link>
+
+        <Link
+          href="/circle"
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+        >
+          Get started
+        </Link>
+      </header>
+
+      <section className="relative mx-auto max-w-6xl px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
+        <div className="pointer-events-none absolute left-1/2 top-0 -z-10 h-80 w-80 -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-sky-400">
+            Trust, when it matters
+          </p>
+
+          <h1 className="text-balance text-5xl font-semibold tracking-[-0.04em] text-white sm:text-7xl">
             Verify the person.
-            <br />
-            <span className="text-gradient">Not just the voice.</span>
+            <span className="block text-neutral-500">Not just the voice.</span>
           </h1>
-          <p className="text-lg text-neutral-400 max-w-md mx-auto text-balance">
-            When a caller sounds like someone you trust, use Handshake to check whether they can
-            prove who they are.
+
+          <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-neutral-400 sm:text-xl">
+            Voice cloning can make a fake sound real. Handshake gives people a simple way to verify
+            who they are before a trusted conversation turns into a scam.
+          </p>
+
+          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link
+              href="/circle"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-6 font-semibold text-neutral-950 transition hover:bg-neutral-200"
+            >
+              Protect your trusted circle
+            </Link>
+            <a
+              href="#how-it-works"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 font-medium text-white transition hover:bg-white/10"
+            >
+              See how it works
+            </a>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-16 max-w-4xl rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/30 sm:mt-20 sm:p-6">
+          <div className="rounded-2xl border border-white/10 bg-neutral-950 p-6 sm:p-9">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-neutral-500">Trusted connection</span>
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Protected
+              </span>
+            </div>
+
+            <div className="py-12 text-center sm:py-16">
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
+                Current code
+              </p>
+              <p className="mt-3 font-mono text-5xl font-bold tracking-[0.18em] text-white sm:text-7xl">
+                537 378
+              </p>
+              <p className="mt-4 text-sm text-neutral-500">Changes every 30 seconds</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-wider text-neutral-500">Identity</p>
+                <p className="mt-2 font-medium text-white">Verified contact</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-wider text-neutral-500">Trust</p>
+                <p className="mt-2 font-medium text-white">Private connection</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-wider text-neutral-500">Action</p>
+                <p className="mt-2 font-medium text-white">Verify before acting</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="border-y border-white/10 bg-white/[0.02]">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+          <div className="max-w-2xl">
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-400">How it works</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              A simple check before trust becomes a costly mistake.
+            </h2>
+          </div>
+
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {steps.map((step) => (
+              <article
+                key={step.number}
+                className="rounded-2xl border border-white/10 bg-neutral-950 p-6"
+              >
+                <span className="font-mono text-sm text-neutral-600">{step.number}</span>
+                <h3 className="mt-8 text-xl font-semibold text-white">{step.title}</h3>
+                <p className="mt-3 leading-7 text-neutral-400">{step.text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
+        <div className="grid gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-end">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-400">Built around trust</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              The goal is not to guess. It is to verify.
+            </h2>
+          </div>
+          <p className="leading-7 text-neutral-400">
+            Handshake keeps verification simple: trusted people share a secret, and the proof changes
+            over time. Other risk signals can help you slow down, but they do not replace human
+            judgment.
           </p>
         </div>
 
-        {/* Primary CTA */}
-        <div className="space-y-4">
-          <Link href="/verify" className="btn-primary btn-lg btn-block group">
-            <svg
-              className="h-5 w-5 transition-transform group-hover:translate-x-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-            <span>Verify a person</span>
-          </Link>
-
-          <p className="text-sm text-neutral-500 text-center">Check a call right now</p>
-        </div>
-
-        {/* Secondary CTA */}
-        <div className="divider my-4" />
-
-        <Link href="/circle" className="btn-secondary btn-block group">
-          <svg
-            className="h-5 w-5 transition-transform group-hover:translate-x-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="mt-10 flex flex-col items-start justify-between gap-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:p-8">
+          <div>
+            <h3 className="text-xl font-semibold text-white">Ready to protect your circle?</h3>
+            <p className="mt-2 text-neutral-400">Set up your first trusted connection.</p>
+          </div>
+          <Link
+            href="/circle"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 font-semibold text-neutral-950 transition hover:bg-neutral-200"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-            />
-          </svg>
-          <span className="flex items-center justify-center gap-2">
-            <span>My trusted people</span>
-          </span>
-        </Link>
-        <p className="text-sm text-neutral-500 text-center">Add or manage trusted contacts</p>
-
-        {/* Secondary tools */}
-        <div className="divider my-4" />
-
-        <nav className="space-y-2" aria-label="Other tools">
-          <p className="text-xs text-neutral-500 uppercase tracking-wider">Other tools</p>
-
-          <Link href="/analyze" className="card-interactive p-4 flex items-center gap-4 group">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <svg
-                className="h-5 w-5 text-sky-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <span className="block font-medium text-neutral-50">Pressure Check</span>
-              <span className="block text-sm text-neutral-500 mt-0.5">
-                Spot pressure tactics in a message
-              </span>
-            </div>
-            <svg
-              className="h-5 w-5 text-neutral-600 group-hover:text-neutral-400 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            Get started
           </Link>
+        </div>
+      </section>
 
-          <Link href="/challenge" className="card-interactive p-4 flex items-center gap-4 group">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <svg
-                className="h-5 w-5 text-amber-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <span className="block font-medium text-neutral-50">Personal Question</span>
-              <span className="block text-sm text-neutral-500 mt-0.5">
-                Generate a question only the real person can answer
-              </span>
-            </div>
-            <svg
-              className="h-5 w-5 text-neutral-600 group-hover:text-neutral-400 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-
-          <Link href="/first-hour" className="card-interactive p-4 flex items-center gap-4 group">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <svg
-                className="h-5 w-5 text-emerald-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <span className="block font-medium text-neutral-50">The First Hour</span>
-              <span className="block text-sm text-neutral-500 mt-0.5">
-                Calm steps if money has already moved
-              </span>
-            </div>
-            <svg
-              className="h-5 w-5 text-neutral-600 group-hover:text-neutral-400 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-
-          <Link href="/demo" className="card-interactive p-4 flex items-center gap-4 group">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <svg
-                className="h-5 w-5 text-purple-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 20l4-16m4 4l4 4-4 4M6 16l4 4-4 4"
-                />
-              </svg>
-            </div>
-            <div className="flex-1 text-left">
-              <span className="block font-medium text-neutral-50">Demo Mode</span>
-              <span className="block text-sm text-neutral-500 mt-0.5">
-                Test verification with two devices
-              </span>
-            </div>
-            <svg
-              className="h-5 w-5 text-neutral-600 group-hover:text-neutral-400 transition-colors"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </nav>
-
-        {/* Footer note */}
-        <p className="text-xs text-neutral-500 text-center pt-4">
-          No accounts. No tracking. Just a shared secret between you and the person you trust.
-        </p>
-      </div>
-    </PageShell>
+      <footer className="border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p>Handshake</p>
+          <p>Verify the person. Not just the voice.</p>
+        </div>
+      </footer>
+    </main>
   );
 }
