@@ -71,7 +71,7 @@ export default function Home() {
         <div className="mx-auto mt-16 max-w-4xl rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/30 sm:mt-20 sm:p-6">
           <div className="rounded-2xl border border-white/10 bg-neutral-950 p-6 sm:p-9">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-neutral-500">Trusted connection</span>
+              <span className="text-sm text-neutral-500">Product preview</span>
               <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 Protected
