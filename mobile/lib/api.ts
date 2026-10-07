@@ -106,39 +106,4 @@ export const api = {
       method: "POST",
       body: { pairId, context },
     }),
-
-  // Call API
-  createCallSession: (pairId: string, callerId: string, callerName?: string): Promise<CreateCallSessionResponse> =>
-    request("/api/call/session", createCallSessionResponseSchema, {
-      method: "POST",
-      body: { pairId, callerId, callerName },
-    }),
-
-  getCallSession: (sessionId: string, deviceId: string): Promise<CallSession> =>
-    request(`/api/call/session/${sessionId}?deviceId=${encodeURIComponent(deviceId)}`, callSessionSchema),
-
-  sendOffer: (sessionId: string, offer: { type: "offer"; sdp: string }, fromDeviceId: string): Promise<CallSession> =>
-    request("/api/call/offer", callSessionSchema, {
-      method: "POST",
-      body: { sessionId, offer, fromDeviceId },
-    }),
-
-  sendAnswer: (sessionId: string, answer: { type: "answer"; sdp: string }, fromDeviceId: string): Promise<CallSession> =>
-    request("/api/call/answer", callSessionSchema, {
-      method: "POST",
-      body: { sessionId, answer, fromDeviceId },
-    }),
-
-  sendIceCandidate: (sessionId: string, candidate: { candidate: string; sdpMid: string | null; sdpMLineIndex: number | null }, fromDeviceId: string): Promise<CallSession> =>
-    request("/api/call/ice", callSessionSchema, {
-      method: "POST",
-      body: { sessionId, candidate, fromDeviceId },
-    }),
-
-  endCall: (sessionId: string): Promise<CallSession> =>
-    request("/api/call/end", callSessionSchema, {
-      method: "POST",
-      body: { sessionId },
-    }),
 };
-
