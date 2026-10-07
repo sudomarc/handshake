@@ -14,7 +14,7 @@ export default function CodesScreen() {
         <>
           <Card>
             <Body>
-              Read these 6 digits aloud when your trusted person asks. Never send them by text.
+              Read the current 6-digit code aloud when your trusted person asks. Never send it by text.
             </Body>
           </Card>
           <CodeDisplay pairId={parsed.data} />
