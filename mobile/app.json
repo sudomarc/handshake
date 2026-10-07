@@ -36,14 +36,7 @@
           "configureAndroidBackup": true
         }
       ],
-      "./plugins/handshake-call-audio/plugin.js",
-      [
-        "@config-plugins/react-native-webrtc",
-        {
-          "microphonePermission": "Allow Handshake to access your microphone for protected calls",
-          "cameraPermission": "Allow Handshake to access your camera for video calls"
-        }
-      ]
+      "./plugins/handshake-call-audio/plugin.js"
     ],
     "scheme": "handshake",
     "extra": {

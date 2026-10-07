@@ -59,11 +59,7 @@ function copyNativeFiles() {
   }
 
   const files = [
-    "CallAudioModule.kt",
-    "CallAudioService.kt",
     "CallScreeningServiceImpl.kt",
-    "AudioCaptureManager.kt",
-    "VADProcessor.kt",
     "CallAudioPackage.kt",
     "HandshakeOverlayModule.kt",
     "HandshakeOverlayService.kt",
@@ -174,12 +170,8 @@ function withCallAudioPlugin(config) {
     const manifest = config.modResults;
 
     const permissions = [
-      "android.permission.RECORD_AUDIO",
       "android.permission.FOREGROUND_SERVICE",
-      "android.permission.FOREGROUND_SERVICE_MICROPHONE",
       "android.permission.READ_PHONE_STATE",
-      "android.permission.READ_CALL_LOG",
-      "android.permission.ANSWER_PHONE_CALLS",
       "android.permission.SYSTEM_ALERT_WINDOW",
       "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
     ];
@@ -201,37 +193,6 @@ function withCallAudioPlugin(config) {
       manifest.manifest.application[0].service = [];
     }
 
-    const callScreeningService = {
-      $: {
-        "android:name": `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
-        "android:permission": "android.permission.BIND_SCREENING_SERVICE",
-        "android:exported": "true",
-      },
-      "intent-filter": [
-        {
-          action: [{ $: { "android:name": "android.telecom.CallScreeningService" } }],
-        },
-      ],
-      "meta-data": [
-        {
-          $: {
-            "android:name": "android.telecom.CALL_SCREENING_SERVICE_UI",
-            "android:value": "false",
-          },
-        },
-      ],
-    };
-
-    const audioCaptureService = {
-      $: {
-        "android:name": `${PACKAGE_NAME}.callaudio.CallAudioService`,
-        "android:permission": "android.permission.BIND_FOREGROUND_SERVICE",
-        "android:exported": "false",
-        "android:foregroundServiceType": "microphone",
-      },
-    };
-
-
     const overlayService = {
       $: {
         "android:name": `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
@@ -242,28 +203,13 @@ function withCallAudioPlugin(config) {
         {
           $: {
             "android:name": "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE",
-            "android:value": "User-enabled call protection overlay shown above supported communication apps",
+            "android:value": "User-enabled Handshake warning overlay shown above phone and calling apps",
           },
         },
       ],
     };
 
-    const existingScreening = manifest.manifest.application[0].service.find(
-      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
-    );
-    if (!existingScreening) {
-      manifest.manifest.application[0].service.push(callScreeningService);
-    }
-
-    const existingAudio = manifest.manifest.application[0].service.find(
-      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallAudioService`,
-    );
-    if (!existingAudio) {
-      manifest.manifest.application[0].service.push(audioCaptureService);
-    }
-
-
-    const existingOverlay = manifest.manifest.application[0].service.find(
+   const existingOverlay = manifest.manifest.application[0].service.find(
       (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
     );
     if (!existingOverlay) {

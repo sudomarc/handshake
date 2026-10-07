@@ -21,7 +21,6 @@ export type EscalationOutcome = "pass" | "fail";
 
 export interface ShieldState {
   status: ShieldStatus;
-  callActive: boolean;
   transcript: string;
   checking: boolean;
   check: TranscriptCheck | null;
@@ -33,18 +32,15 @@ export interface ShieldState {
 }
 
 export interface ShieldApi extends ShieldState {
-  primaryLabel: string;
   setTranscript: (value: string) => void;
   startAnalysis: () => void;
   submitTranscript: () => Promise<void>;
   resolveEscalation: (outcome: EscalationOutcome) => void;
   reset: () => void;
-  reportCallActive: (active: boolean) => void;
 }
 
 const INITIAL: ShieldState = {
   status: "safe",
-  callActive: false,
   transcript: "",
   checking: false,
   check: null,
@@ -66,31 +62,24 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
   const { activePair, pairs } = usePairs();
   const runRef = useRef(0);
 
-  const reportCallActive = useCallback((active: boolean) => {
-    setState((prev) => (prev.callActive === active ? prev : { ...prev, callActive: active }));
-  }, []);
-
   const setTranscript = useCallback((value: string) => {
     setState((prev) => ({ ...prev, transcript: value, error: null }));
   }, []);
 
   const startAnalysis = useCallback(() => {
     runRef.current += 1;
-    setState((prev) => ({
-      ...INITIAL,
-      callActive: prev.callActive,
-      status: "analyzing",
-    }));
+    setState({ ...INITIAL, status: "analyzing" });
   }, []);
 
   const reset = useCallback(() => {
     runRef.current += 1;
-    setState((prev) => ({ ...INITIAL, callActive: prev.callActive }));
+    setState(() => ({ ...INITIAL }));
   }, []);
 
   const escalate = useCallback(
-    (run: number, context: string) => {
-      const pairId = activePair?.pairId ?? pairs[0]?.pairId ?? null;
+    (run: number) => {
+      const pair = activePair ?? pairs[0] ?? null;
+      const pairId = pair?.pairId ?? null;
       if (!pairId) {
         setState((prev) =>
           run === runRef.current && prev.status === "threat"
@@ -108,7 +97,19 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
           ? { ...prev, challengeLoading: true, challengeError: null }
           : prev,
       );
-      createPersonalQuestion(pairId, context)
+      if (!pair?.privateContext?.trim()) {
+        setState((prev) =>
+          run === runRef.current && prev.status === "threat"
+            ? {
+                ...prev,
+                challengeLoading: false,
+                challengeError: "Add a private verification detail for this person first.",
+              }
+            : prev,
+        );
+        return;
+      }
+      createPersonalQuestion(pairId, pair.privateContext.trim())
         .then((challenge) => {
           setState((prev) =>
             run === runRef.current && prev.status === "threat"
@@ -128,7 +129,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
           );
         });
     },
-    [activePair?.pairId, pairs],
+    [activePair, pairs],
   );
 
   const submitTranscript = useCallback(async () => {
@@ -159,7 +160,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           // The in-app shield remains authoritative if cross-app overlay permission is unavailable.
         });
-      escalate(run, transcript);
+      escalate(run);
     } catch (error) {
       setState((prev) =>
         run === runRef.current
@@ -175,28 +176,22 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const primaryLabel = state.callActive ? "Shield Call" : "Verify Interaction";
-
   const value = useMemo<ShieldApi>(
     () => ({
       ...state,
-      primaryLabel,
       setTranscript,
       startAnalysis,
       submitTranscript,
       resolveEscalation,
       reset,
-      reportCallActive,
     }),
     [
       state,
-      primaryLabel,
       setTranscript,
       startAnalysis,
       submitTranscript,
       resolveEscalation,
       reset,
-      reportCallActive,
     ],
   );
 

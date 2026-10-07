@@ -2,9 +2,7 @@
 
 > **The voice can be cloned. The person can still prove who they are.**
 
-Handshake is a mobile-first web app that helps you verify _who is actually on the
-other end_ of a phone call or message — even when the voice sounds exactly like
-someone you love. Instead of trying to detect the fake (an arms race that voice
+Handshake helps you verify _who is actually on the other end_ of a phone call or message — even when the voice sounds exactly like someone you love. Instead of trying to detect the fake (an arms race that voice
 detectors keep losing), Handshake checks something a clone can never have: access
 to a secret your trusted circle shares.
 
@@ -41,43 +39,39 @@ the fake is.
    An LLM flags manipulation tactics — artificial urgency, secrecy, immediate
    payment, authority pressure — and returns a risk level plus reasons, as
    validated structured data. Advisory, not a verdict.
-3. **Personal challenge (AI).** From a few private details you saved in advance
-   (nicknames, shared memories), the app generates a question only the real
-   person could answer.
+3. **Personal challenge (AI).** After a meaningful pressure signal, Handshake can generate a private verification question for the trusted person.
 4. **The first hour.** A calm, static checklist for the 60 minutes after money
    has already moved. No AI, no decisions made under stress — just the right
    steps, in order.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  subgraph browser ["Your phone (browser, mobile-first)"]
-    verify["Verify screen<br/>huge code + countdown"]
-    codes["My codes screen"]
-    analyze["Pressure check"]
-    challenge["Personal challenge"]
-    firsthour["The first hour"]
-  end
+Handshake Personal (Android)
+    ↓
+Protection-ready home
+    ├── Trusted people + shared rotating codes
+    ├── Verify person
+    └── Check a call
+          ↓
+    Shield orchestration
+    ├── Pressure Check (advisory)
+    └── Personal Challenge (when needed)
+          ↓
+    Protected / Verify / Risk
 
-  subgraph server ["Next.js server (API routes)"]
-    totp["Codes module<br/>(otplib, standard TOTP)"]
-    llm["AI module<br/>(server-only client)"]
-    derivation["Stateless derived secrets<br/>HMAC-SHA256(PAIR_KEY, pairId)"]
-  end
+Android companion layer
+    ├── Operator call-state awareness
+    └── Optional warning overlay above phone and calling apps
 
-  llm -- "HTTPS, key stays server-side" --> fea["Featherless AI API<br/>(OpenAI-compatible)"]
+Next.js backend
+    ├── Rotating-code verification
+    ├── Pressure analysis
+    └── Personal-question generation
 
-  verify -- "GET current code · POST claimed code" --> totp
-  codes -- "GET current code" --> totp
-  analyze -- "POST transcript (treated as untrusted data)" --> llm
-  challenge -- "POST saved private context" --> llm
-  totp --- derivation
-```
-
-All secrets — pair secrets and the AI key — live on the server only. The browser
-never sees them. Full details in [ARCHITECTURE.md](./ARCHITECTURE.md); the threat
-model and its honest limits in [SECURITY.md](./SECURITY.md).
+The mobile client does not replace the system Phone app and does not create a Handshake-only
+call. For WhatsApp and other third-party calling apps, Handshake is a companion layer: the
+user can run Check a call manually and keep warnings visible with overlay permission.
+Handshake does not claim automatic access to private two-way audio from those apps.
 
 ## Stack
 
@@ -149,19 +143,36 @@ The intended product split is:
 
 ### Personal UX direction
 
-The long-term Personal experience is **automation rather than a toolbox**.
+The Personal experience is **automation rather than a toolbox**.
 
-When there is no call, Handshake should be a calm trust center showing protection
-status, trusted people, recent activity and privacy/settings controls.
+When there is no active interaction, Handshake should be a calm trust center showing
+protection readiness and trusted people.
 
-When a supported call or communication session begins, Handshake should enter a
-**Call Protection Mode** that feels like **Android + Handshake**, not a second
-phone application. The intended user-facing states are **Protected**, **Verify**
-and **Risk**.
+When the user is dealing with a phone call or a third-party calling app such as
+WhatsApp, Handshake should act as a small companion layer: optional warnings can
+stay visible above other apps, and the user can run a manual interaction check when
+needed.
 
-Pressure Check, Personal Challenge and rotating-code verification should become
-internal capabilities selected by Handshake rather than tools the user must
-manually open one by one.
+The user-facing states are **Protected**, **Verify** and **Risk**. Pressure Check,
+Personal Challenge and rotating-code verification remain internal capabilities.
+
+### Current call integration boundary
+
+Handshake is designed to accompany ordinary operator phone calls and third-party
+calling apps rather than replacing them with a Handshake-only call screen.
+
+On Android, the native integration currently provides carrier call-state awareness
+and an optional overlay. The overlay can remain visible above apps after the user
+has granted overlay permission.
+
+Handshake does **not** automatically receive private two-way audio from ordinary
+carrier calls or third-party calling apps such as WhatsApp. Audio analysis therefore
+cannot be presented as live call analysis until a supported platform surface is
+independently verified.
+
+For any interaction, the current reliable path is user-provided text or transcript
+input → pressure analysis → contextual verification. The shared rotating-code
+flow remains the authoritative identity check.
 
 ### Real-time call analysis direction
 
@@ -219,7 +230,8 @@ real-time-analysis pipeline, Android integration layers and phased plan.
 ## Ethics & consent
 
 - The voice clone used in the demo is of the **developer's own voice**, with
-  consent. No real third party is impersonated.
+  consent. The clone has already been generated; any detector result must still be
+  observed and recorded before being claimed.
 - "Mom" is a role-played scenario for the demo; no real person is targeted, and
   no real scam is attempted.
 - Transcripts are analyzed in memory by the LLM provider and are not stored by

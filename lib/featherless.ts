@@ -89,10 +89,10 @@ async function chatCompletionWithRetry(
   throw lastError ?? new Error("Featherless request failed after retry");
 }
 
-const PRESSURE_SYSTEM_PROMPT = `You are a security analyst evaluating voice-call transcripts for social-engineering pressure tactics.
+const PRESSURE_SYSTEM_PROMPT = `You are a security analyst evaluating a call or message transcript for social-engineering pressure tactics.
 Return ONLY valid JSON matching the schema. No extra text.
 
-Schema: { pressureScore: 0-100, humanLikelihood: 0-100, reasoning: string, verdict: "likely_human" | "likely_clone" | "uncertain" }
+Schema: { pressureScore: 0-100, riskLevel: "low" | "medium" | "high", reasoning: string }
 
 Your primary task is to assess SCAM / SOCIAL-ENGINEERING RISK, not to prove a person's identity.
 
@@ -108,10 +108,10 @@ Evaluate strong, concrete signals such as:
 Important decision rules:
 - Normal conversation, ordinary urgency, nervousness, poor wording, accents, or unusual phrasing are NOT sufficient evidence of a scam.
 - Do NOT label someone likely_clone merely because the transcript sounds scripted, polished, awkward, or unusual.
-- A possible AI/voice-clone signal by itself is NOT enough to require identity verification.
-- Prefer "likely_human" when there is no meaningful evidence of social-engineering pressure.
-- Use "uncertain" when evidence is genuinely insufficient.
-- Use "likely_clone" only when there are concrete indicators supporting that conclusion.
+- Do not infer whether a voice is human, cloned, synthetic, or genuine from text.
+- Use "low" when there is no meaningful evidence of social-engineering pressure.
+- Use "medium" when there are some concrete pressure signals but they are not strong enough for a high-risk intervention.
+- Use "high" when multiple meaningful risk signals materially increase scam risk.
 - A high pressureScore must correspond to multiple meaningful risk signals, not a single weak clue.
 
 The application will decide whether an identity challenge is necessary from the risk result. Do NOT assume that every uncertain or unusual interaction requires verification.

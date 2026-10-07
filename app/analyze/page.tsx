@@ -5,64 +5,21 @@ import { PageShell } from "@/components/PageShell";
 
 type PressureResult = {
   pressureScore: number;
-  humanLikelihood: number;
+  riskLevel: "low" | "medium" | "high";
   reasoning: string;
-  verdict: "likely_human" | "likely_clone" | "uncertain";
 };
 
 type ApiError = {
-  error: {
-    code: string;
-    message: string;
-  };
+  error: { code: string; message: string };
 };
 
-const verdictConfig: Record<
-  PressureResult["verdict"],
-  { label: string; icon: React.ReactNode; color: "success" | "danger" | "warning" }
+const riskConfig: Record<
+  PressureResult["riskLevel"],
+  { label: string; color: "success" | "danger" | "warning" }
 > = {
-  likely_human: {
-    label: "Likely human",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    color: "success",
-  },
-  likely_clone: {
-    label: "Likely clone",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m-2 2l2 2m-2-2h.01M12 22a10 10 0 110-20a10 10 0 010 20z"
-        />
-      </svg>
-    ),
-    color: "danger",
-  },
-  uncertain: {
-    label: "Uncertain",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
-        />
-      </svg>
-    ),
-    color: "warning",
-  },
+  low: { label: "Low pressure", color: "success" },
+  medium: { label: "Medium pressure", color: "warning" },
+  high: { label: "High pressure", color: "danger" },
 };
 
 const colorStyles = {
@@ -95,14 +52,12 @@ export default function AnalyzePage() {
     }
 
     setIsSubmitting(true);
-
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: trimmed }),
       });
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -139,7 +94,6 @@ export default function AnalyzePage() {
   return (
     <PageShell title="Pressure check">
       <div className="section animate-in">
-        {/* Header */}
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 px-3 py-1 text-sm font-medium text-sky-400">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,11 +107,10 @@ export default function AnalyzePage() {
             Pressure check
           </div>
           <p className="text-lg text-neutral-300">
-            Paste what the caller said to see if it shows pressure tactics.
+            Paste what the caller or sender said to check for social-engineering pressure tactics.
           </p>
         </div>
 
-        {/* Input form */}
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
             <label htmlFor="transcript" className="label">
@@ -175,25 +128,11 @@ export default function AnalyzePage() {
               aria-describedby={fieldError ? "transcript-error" : "transcript-hint"}
               aria-invalid={fieldError ? "true" : "false"}
             />
-            {fieldError && (
-              <p id="transcript-error" className="error-text flex items-center gap-1" role="alert">
-                <svg
-                  className="h-4 w-4 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
-                  />
-                </svg>
+            {fieldError ? (
+              <p id="transcript-error" className="error-text" role="alert">
                 {fieldError}
               </p>
-            )}
-            {!fieldError && (
+            ) : (
               <p id="transcript-hint" className="hint text-right">
                 {transcript.length}/4000 characters
               </p>
@@ -201,75 +140,24 @@ export default function AnalyzePage() {
           </div>
 
           <button type="submit" disabled={isSubmitting} className="btn-primary btn-lg btn-block">
-            {isSubmitting ? (
-              <>
-                <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Analyzing…
-              </>
-            ) : (
-              <>
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
-                </svg>
-                Check for pressure
-              </>
-            )}
+            {isSubmitting ? "Checking…" : "Check for pressure"}
           </button>
 
-          {error && (
-            <div
-              className="alert-danger flex items-center gap-2"
-              role="alert"
-              aria-live="assertive"
-            >
-              <svg
-                className="h-5 w-5 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
-                />
-              </svg>
+          {error ? (
+            <div className="alert-danger" role="alert" aria-live="assertive">
               {error}
             </div>
-          )}
+          ) : null}
 
-          {/* Result */}
-          {result && (
-            <section className="animate-in" aria-live="polite" aria-label="Analysis result">
+          {result ? (
+            <section className="animate-in" aria-live="polite" aria-label="Pressure result">
               <div className="card p-5 space-y-5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <h2 className="text-xl font-semibold">Result</h2>
                   <span
-                    className={`badge ${colorStyles[verdictConfig[result.verdict].color]} flex items-center gap-1.5`}
+                    className={`badge ${colorStyles[riskConfig[result.riskLevel].color]}`}
                   >
-                    {verdictConfig[result.verdict].icon}
-                    {verdictConfig[result.verdict].label}
+                    {riskConfig[result.riskLevel].label}
                   </span>
                 </div>
 
@@ -285,64 +173,29 @@ export default function AnalyzePage() {
                   </div>
                   <div className="rounded-xl bg-neutral-900/50 p-5 text-center">
                     <p className="text-xs text-neutral-400 uppercase tracking-wide mb-1">
-                      Human likelihood
+                      Risk level
                     </p>
-                    <p className="text-4xl font-bold tabular-nums text-neutral-50">
-                      {result.humanLikelihood}
+                    <p className="text-2xl font-bold text-neutral-50 capitalize">
+                      {result.riskLevel}
                     </p>
-                    <p className="text-xs text-neutral-500">/ 100</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-neutral-300 mb-2 flex items-center gap-2">
-                    <svg
-                      className="h-4 w-4 text-sky-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    Reasoning
-                  </h3>
-                  <p className="text-neutral-300 whitespace-pre-wrap leading-7">
-                    {result.reasoning}
-                  </p>
+                  <h3 className="text-sm font-medium text-neutral-300 mb-2">Why this was flagged</h3>
+                  <p className="text-neutral-300 whitespace-pre-wrap leading-7">{result.reasoning}</p>
                 </div>
 
                 <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <svg
-                      className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
-                      />
-                    </svg>
-                    <div>
-                      <p className="font-medium text-amber-300">Advisory signal</p>
-                      <p className="text-sm text-amber-400 mt-1">
-                        This is an additional warning signal, not a guarantee. Always verify with
-                        the rotating code.
-                      </p>
-                    </div>
-                  </div>
+                  <p className="font-medium text-amber-300">Advisory signal</p>
+                  <p className="text-sm text-amber-400 mt-1">
+                    This checks pressure tactics only. It does not prove fraud or identity. Use the
+                    rotating code to verify a trusted person.
+                  </p>
                 </div>
               </div>
             </section>
-          )}
+          ) : null}
 
           <p className="text-xs text-neutral-500 text-center">
             Your transcript is sent to Featherless AI for analysis and is not stored by this app.

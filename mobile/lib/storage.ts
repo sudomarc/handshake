@@ -7,6 +7,7 @@ const ACTIVE_PAIR_KEY = "handshake_active_pair";
 export interface StoredPair extends PairMeta {
   name?: string;
   role?: "caller" | "receiver";
+  privateContext?: string;
 }
 
 async function getPairs(): Promise<StoredPair[]> {
@@ -41,6 +42,18 @@ export async function addPair(
     await savePairs([...pairs, newPair]);
   }
   await setActivePair(pairId);
+}
+
+export async function updatePair(
+  pairId: string,
+  patch: { name?: string; privateContext?: string },
+): Promise<void> {
+  const pairs = await getPairs();
+  const index = pairs.findIndex((pair) => pair.pairId === pairId);
+  if (index === -1) return;
+  const next = [...pairs];
+  next[index] = { ...next[index], ...patch };
+  await savePairs(next);
 }
 
 export async function getActivePair(): Promise<StoredPair | null> {
