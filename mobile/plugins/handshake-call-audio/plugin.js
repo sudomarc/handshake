@@ -172,7 +172,6 @@ function withCallAudioPlugin(config) {
     const permissions = [
       "android.permission.FOREGROUND_SERVICE",
       "android.permission.READ_PHONE_STATE",
-      "android.permission.READ_CALL_LOG",
       "android.permission.SYSTEM_ALERT_WINDOW",
       "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
     ];
@@ -194,27 +193,6 @@ function withCallAudioPlugin(config) {
       manifest.manifest.application[0].service = [];
     }
 
-    const callScreeningService = {
-      $: {
-        "android:name": `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
-        "android:permission": "android.permission.BIND_SCREENING_SERVICE",
-        "android:exported": "true",
-      },
-      "intent-filter": [
-        {
-          action: [{ $: { "android:name": "android.telecom.CallScreeningService" } }],
-        },
-      ],
-      "meta-data": [
-        {
-          $: {
-            "android:name": "android.telecom.CALL_SCREENING_SERVICE_UI",
-            "android:value": "false",
-          },
-        },
-      ],
-    };
-
     const overlayService = {
       $: {
         "android:name": `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
@@ -231,14 +209,7 @@ function withCallAudioPlugin(config) {
       ],
     };
 
-    const existingScreening = manifest.manifest.application[0].service.find(
-      (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.CallScreeningServiceImpl`,
-    );
-    if (!existingScreening) {
-      manifest.manifest.application[0].service.push(callScreeningService);
-    }
-
-    const existingOverlay = manifest.manifest.application[0].service.find(
+   const existingOverlay = manifest.manifest.application[0].service.find(
       (s) => s.$ && s.$["android:name"] === `${PACKAGE_NAME}.callaudio.HandshakeOverlayService`,
     );
     if (!existingOverlay) {
