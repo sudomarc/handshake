@@ -60,11 +60,9 @@ export function ActiveShield() {
         <Body muted style={s.centerText}>
           Checking for pressure tactics, urgency and payment demands.
         </Body>
-        {shield.callActive ? (
-          <Body muted style={s.centerText}>
-            Protected call audio is live.
-          </Body>
-        ) : null}
+        <Body muted style={s.centerText}>
+          You can keep the Phone app, WhatsApp, or another calling app open while you check the interaction.
+        </Body>
       </Centered>
     );
   } else if (status === "analyzing" && check?.verdict === "clear") {
@@ -81,17 +79,16 @@ export function ActiveShield() {
         <Card>
           <Body>{pressure?.reasoning}</Body>
         </Card>
-        <Body muted>Advisory text analysis — it does not detect cloned voices.</Body>
+        <Body muted>Text analysis is advisory. It checks pressure tactics; it does not prove who is speaking.</Body>
         <Button label="Done" onPress={shield.reset} />
       </>
     );
   } else if (status === "analyzing") {
     body = (
       <>
-        <H2>{shield.callActive ? "Protected call in progress" : "Verify interaction"}</H2>
+        <H2>Check this interaction</H2>
         <Body muted>
-          Write what the caller is saying. Live transcription is not available yet, so paste or type
-          what is being said.
+          Type or paste what the caller or sender said. Handshake checks for pressure tactics.
         </Body>
         <TextInput
           value={shield.transcript}
@@ -115,7 +112,7 @@ export function ActiveShield() {
           <StatusRing
             status="threat"
             size={176}
-            titleOverride="High Pressure Detected"
+            titleOverride="High pressure detected"
             subtitleOverride={pressure ? `Pressure ${pressure.pressureScore}/100` : undefined}
           />
         </Centered>
@@ -158,7 +155,7 @@ export function ActiveShield() {
         </Centered>
         {passed ? (
           <Card>
-            <Body>You confirmed the answer. Stay connected.</Body>
+            <Body>You confirmed the answer. The shared verification matched.</Body>
           </Card>
         ) : (
           <Card style={s.dangerCard}>
