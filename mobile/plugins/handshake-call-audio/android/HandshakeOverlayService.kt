@@ -187,7 +187,7 @@ class HandshakeOverlayService : Service() {
             setPadding(0, 0, 8, 0)
         }
         val label = TextView(this).apply {
-            text = if (ringing) "Handshake • Incoming call" else "Handshake • Call protected"
+            text = if (ringing) "Handshake • Phone call" else "Handshake Protected"
             setTextColor(Color.WHITE)
             textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
@@ -244,11 +244,11 @@ class HandshakeOverlayService : Service() {
             gravity = Gravity.END
         }
         val dismiss = Button(this).apply {
-            text = "Dismiss"
+            text = "Ignore"
             setOnClickListener { renderCallState() }
         }
         val verify = Button(this).apply {
-            text = "Open Handshake"
+            text = "Verify now"
             setOnClickListener {
                 val launch = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)

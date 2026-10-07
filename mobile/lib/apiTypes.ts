@@ -94,91 +94,14 @@ export const challengeResponseSchema = z.object({
 });
 export type ChallengeResponse = z.infer<typeof challengeResponseSchema>;
 
-// Mirrors pressureCheckResponseSchema in the backend (lib/schemas.ts) for POST /api/analyze.
-export const pressureVerdictSchema = z.enum(["likely_human", "likely_clone", "uncertain"]);
-export type PressureVerdict = z.infer<typeof pressureVerdictSchema>;
+export const pressureRiskLevelSchema = z.enum(["low", "medium", "high"]);
+export type PressureRiskLevel = z.infer<typeof pressureRiskLevelSchema>;
 
 export const pressureCheckResponseSchema = z.object({
   pressureScore: z.number().int().min(0).max(100),
-  humanLikelihood: z.number().int().min(0).max(100),
+  riskLevel: pressureRiskLevelSchema,
   reasoning: z.string().max(500),
-  verdict: pressureVerdictSchema,
 });
 export type PressureCheckResponse = z.infer<typeof pressureCheckResponseSchema>;
 
-export const callSessionIdSchema = z.string().min(1);
-export type CallSessionId = z.infer<typeof callSessionIdSchema>;
 
-export const deviceIdSchema = z.string().min(1);
-export type DeviceId = z.infer<typeof deviceIdSchema>;
-
-export const callSessionStatusSchema = z.enum(["pending", "active", "ended"]);
-export type CallSessionStatus = z.infer<typeof callSessionStatusSchema>;
-
-export const sdpSchema = z.object({
-  type: z.enum(["offer", "answer"]),
-  sdp: z.string(),
-});
-export type SDP = z.infer<typeof sdpSchema>;
-
-export const iceCandidateSchema = z.object({
-  candidate: z.string(),
-  sdpMid: z.string().nullable(),
-  sdpMLineIndex: z.number().nullable(),
-});
-export type IceCandidate = z.infer<typeof iceCandidateSchema>;
-
-export const callSessionSchema = z.object({
-  sessionId: callSessionIdSchema,
-  pairId: pairIdSchema,
-  status: callSessionStatusSchema,
-  callerDeviceId: deviceIdSchema,
-  calleeDeviceId: deviceIdSchema.nullable(),
-  offer: sdpSchema.nullable(),
-  answer: sdpSchema.nullable(),
-  iceCandidates: z.array(iceCandidateSchema),
-  createdAt: z.number().int().nonnegative(),
-  updatedAt: z.number().int().nonnegative(),
-});
-export type CallSession = z.infer<typeof callSessionSchema>;
-
-export const createCallSessionRequestSchema = z.object({
-  pairId: pairIdSchema,
-  callerId: deviceIdSchema,
-  callerName: z.string().optional(),
-});
-export type CreateCallSessionRequest = z.infer<typeof createCallSessionRequestSchema>;
-
-export const createCallSessionResponseSchema = z.object({
-  sessionId: callSessionIdSchema,
-  pairId: pairIdSchema,
-  status: callSessionStatusSchema,
-  createdAt: z.number().int().nonnegative(),
-});
-export type CreateCallSessionResponse = z.infer<typeof createCallSessionResponseSchema>;
-
-export const callOfferRequestSchema = z.object({
-  sessionId: callSessionIdSchema,
-  offer: sdpSchema,
-  fromDeviceId: deviceIdSchema,
-});
-export type CallOfferRequest = z.infer<typeof callOfferRequestSchema>;
-
-export const callAnswerRequestSchema = z.object({
-  sessionId: callSessionIdSchema,
-  answer: sdpSchema,
-  fromDeviceId: deviceIdSchema,
-});
-export type CallAnswerRequest = z.infer<typeof callAnswerRequestSchema>;
-
-export const iceCandidateRequestSchema = z.object({
-  sessionId: callSessionIdSchema,
-  candidate: iceCandidateSchema,
-  fromDeviceId: deviceIdSchema,
-});
-export type IceCandidateRequest = z.infer<typeof iceCandidateRequestSchema>;
-
-export const endCallRequestSchema = z.object({
-  sessionId: callSessionIdSchema,
-});
-export type EndCallRequest = z.infer<typeof endCallRequestSchema>;

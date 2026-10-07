@@ -60,11 +60,6 @@ export function ActiveShield() {
         <Body muted style={s.centerText}>
           Checking for pressure tactics, urgency and payment demands.
         </Body>
-        {shield.callActive ? (
-          <Body muted style={s.centerText}>
-            Protected call audio is live.
-          </Body>
-        ) : null}
       </Centered>
     );
   } else if (status === "analyzing" && check?.verdict === "clear") {
@@ -74,24 +69,23 @@ export function ActiveShield() {
           <StatusRing
             status="safe"
             size={176}
-            titleOverride="All clear"
+            titleOverride="No high-pressure signal"
             subtitleOverride={`Pressure ${pressure?.pressureScore}/100`}
           />
         </Centered>
         <Card>
           <Body>{pressure?.reasoning}</Body>
         </Card>
-        <Body muted>Advisory text analysis — it does not detect cloned voices.</Body>
+        <Body muted>Text analysis is advisory. It checks pressure tactics; it does not prove who is speaking.</Body>
         <Button label="Done" onPress={shield.reset} />
       </>
     );
   } else if (status === "analyzing") {
     body = (
       <>
-        <H2>{shield.callActive ? "Protected call in progress" : "Verify interaction"}</H2>
+        <H2>Check this interaction</H2>
         <Body muted>
-          Write what the caller is saying. Live transcription is not available yet, so paste or type
-          what is being said.
+          Type or paste what the caller or sender said. Handshake checks for pressure tactics.
         </Body>
         <TextInput
           value={shield.transcript}
@@ -115,7 +109,7 @@ export function ActiveShield() {
           <StatusRing
             status="threat"
             size={176}
-            titleOverride="High Pressure Detected"
+            titleOverride="High pressure detected"
             subtitleOverride={pressure ? `Pressure ${pressure.pressureScore}/100` : undefined}
           />
         </Centered>
@@ -152,13 +146,13 @@ export function ActiveShield() {
           <StatusRing
             status={passed ? "safe" : "threat"}
             size={176}
-            titleOverride={passed ? "Pass" : "Fail"}
-            subtitleOverride={passed ? "Identity confirmed by you" : "Identity not confirmed"}
+            titleOverride={passed ? "Verified" : "Verification failed"}
+            subtitleOverride={passed ? "You confirmed the private answer" : "The identity check did not match"}
           />
         </Centered>
         {passed ? (
           <Card>
-            <Body>You confirmed the answer. Stay connected.</Body>
+            <Body>You confirmed the answer. The shared verification matched.</Body>
           </Card>
         ) : (
           <Card style={s.dangerCard}>

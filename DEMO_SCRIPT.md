@@ -11,22 +11,19 @@ result.
   **deliberately does not show the live code** — showing it on the screen where
   you type it would defeat the check.
 - The **Pressure check** analyzes scam tactics in a **text transcript** (urgency,
-  secrecy, payment requests, authority impersonation). It does not analyze
-  audio and is not a voice-clone detector. Never claim cloned-voice detection.
+  secrecy, payment requests, authority impersonation). It does not analyze audio
+  and is not a voice-clone detector.
 
 **Wording rules (audit 2026-10-05):**
 
 - Say: "Pressure check looks for manipulation tactics in a text transcript. It is
   advisory." Never say it detects a cloned voice, and never present its output as
   proof that a caller is real or fake.
-- The mobile result screen currently shows a label (*Likely human* / *Likely clone /
-  scam pressure* / *Uncertain*), a pressure score, a "human likelihood" number and a
-  short reasoning (see ROADMAP finding F1). Read out the **pressure score and the
-  reasoning only**; do not read the label or the "human likelihood" as a verdict
-  about the voice. A calm transcript scoring low means "little pressure in this text",
-  not "this person is genuine".
-- *Personal question* returns a generic question on mobile (no private context can be
-  entered). Skip it, or describe it as a generic extra question — not as personalized.
+- The mobile result shows a **pressure score**, **risk level** and short reasoning. Read
+  those as an advisory assessment of the text only. A low score means "little pressure
+  in this text", not "this person is genuine".
+- *Personal question* uses a private verification detail saved for the trusted person. Do not
+  expose that private detail in the demo.
 - The wrong code in step 5 is typed by the presenter as role-play; the
   **Not verified** verdict itself is a real server check.
 
@@ -42,7 +39,7 @@ rehearsal; two real devices for the recording).
 
 | Role                    | Device                             | What it shows                                                             |
 | ----------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
-| "Mom" (receiver)        | **Device A** — Android phone       | Handshake **Verify a call** screen: types the code the caller says → verdict. No live code on this screen. |
+| "Mom" (receiver)        | **Device A** — Android phone       | Handshake **Verify person** screen: types the code the caller says → verdict. No live code on this screen. |
 | Real person (developer) | **Device B** — Android phone       | Handshake **My code** screen (6 digits + countdown, read aloud) + **Pressure check** + **The first hour** |
 | Scammer                 | speaker on Device A or a 2nd phone | plays the **cloned voice** scam audio                                     |
 
@@ -68,7 +65,7 @@ before the demo.
    is one the clone can't access: a code only the real person's phone can show."
 2. **(20 s) The scam.** Play the clone audio on speaker: _"Mom, it's me, I'm in
    trouble, I need $500 right now, don't tell anyone."_
-3. **(25 s) The reflex.** Device A (Mom's phone) on **Verify a call**. Narrate:
+3. **(25 s) The reflex.** Device A (Mom's phone) on **Verify person**. Narrate:
    "Mom doesn't guess and doesn't transfer. She asks the caller to say the
    code out loud. This screen shows no code — so there is nothing on screen to
    read. Only the real person's phone can produce it."
@@ -112,3 +109,9 @@ before the demo.
   online (e.g., YouTube) for the Devpost submission.
 - Refresh README "Demo" section if the flow changed.
 - Submit on Devpost with: repo URL, video link, story, screenshots, public URL.
+## Call companion note
+
+For ordinary operator calls, Handshake can show its warning overlay when call-state awareness is available.
+For WhatsApp and similar calling apps, the demo should use **Check a call** manually; the app does not
+claim automatic access to their private call audio. The overlay is a companion surface, not a replacement
+for the Phone or calling app.

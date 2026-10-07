@@ -7,27 +7,20 @@ import { ShieldProvider } from "@/lib/shield/engine";
 import { callOverlayManager } from "@/lib/callOverlay";
 import { colors } from "@/lib/theme";
 
-function AutoArmCallProtection() {
+function AutoArmWarnings() {
   useEffect(() => {
     let cancelled = false;
-
     const arm = async () => {
       try {
         const allowed = await callOverlayManager.canDrawOverlays();
-        if (!cancelled && allowed) {
-          await callOverlayManager.startProtection();
-        }
+        if (!cancelled && allowed) await callOverlayManager.startProtection();
       } catch {
-        // The in-app protection UI remains available when cross-app overlay setup fails.
+        // Warnings remain opt-in when overlay setup is unavailable.
       }
     };
-
     void arm();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
-
   return null;
 }
 
@@ -44,11 +37,10 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="verify/[pairId]" options={{ title: "Trust Ping" }} />
+          <Stack.Screen name="verify/[pairId]" options={{ title: "Verify person" }} />
           <Stack.Screen name="codes/[pairId]" options={{ title: "My code" }} />
-          <Stack.Screen name="call/protection" options={{ title: "Call Protection" }} />
         </Stack>
-        <AutoArmCallProtection />
+        <AutoArmWarnings />
         <ActiveShield />
       </ShieldProvider>
     </SafeAreaProvider>

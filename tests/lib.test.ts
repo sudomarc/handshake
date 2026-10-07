@@ -161,17 +161,15 @@ describe("lib/schemas", () => {
   test("pressureCheckResponseSchema validates response schema", () => {
     const valid = {
       pressureScore: 85,
-      humanLikelihood: 15,
+      riskLevel: "high",
       reasoning: "Urgent financial request",
-      verdict: "likely_clone",
     };
     assert.equal(pressureCheckResponseSchema.safeParse(valid).success, true);
 
     const invalid = {
       pressureScore: 150, // out of range
-      humanLikelihood: 15,
+      riskLevel: "high",
       reasoning: "Urgent financial request",
-      verdict: "likely_clone",
     };
     assert.equal(pressureCheckResponseSchema.safeParse(invalid).success, false);
   });
