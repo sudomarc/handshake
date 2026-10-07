@@ -46,7 +46,7 @@ mobile/
 │   │   ├── _layout.tsx     # Tab bar config
 │   │   ├── index.tsx       # Shield home (global status + contextual action)
 │   │   └── trusted.tsx     # Trust Ledger
-│   ├── verify/[pairId].tsx # Trust Ping + person management
+│   ├── verify/[pairId].tsx # Verify person + private context
 │   ├── codes/[pairId].tsx  # Caller code screen
 ├── components/
 │   ├── ActiveShield.tsx    # Contextual shield overlay
