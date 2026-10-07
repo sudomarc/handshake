@@ -15,7 +15,7 @@ export default function PersonScreen() {
 
   if (!parsed.success) {
     return (
-      <PageShell title="Trust Ping">
+      <PageShell title="Verify person">
         <ErrorBox message="Invalid pair code." />
       </PageShell>
     );
@@ -49,7 +49,7 @@ export default function PersonScreen() {
       <TrustPing pairId={validPairId} name={name} />
 
       <Card>
-        <H2>Manage</H2>
+        <H2>Manage person</H2>
         <Body muted>Only you on this phone see these controls.</Body>
         <Button
           label="Show my code"
