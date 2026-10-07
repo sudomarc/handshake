@@ -53,15 +53,14 @@ export const analysisRequestSchema = z.object({
 });
 export type AnalysisRequest = z.infer<typeof analysisRequestSchema>;
 
-// J4: Pressure Check response (Featherless output)
-export const verdictSchemaJ4 = z.enum(["likely_human", "likely_clone", "uncertain"]);
-export type VerdictJ4 = z.infer<typeof verdictSchemaJ4>;
+// Pressure Check response (Featherless output)
+export const pressureRiskLevelSchema = z.enum(["low", "medium", "high"]);
+export type PressureRiskLevel = z.infer<typeof pressureRiskLevelSchema>;
 
 export const pressureCheckResponseSchema = z.object({
   pressureScore: z.number().int().min(0).max(100),
-  humanLikelihood: z.number().int().min(0).max(100),
+  riskLevel: pressureRiskLevelSchema,
   reasoning: z.string().max(500),
-  verdict: verdictSchemaJ4,
 });
 export type PressureCheckResponse = z.infer<typeof pressureCheckResponseSchema>;
 
