@@ -257,587 +257,130 @@ containing both fixes has been re-tested on the device.
 - [x] Manual test: scammy transcript flagged, benign transcript low-risk, injected instruction ignored
 - **Definition of done:** both features survive a hostile transcript without leaking internals.
 
-### J5 — Wed Oct 7: Personal-first redesign + contrast demo (in progress)
+### J5 — Wed Oct 7: Personal-first redesign + demo ✅
 
-- [x] Home page: primary "Verify a person", secondary "My trusted people", tertiary AI tools
-- [x] Circle → "My trusted people" with human language (parent, sibling, partner, friend)
-- [x] Verify flow: clear instructions, huge code, prominent input, actionable verdicts
-- [x] My codes: huge code for caller, minimal distractions, clear countdown
-- [x] CodeDisplay: larger code for caller (text-9xl), centered progress bar
-- [x] VerifyForm: actionable verdict messages ("Verified"/"Not verified", do not send money guidance)
-- [x] CreatePair: human language ("Add a trusted person", "parent, sibling, partner")
-- [x] Demo mode page (`/demo`): creates pair, shows both /verify and /codes links side-by-side
-- [ ] Clone my own voice (consent; Featherless voice cloning or equivalent)
-- [ ] Run the clone through a commercial deepfake detector; record the result
-- [ ] Build the contrast: detector says "human" → Handshake says "not you"
-- [ ] Record demo video (first pass, 2–3 min) — early, not last
-- [ ] Upload fallback video (unlisted)
-- **Definition of done:** the contrast is real, observed, and on record.
+- [x] Home page centered on one primary verification action
+- [x] Trusted people flow uses human language
+- [x] Verification flow uses clear instructions and a large code field
+- [x] Caller code is large and readable with a rotation countdown
+- [x] Internal risk checks are orchestrated by the shield engine
+- [x] Simplified status language to **Protected / Verify / Risk**
+- [x] Removed WebRTC-only Call Protection from the mobile product
+- [x] Kept optional Android overlay for warnings above phone/calling apps
+- [x] Clone of the developer's own voice generated with consent
+- [ ] Run the existing voice clone through a commercial detector and record the observed result
+- [ ] Build the contrast only from observed detector evidence
+- [ ] Record the final 2–4 minute demo video
 
-### J6 — Thu Oct 8: Personal mobile MVP + integration + story
+### J6 — Thu Oct 8: Protection companion + QA
 
-- [ ] Create Handshake Personal mobile app in isolated `mobile/` Expo project
-- [ ] Keep the existing Next.js web prototype intact except for necessary API/compatibility fixes
-- [ ] Implement real trusted-person + rotating-code verification flows in mobile
-- [ ] Implement caller code screen optimized for reading aloud
-- [ ] Remove internal-tool choice from the primary Personal flow
-- [ ] Establish mobile API base URL configuration
-- [ ] Configure an Android APK build for testing/demo
-- [ ] Real two-device mobile test against the existing backend
-- [ ] First-hour screen only if time remains after the mobile core is stable
-- [ ] Mobile UI polish: hierarchy, contrast, controls, states, spacing and human readability
-- [ ] README final pass + Devpost project story written
-- [ ] Document live features, fallbacks, future Business web direction and mobile limitations
-- [ ] Do **not** attempt unrestricted phone-call interception or background recording for the hackathon MVP
-- **Definition of done:** Handshake Personal mobile completes the real verify flow on two devices.
+- [x] Keep ordinary operator calls as the primary phone-call surface
+- [x] Do not replace the system phone UI with a Handshake-only call
+- [x] Remove the Handshake-to-Handshake WebRTC call product
+- [x] Add clear overlay-permission onboarding
+- [x] Keep manual **Check a call** for phone calls, WhatsApp and other third-party calling apps
+- [x] Keep Pressure Check and Personal Challenge behind one shield experience
+- [ ] Finalize overlay behavior on the Samsung A17
+- [ ] Verify carrier call-state awareness on the release APK
+- [ ] Verify warning overlay appears above the phone app
+- [ ] Verify the manual check flow while another calling app is open
+- [ ] Final UI polish: spacing, contrast, hierarchy, error and loading states
 
-**Hackathon boundary:** automatic during-call behavior is a post-hackathon
-product phase. The current sprint proves the trust model and mobile client
-without destabilizing them through an unverified telephony integration.
+**Important boundary:** Handshake does not automatically receive private two-way audio from
+ordinary operator calls or third-party apps such as WhatsApp. Do not claim live audio
+analysis for those surfaces unless independently verified.
 
-### J7 — Fri Oct 9: mobile QA + final demo + submit
+### J7 — Fri Oct 9: final QA + demo + submit
 
 - [ ] Full manual test pass on the mobile app
-- [ ] Test the Android APK on a real device/emulator
-      (2026-10-06: core flows pass on the Samsung A17; Call Protection and Call
-      Audio Feasibility crash — see ON-DEVICE TEST RESULTS. Not complete.)
-- [ ] Real two-device verification test using the mobile app
-- [ ] Keep the web prototype/API healthy after any compatibility fix
-- [ ] Record the cleanest real mobile demo
+- [ ] Build and install the final Android APK
+- [ ] Verify startup, trusted people, rotating code, correct/wrong verification
+- [ ] Verify Pressure Check and Personal Challenge against the deployed backend
+- [ ] Verify overlay permission flow and warning UI
+- [ ] Test one deliberate network failure
+- [ ] Record the cleanest real demo
 - [ ] Final public demo video, **2–4 min maximum**
-- [ ] Video clearly shows the problem and how the mobile Handshake product works
-- [ ] Final README/project description includes target users, technical approach,
-      real-world impact, and the correct track
-- [ ] Confirm GitHub repo is publicly accessible and contains source code + clear README
-- [ ] Add mobile build/testing evidence, screenshots and architecture evidence
-- [ ] Explicitly label live features, fallbacks, and future Business web product
-- [ ] **Submit on Devpost before 12:00 PM EDT** (target: by noon)
-- [ ] Stop. Buffer day (Oct 10) is untouched.
+- [ ] Final README/project description and evidence
+- [ ] Confirm GitHub repo is public and the mobile source is included
+- [ ] Submit on Devpost before **12:00 PM EDT on Oct 10, 2026**
 
 ## Hackathon platform decision
 
-**Decision recorded 2026-10-04:** Handshake Personal mobile is the primary
-ForgeHacks deliverable.
+**Decision recorded 2026-10-07:** Handshake Personal is a companion layer for ordinary
+phone calls and third-party calling apps. Handshake does not replace the phone app,
+and the mobile product no longer contains a Handshake-to-Handshake WebRTC call screen.
 
-The existing Next.js web app is preserved as the working web prototype and API
-reference. It may receive minimal fixes when required by the mobile client, but
-there is no broad web rewrite during this mobile sprint.
-
-After the hackathon, the web product becomes the basis for **Handshake Business**
-for organizations. The mobile client becomes the Personal product for families
-and individuals.
+The existing Next.js web app remains the working web prototype and API reference.
+The mobile product keeps the shared-code verification model, the shield orchestration,
+and the optional Android warning overlay.
 
 ## Post-hackathon product direction
 
-These are **future product decisions**, not requirements that block the current
-hackathon submission:
+1. Continue Handshake Personal as the Android-first trust companion.
+2. Keep the web product as the basis for Handshake Business after the hackathon.
+3. Keep one shared Handshake Core/API for verification and risk policy.
+4. Move internal checks behind an orchestration layer instead of exposing a toolbox.
+5. Add accounts, device enrollment/revocation, persistent storage and distributed
+   abuse controls before consumer security claims.
 
-1. Continue Handshake Personal as a React Native + Expo + TypeScript mobile
-   product, with Android APK builds for direct testing and AAB/iOS distribution
-   paths as appropriate.
-2. Evolve the existing Next.js web product into Handshake Business for organizations.
-3. Keep a shared Handshake Core/API so security and verification logic is not
-   duplicated across clients.
-4. Move from explicit internal tools to automated orchestration in Personal:
-   Handshake should select appropriate checks and expose one understandable result.
-5. Add real accounts, device enrollment/revocation, persistent storage and
-   production-grade abuse controls before any real consumer security claim.
+## Post-hackathon roadmap — communication companion
 
-## Post-hackathon roadmap — automatic protection during calls
+### Phase 1 — Stable protection layer
+- Finish Samsung A17 release validation.
+- Make overlay permission setup explicit and reversible.
+- Keep carrier call-state awareness separate from audio analysis.
+- Make the manual interaction check easy to use beside WhatsApp and other calling apps.
 
-This is the long-term Personal product direction, **not a hackathon claim and not
-currently implemented**. The goal is to make Handshake a **user-controlled trust
-layer around a supported communication session**, rather than a toolbox of
-manual security buttons.
+**Exit:** the user can reliably protect a phone interaction without replacing the
+calling application.
 
-### Product UX — two states, one protection layer
+### Phase 2 — Evidence-driven risk orchestration
+- Combine pressure signals, trusted-person context and user input.
+- Select the smallest useful check automatically.
+- Keep the user-facing states to **Protected / Verify / Risk**.
+- Trigger the smallest contextual action: verify, challenge or recovery guidance.
 
-**Status: PARTIALLY VERIFIED — AUDIO PATH REQUIRES DIFFERENT CALL ARCHITECTURE**
+**Exit:** one clear action is presented instead of multiple security tools.
 
-- ✅ Verified what Android permits for call-state awareness (CallScreeningService: metadata only)
-- ✅ Verified background execution constraints (microphone FGS: must start from foreground)
-- ✅ Verified audio access boundaries (CARRIER CALL REMOTE AUDIO: NOT AVAILABLE to third-party apps)
-- ✅ Identified supportable call types: Handshake-controlled VoIP/app calls ONLY
-- ✅ Kept existing verification API as source of truth
+### Phase 3 — Supported audio analysis
+Only implement this for a communication surface whose audio is legitimately exposed
+to the application.
 
-**Key Findings (2026-10-05):**
-- Android carrier-call remote audio: NOT AVAILABLE (CAPTURE_AUDIO_OUTPUT is system-only)
-- Local microphone capture: VERIFIED (works when no call active)
-- Call detection via CallScreeningService: VERIFIED (metadata for non-contacts)
-- Two-way carrier-call audio: NOT AVAILABLE IN TESTED PATH
-- VoIP feasibility: CONFIRMED — next phase should implement Handshake-controlled session
+Pipeline:
+**audio → VAD → short buffer → STT → pressure analysis → risk engine → action**
 
-**Exit condition MET WITH CAVEAT:** A real supported call scenario (Handshake VoIP) can be detected/entered, but carrier calls cannot be analyzed in real-time.
+Do not send raw audio continuously to the model, and do not claim carrier or WhatsApp
+audio access without independent device/platform evidence.
 
-### Call Audio Feasibility Prototype — COMPLETED (2026-10-05)
+**Exit:** a measured, supported audio path exists.
 
-**Status: VERIFIED (source review) — Native module implemented, typecheck/lint clean**
+### Phase 4 — Production trust model
+- Real accounts
+- Device enrollment and revocation
+- Persistent encrypted trust relationships
+- Durable/distributed abuse controls
+- Privacy and retention controls
+- Clear recovery flows after suspected fraud
 
-#### ✅ Implemented
-- Native Android module `handshake-call-audio` with Expo config plugin
-- `AudioCaptureManager` — AudioRecord wrapper (MIC, VOICE_RECOGNITION, VOICE_COMMUNICATION)
-- `VADProcessor` — Energy-based VAD (SILENCE/SPEECH/UNKNOWN states)
-- `CallScreeningServiceImpl` — Call metadata detection (number, direction, verification)
-- `CallAudioService` — Microphone foreground service (persists in background)
-- `CallAudioModule` — React Native bridge with real-time events
-- `CallAudioPackage` — React Native package registration
-- Test screen: `call-audio-feasibility.tsx` with real-time metrics
+### Product UX target
 
-#### 📋 Test Matrix Results (Source Verified)
+Outside active interaction:
+**Protection ready**
+→ trusted people
+→ recent activity
+→ privacy/settings
 
-| Scenario | Call Detected | Local Audio | Remote Audio | Both | Background | Result |
-|----------|---------------|-------------|--------------|------|------------|--------|
-| Incoming carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Outgoing carrier | ✅ (CallScreeningService) | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Speakerphone | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Earpiece | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| Bluetooth | ✅ | ❌ Silenced | ❌ NOT AVAILABLE | ❌ | ❌ | LOCAL_MIC_ONLY |
-| App foreground | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
-| App background | N/A | ✅ (FGS) | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
-| Microphone FGS | N/A | ✅ | ❌ NOT AVAILABLE | ❌ | ✅ | LOCAL_MIC_ONLY |
+During an interaction:
+**Protected**
+→ **Verify**
+→ **Risk**
 
-**Major Discovery:** Android carrier-call remote audio is platform-blocked. `CAPTURE_AUDIO_OUTPUT` required for VOICE_UPLINK/DOWNLINK is system-only.
+The user should not need to know whether Handshake used Pressure Check, Personal
+Challenge or another internal capability. The product chooses the check and presents
+the next useful action.
 
-**Architecture Decision:** Pivot to Handshake-controlled VoIP sessions (`ConnectionService` + WebRTC) where both audio sides are natively available.
+## Legacy technical research
 
-### Call Protection Implementation Progress (2026-10-05)
+The Android audio-feasibility research remains archived in `docs/CALL_AUDIO_FEASIBILITY.md`. It established that ordinary carrier-call remote audio is not available to the tested third-party app path. It is retained as evidence, not as a shipped feature.
 
-**Status: IMPLEMENTED IN SOURCE — CRASHES ON DEVICE (see ON-DEVICE TEST RESULTS, 2026-10-06)**
-
-The items below were **source-reviewed only** when written. The 2026-10-06 device
-test found that the active-call screen crashes (`ClassCastException` on
-`<RTCView>`) before any remote media can be established, so none of the call-flow
-behaviour downstream of local capture is verified yet.
-
-#### ✅ Implemented in source (source review only — not device-verified)
-- WebRTC dependency added (`react-native-webrtc@118.0.7`, `@config-plugins/react-native-webrtc@9.0.0`)
-- Expo config plugin configured with microphone/camera permissions
-- Native Android permissions: CAMERA, RECORD_AUDIO, MODIFY_AUDIO_SETTINGS, BLUETOOTH, WAKE_LOCK
-- Backend signaling API: `/api/call/session`, `/api/call/offer`, `/api/call/answer`, `/api/call/ice`, `/api/call/session/:id`, `/api/call/end`
-- Call session store with in-memory session management (30-min TTL)
-- WebRTC call manager with peer connection, ICE candidate handling, connection state monitoring
-- Call Protection UI screen (`/call/protection`) with:
-  - Create protected call / Join call via session ID
-  - Real-time call state display (connecting/connected/ended)
-  - Local and remote audio stream visualization
-  - Mute/unmute, end call controls
-  - Protection status badges (Identity ✓, Call Active, Risk Low)
-- Device ID generation and secure storage via expo-crypto + expo-secure-store
-- TypeScript compilation clean, ESLint clean
-
-> **Device reality (2026-10-06):** session creation, local mic capture,
-> `addTrack`, offer creation and ICE gathering were observed. The active-call
-> screen then crashed, so state display, local/remote stream visualization,
-> mute/unmute and end call were **never rendered**. Treat the bullet list above
-> as code that exists, not behaviour that works.
-
-#### 🔄 Blocked / Next Steps
-- **Rebuild the APK with the `<RTCView>` fix and retest Call Protection** (highest priority)
-- Rebuild and retest Call Audio Feasibility with the `CallAudioModule` bridge fix
-- Two-device WebRTC call test (Device A = Samsung A17, Device B = emulator/second
-  device) — no second device or emulator available on 2026-10-06
-- Verify local audio track transmission (captured on device; not yet observed as
-  rendered/streamed)
-- Verify remote audio track reception
-- Verify two-way audio communication
-- Test background/foreground behavior during active call
-- Test call establishment reliability (ICE, NAT traversal)
-
-#### 📋 Planned
-- VAD integration (reuse existing VADProcessor from native module)
-- Real-time audio frame access for analysis pipeline
-- STT integration (on-device Whisper.cpp or cloud)
-- Pressure Check integration as internal capability
-- Risk engine with Protected/Verify/Risk states
-- Automatic orchestration based on available signals
-
-**Current Architecture:**
-```
-Handshake Personal (Expo)
-    ↓
-WebRTC (react-native-webrtc)
-    ↓
-Signaling via REST API (existing backend)
-    ↓
-PeerConnection (audio-only)
-    ↓
-Local + Remote MediaStream tracks
-    ↓
-Analysis-ready audio (pending VAD integration)
-```
-
-**Target for next validation:** Real two-device WebRTC call with two-way audio confirmed on Samsung A17.
-**Gate (2026-10-06):** blocked behind the `<RTCView>` crash fix — the call never
-gets past local ICE gathering today.
-
-**When there is no call**, Handshake should behave like a calm Personal trust
-center:
-
-- current protection status;
-- trusted people / enrolled relationships;
-- recent verification activity;
-- settings, permissions and privacy controls.
-
-Pressure Check, Personal Challenge and other mechanisms should exist as
-capabilities, but they should not dominate the home screen as unrelated manual
-tools.
-
-**When a protected call starts**, the product should move into **Call Protection
-Mode** while preserving the native communication experience as much as the
-platform allows.
-
-The intended experience is:
-
-- the normal Android call UI remains recognizable;
-- Handshake adds a small, natural trust layer rather than recreating the whole
-  phone application;
-- the user sees one understandable security state instead of a technical
-  workflow.
-
-Primary states:
-
-- **PROTECTED** — identity context is valid and no elevated signal is currently
-  present;
-- **VERIFYING / VERIFY** — additional proof is required;
-- **RISK / POSSIBLE RISK** — Handshake has a meaningful warning signal and offers
-  the next useful action.
-
-Example interaction model:
-
-```text
-No call
-  ↓
-Personal trust center
-
-Call starts
-  ↓
-Call Protection Mode
-  ↓
-Protected / Verify / Risk
-  ↓
-Handshake chooses the next useful check
-```
-
-The user should not have to manually open **Pressure Check**, **Personal
-Challenge**, and other internal tools one by one. Those become internal
-capabilities behind one protection experience.
-
-### Real-time call analysis — intended pipeline
-
-For a call type where the operating system actually exposes an analyzable audio
-stream, the target architecture is continuous, low-latency analysis:
-
-```text
-Call audio
-  ↓
-Audio capture
-  ↓
-Voice Activity Detection (VAD)
-  ↓
-Short audio frames + rolling buffer
-  ↓
-Speech-to-text
-  ↓
-Transcript chunks
-  ↓
-Risk / manipulation analysis
-  ↓
-Risk engine
-  ↓
-PROTECTED / VERIFY / RISK
-  ↓
-Contextual action (verify / challenge / guidance)
-```
-
-The system should **not** send the raw audio stream continuously to the LLM.
-A more realistic design is:
-
-- capture and pre-process audio locally where possible;
-- detect speech and maintain a short rolling buffer;
-- generate transcript chunks;
-- send compact text/context to a semantic model only when useful;
-- maintain an incremental risk state rather than waiting for the entire call.
-
-The model already used for Pressure Check can become one component of this
-risk engine. Its job is to identify signals such as:
-
-- urgency;
-- secrecy;
-- financial requests;
-- authority impersonation;
-- threats or consequences;
-- coercive framing;
-- unusual pressure patterns.
-
-The model output must remain **advisory**, not proof of fraud or proof that a
-voice is cloned.
-
-**Latency target (design goal, not measured):** roughly **1–2 seconds** from a
-meaningful transcript segment to a visible risk update when the supported
-platform and model path can achieve it. This is a target for experimentation,
-not a performance claim.
-
-### How the checks should be orchestrated
-
-The protection session should be policy-driven rather than tool-driven:
-
-```text
-Available signals
-      ↓
-Orchestration / policy layer
-      ↓
-Choose the smallest useful check
-      ↓
-Combine evidence
-      ↓
-One user-facing result
-```
-
-Examples:
-
-- trusted-person identity signal → rotating-code verification;
-- identity uncertainty → Personal Challenge;
-- permitted transcript/message signal → Pressure Check;
-- user reports money or sensitive data already sent → recovery guidance.
-
-Handshake should choose the next useful action instead of exposing internal
-tool names as the primary interaction.
-
-### Android integration strategy
-
-Android integration must be built in layers and validated experimentally.
-
-#### Layer A — Call awareness / caller identity
-
-Android's CallScreeningService is an integration point for call screening and
-caller-ID use cases. It can be implemented by the default dialer or a third-party
-app. It receives new incoming/outgoing call events for screening/identification,
-and incoming-call screening has a strict response window. It is **not** equivalent
-to receiving the full two-way call audio.
-
-Official reference:
-https://developer.android.com/reference/android/telecom/CallScreeningService
-
-#### Layer B — Native in-call experience
-
-Android's InCallService is the deeper integration path when an application
-provides the call UI. This is a separate architectural commitment and should
-not be assumed to be necessary for the first prototype.
-
-Official reference:
-https://developer.android.com/reference/android/telecom/InCallService
-
-#### Layer C — Microphone / foreground execution
-
-Android supports microphone foreground services for continuing microphone
-capture in the background, subject to RECORD_AUDIO, foreground-service type
-permissions and Android's background-start restrictions. This provides a way to
-capture microphone input under supported conditions, but **does not by itself
-grant Handshake unrestricted access to both sides of a carrier call**.
-
-Official references:
-https://developer.android.com/develop/background-work/services/fgs/service-types
-https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
-
-#### Layer D — Controlled VoIP / communication session
-
-A longer-term path is for Handshake to own or integrate a supported VoIP
-communication session where the application legitimately controls the audio
-streams. Android's Telecom stack includes ConnectionService for integrating
-managed calls.
-
-Official reference:
-https://developer.android.com/reference/android/telecom/ConnectionService
-
-**Current architecture rule:** do not assume that RECORD_AUDIO means 'read the
-phone call'. A real experiment must determine what audio is actually available
-on the target device and call type.
-
-### First technical prototype after the hackathon
-
-The first implementation task is **not** the full real-time risk engine.
-
-It is a small Android-native feasibility prototype that answers one question:
-
-> During a real call on the target Samsung A17, what audio stream can Handshake
-> actually obtain, under explicit user permission, and for which call types?
-
-The test matrix should cover, where possible:
-
-1. incoming carrier call;
-2. outgoing carrier call;
-3. microphone input;
-4. remote/caller audio availability;
-5. speakerphone;
-6. earpiece;
-7. Bluetooth;
-8. app foreground;
-9. app background;
-10. foreground microphone service;
-11. the exact stream exposed to AudioRecord or the chosen native audio API.
-
-**Exit condition:** documented, observed evidence showing which scenarios expose
-usable audio and which do not.
-
-Do not build the rest of the real-time pipeline until this gate is passed.
-
-### If two-way carrier-call audio is unavailable
-
-The fallback architecture is **not** to fake capture or secretly record.
-
-Instead, evaluate supported communication-session options first, especially a
-Handshake-controlled VoIP/session model where both audio sides are legitimately
-available to the application.
-
-The product should clearly state which call types are supported.
-
-A carrier-call capability and a VoIP capability are different product surfaces;
-they must not be presented as interchangeable.
-
-### Real-time privacy and consent model
-
-Call analysis is a sensitive capability and must remain explicit and
-user-controlled.
-
-Design requirements:
-
-- explicit microphone/call-analysis consent;
-- clear Android privacy indicators when platform APIs trigger them;
-- visible 'Handshake protection active' state;
-- user-controlled pause/stop;
-- no invisible always-listening behavior;
-- minimize raw audio retention;
-- prefer on-device processing where practical;
-- only send the minimum derived text/context required for semantic analysis;
-- define retention/deletion rules before production.
-
-The product must never become covert call surveillance.
-
-### Call Protection UI target
-
-The call interface should feel like **Android + Handshake**, not a second phone
-application.
-
-Normal state:
-
-```text
-            Trusted contact
-                04:37
-
-        ✓ HANDSHAKE PROTECTED
-
-        Identity      ✓
-        Risk          Low
-        Protection    Active
-```
-
-Elevated-risk state:
-
-```text
-        ⚠ HANDSHAKE
-
-        Elevated pressure detected
-
-        The caller is creating urgency
-        around a payment.
-
-        [ VERIFY ]
-
-        [ CHALLENGE ]
-```
-
-The exact visual implementation remains open until the Android integration
-constraints are validated. The UX principle is stable: **minimal interruption,
-one clear state, one contextual next action**.
-
-### What this phase must not claim
-
-Until the technical feasibility gate is passed and tested on-device, Handshake
-must **not** claim that it:
-
-- automatically intercepts every phone call;
-- continuously receives both sides of every carrier call;
-- analyzes phone-call audio in real time on Android;
-- detects cloned voices from live audio;
-- runs invisibly in the background;
-- works identically on Android and iOS.
-
-Those are hypotheses / future capabilities until independently verified.
-
-### Long-term sequencing
-
-**Phase 1 — Call-awareness feasibility**
-- verify Android/iOS call state, audio, background and notification capabilities;
-- determine first supported call type;
-- build the native audio feasibility prototype;
-- record observed constraints.
-
-**Exit:** one genuinely supported communication scenario is technically proven.
-
-**Phase 2 — Protected Call Session**
-- connect the proven call/session signal to trusted-person context;
-- start the rotating-code verification context automatically;
-- expose a single **Protected / Verify / Risk** state;
-- let the user pause/end protection.
-
-**Exit:** one supported session can be protected end to end.
-
-**Phase 3 — Real-time analysis**
-- audio frames → VAD → rolling buffer;
-- speech-to-text;
-- incremental semantic risk analysis;
-- local risk aggregation;
-- contextual intervention;
-- latency and battery profiling.
-
-**Exit:** the system reacts to meaningful call content in near real time on a
-supported device/session, with measured behavior.
-
-**Phase 4 — Automatic orchestration**
-- policy layer selects verification, challenge, pressure analysis or recovery
-  guidance;
-- surface evidence behind the decision without exposing internal tool mechanics.
-
-**Exit:** users experience one protection layer rather than separate tools.
-
-**Phase 5 — Production trust and privacy**
-- accounts;
-- device enrollment/revocation;
-- persistent storage;
-- durable abuse controls;
-- consent, retention and deletion controls;
-- security review and adversarial testing.
-
-**Phase 6 — Handshake Business**
-- evolve the existing Next.js web product into organization-facing controls,
-  administration, verification history, policies and reporting;
-- reuse the shared Handshake Core/API.
-
-**Long-term principle:** Handshake should feel automatic during a supported
-communication session while remaining explicit, user-controlled,
-privacy-preserving and honest about platform limits.
-
-## Cut list (in this order, only if behind)
-
-1. **Personal challenge** (feature 3) — second LLM feature, highest added risk.
-2. **Pressure check** (feature 2) — first LLM feature, but the demo still works on codes + contrast without it.
-3. **Visual polish** (animations, extra screens) — keep it functional and clean.
-4. **First-hour screen** — last to cut: it is a static page and cheap; ship a simplified version if needed.
-
-**Never cut:** trusted circle + rotating codes, the contrast demo, the video, the Devpost submission.
-
-## Definition of done (overall)
-
-- Handshake Personal mobile build is testable on a real Android device.
-- Core mobile verification flow works for real on two devices.
-- Existing web prototype/API still passes its regression checks.
-- Any live AI feature shown in the demo actually calls the configured backend.
-- Public demo video (2–4 min max) uploaded and linked on Devpost.
-- Repo public with README that a judge can follow to run the app.
-- Submission completed ≥ 4 h before the deadline, with buffer for Devpost issues.
-
-**A presentation-only mockup is not sufficient as the definition of done for the
-core product.**
-
-The video itself is a presentation artifact, but it must demonstrate the
-working product honestly rather than manufacture the appearance of functionality.
+The former Handshake-controlled WebRTC call screen and its mobile client have been removed from the current product. Any future supported audio architecture must be independently verified before implementation.
