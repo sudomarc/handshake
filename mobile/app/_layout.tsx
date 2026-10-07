@@ -13,17 +13,13 @@ function AutoArmWarnings() {
     const arm = async () => {
       try {
         const allowed = await callOverlayManager.canDrawOverlays();
-        if (!cancelled && allowed) {
-          await callOverlayManager.startProtection();
-        }
+        if (!cancelled && allowed) await callOverlayManager.startProtection();
       } catch {
         // Warnings remain opt-in when overlay setup is unavailable.
       }
     };
     void arm();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
   return null;
 }
