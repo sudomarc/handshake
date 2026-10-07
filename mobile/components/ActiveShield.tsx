@@ -60,9 +60,6 @@ export function ActiveShield() {
         <Body muted style={s.centerText}>
           Checking for pressure tactics, urgency and payment demands.
         </Body>
-        <Body muted style={s.centerText}>
-          You can keep the Phone app, WhatsApp, or another calling app open while you check the interaction.
-        </Body>
       </Centered>
     );
   } else if (status === "analyzing" && check?.verdict === "clear") {
@@ -72,7 +69,7 @@ export function ActiveShield() {
           <StatusRing
             status="safe"
             size={176}
-            titleOverride="All clear"
+            titleOverride="No high-pressure signal"
             subtitleOverride={`Pressure ${pressure?.pressureScore}/100`}
           />
         </Centered>
