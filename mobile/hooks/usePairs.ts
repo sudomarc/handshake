@@ -4,6 +4,7 @@ import {
   getActivePair,
   getAllPairs,
   removePair as storeRemove,
+  updatePair as storeUpdate,
   setActivePair,
   type StoredPair,
 } from "@/lib/storage";
@@ -48,5 +49,13 @@ export function usePairs() {
     [refresh],
   );
 
-  return { pairs, activePair, loading, addPair, removePair, setActive, refresh };
+  const updatePair = useCallback(
+    async (pairId: string, patch: { name?: string; privateContext?: string }) => {
+      await storeUpdate(pairId, patch);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  return { pairs, activePair, loading, addPair, removePair, setActive, updatePair, refresh };
 }
