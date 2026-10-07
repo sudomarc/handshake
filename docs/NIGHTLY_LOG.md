@@ -164,3 +164,43 @@
 1. Perform final pre-submission validation checklist in `ROADMAP.md`.
 2. Re-verify release APK build on device.
 3. Complete video demo recording pass per `DEMO_SCRIPT.md`.
+
+## 2026-10-07 (Run 3)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (0 errors).
+  - Test suite (`npm test`): PASS (22/22 passed).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+
+### Work Completed & Priority
+- **Priority 4 (Continuous Improvement Loop - API Route & Security Test Coverage):**
+  - Added full API route integration test suite in `tests/api.test.ts` providing 100% test coverage across HTTP handlers (`/api/code/current`, `/api/code/verify`, `/api/circle`, `/api/analyze`, `/api/challenge`).
+  - Enforced verification of correct TOTP code verification, incorrect code rejection, schema validation failure handling (400 `invalid_input`), per-pair attempt rate limits (429 `rate_limited`), and per-client IP rate limits.
+  - Mocked Featherless LLM fetch calls in API tests to avoid external network dependency during unit test runs.
+  - Updated root `package.json` test script to execute both `tests/lib.test.ts` and `tests/api.test.ts` alongside `plugin.test.js`.
+
+### Changes
+- `tests/api.test.ts`: Added unit test suite for Next.js API route handlers.
+- `package.json`: Updated `npm test` script to `"npx tsx --test tests/lib.test.ts tests/api.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"`.
+- `docs/NIGHTLY_LOG.md`: Recorded 2026-10-07 (Run 3) nightly run results and verification gate outputs.
+
+### Gates & Results
+- `npm test`: PASS (32/32 tests passed across 3 test suites: 15 lib + 10 api + 7 plugin).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+
+### Known Risks & Open Findings
+- Release APK build on Samsung SM-A175F needs physical device re-verification before submission.
+- Device testing of call overlay warnings above phone app.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Record final Devpost demo video following `DEMO_SCRIPT.md`.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Re-verify release APK on device after CI build completes.
+3. Final rehearsal and recording of public Devpost demo video.
