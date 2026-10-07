@@ -21,7 +21,6 @@ export type EscalationOutcome = "pass" | "fail";
 
 export interface ShieldState {
   status: ShieldStatus;
-  callActive: boolean;
   transcript: string;
   checking: boolean;
   check: TranscriptCheck | null;
@@ -33,18 +32,15 @@ export interface ShieldState {
 }
 
 export interface ShieldApi extends ShieldState {
-  primaryLabel: string;
   setTranscript: (value: string) => void;
   startAnalysis: () => void;
   submitTranscript: () => Promise<void>;
   resolveEscalation: (outcome: EscalationOutcome) => void;
   reset: () => void;
-  reportCallActive: (active: boolean) => void;
 }
 
 const INITIAL: ShieldState = {
   status: "safe",
-  callActive: false,
   transcript: "",
   checking: false,
   check: null,
@@ -66,10 +62,6 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
   const { activePair, pairs } = usePairs();
   const runRef = useRef(0);
 
-  const reportCallActive = useCallback((active: boolean) => {
-    setState((prev) => (prev.callActive === active ? prev : { ...prev, callActive: active }));
-  }, []);
-
   const setTranscript = useCallback((value: string) => {
     setState((prev) => ({ ...prev, transcript: value, error: null }));
   }, []);
@@ -78,14 +70,13 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     runRef.current += 1;
     setState((prev) => ({
       ...INITIAL,
-      callActive: prev.callActive,
       status: "analyzing",
     }));
   }, []);
 
   const reset = useCallback(() => {
     runRef.current += 1;
-    setState((prev) => ({ ...INITIAL, callActive: prev.callActive }));
+    setState(() => ({ ...INITIAL }));
   }, []);
 
   const escalate = useCallback(
@@ -188,18 +179,14 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const primaryLabel = state.callActive ? "Shield Call" : "Verify Interaction";
-
   const value = useMemo<ShieldApi>(
     () => ({
       ...state,
-      primaryLabel,
       setTranscript,
       startAnalysis,
       submitTranscript,
       resolveEscalation,
       reset,
-      reportCallActive,
     }),
     [
       state,
@@ -209,7 +196,6 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
       submitTranscript,
       resolveEscalation,
       reset,
-      reportCallActive,
     ],
   );
 
