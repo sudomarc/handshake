@@ -48,7 +48,6 @@ mobile/
 │   │   └── trusted.tsx     # Trust Ledger
 │   ├── verify/[pairId].tsx # Trust Ping + person management
 │   ├── codes/[pairId].tsx  # Caller code screen
-│   └── call/protection.tsx # Protected WebRTC call
 ├── components/
 │   ├── ActiveShield.tsx    # Contextual shield overlay
 │   ├── StatusRing.tsx      # Global status indicator
@@ -75,11 +74,11 @@ mobile/
 
 ## Key Features
 
-- **Shield home**: global SAFE / ANALYZING / THREAT / ESCALATED status with one contextual action
-- **Trust Ping**: conversational verification that ends in Matched or Failed
-- **Escalation**: high-pressure text analysis automatically chains a personal question
-- **Protected call**: WebRTC session whose state feeds the shield engine
-- **Caller code**: large code display for reading aloud
+- **Protection home**: simple READY / CHECKING / VERIFY states with one primary verification action
+- **Identity verification**: shared rotating-code verification that ends in Verified or Verification failed
+- **Risk escalation**: high-pressure text analysis can trigger a personal identity question
+- **Call warnings**: optional Android overlay for phone activity and companion use over third-party calling apps
+- **Caller code**: large rotating code display for reading aloud
 - Live code polling with server-anchored countdown
 - Rate limiting handled on server
 - Secure storage for pair IDs using expo-secure-store
@@ -115,3 +114,10 @@ eas build --platform android --profile preview
 # Production AAB (for Play Store)
 eas build --platform android --profile production
 ```
+
+## Call surfaces
+
+Handshake does not replace the system Phone app and does not place users into a Handshake-only call.
+The Android build can observe carrier call state and show an optional overlay above the phone or another app.
+For WhatsApp and similar apps, use **Check a call** manually and keep warnings enabled if overlay permission is granted.
+Handshake does not automatically receive private two-way audio from those third-party calls.
