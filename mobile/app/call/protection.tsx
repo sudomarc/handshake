@@ -43,14 +43,12 @@ export default function CallProtection() {
     return `${mins}:${secs}`;
   };
 
-  // Initialize call manager
   useEffect(() => {
     getDeviceId().then(deviceId => {
       setCallManager(new WebRTCCallManager(deviceId));
     });
   }, []);
 
-  // Listen for call events
   useEffect(() => {
     if (!callManager) return;
 
@@ -76,7 +74,6 @@ export default function CallProtection() {
     return () => unsub();
   }, [callManager, startDurationTimer, stopDurationTimer]);
 
-  // Report call context to the global shield state engine.
   useEffect(() => {
     reportCallActive(callState === 'connecting' || callState === 'connected');
   }, [callState, reportCallActive]);
@@ -156,13 +153,12 @@ export default function CallProtection() {
     <PageShell title="Call Protection">
       <View style={s.container}>
         {isEnded || callState === 'idle' ? (
-          // Pre-call state
           <View style={s.preCallContainer}>
             <View style={s.statusCard}>
-              <H2 style={s.statusTitle}>Call Protection</H2>
+              <H2 style={s.statusTitle}>Handshake call</H2>
               <Body muted style={s.statusDesc}>
-                Start a protected call with a trusted person. Both audio streams will be
-                available for real-time verification and risk analysis.
+                Start a Handshake-to-Handshake call with a trusted person. This test uses WebRTC
+                audio inside Handshake; it does not establish access to audio from ordinary carrier calls.
               </Body>
 
               {activePair ? (
@@ -176,7 +172,7 @@ export default function CallProtection() {
 
               <View style={s.buttonRow}>
                 <Button
-                  label="Create Protected Call"
+                  label="Create protected call"
                   onPress={handleStartCall}
                   disabled={!activePair || isConnecting}
                   style={{ flex: 1 }}
@@ -188,7 +184,7 @@ export default function CallProtection() {
               </View>
 
               <View style={s.joinSection}>
-                <Text style={s.joinLabel}>Join a call</Text>
+                <Text style={s.joinLabel}>Join a protected call</Text>
                 <View style={s.inputRow}>
                   <TextInput
                     style={s.input}
@@ -201,7 +197,7 @@ export default function CallProtection() {
                   />
                 </View>
                 <Button
-                  label="Join Call"
+                  label="Join call"
                   variant="secondary"
                   onPress={handleJoinCall}
                   disabled={isConnecting}
@@ -210,7 +206,6 @@ export default function CallProtection() {
             </View>
           </View>
         ) : (
-          // Active call state
           <View style={s.activeCallContainer}>
             <View style={s.callHeader}>
               <View style={s.remoteInfo}>
@@ -218,22 +213,22 @@ export default function CallProtection() {
                 <Text style={s.callTimer}>{formatDuration(callDuration)}</Text>
               </View>
               <View style={s.protectionBadge}>
-                <Text style={s.badgeText}>✓ HANDSHAKE PROTECTED</Text>
+                <Text style={s.badgeText}>HANDSHAKE CALL</Text>
               </View>
             </View>
 
             <View style={s.callStatusGrid}>
               <View style={s.statusItem}>
                 <Text style={s.statusLabel}>Identity</Text>
-                <Text style={[s.statusValue, s.statusVerified]}>✓ Verified</Text>
+                <Text style={s.statusValue}>Pending</Text>
               </View>
               <View style={s.statusItem}>
                 <Text style={s.statusLabel}>Call</Text>
                 <Text style={[s.statusValue, s.statusActive]}>{callState}</Text>
               </View>
               <View style={s.statusItem}>
-                <Text style={s.statusLabel}>Risk</Text>
-                <Text style={[s.statusValue, s.statusLow]}>Low</Text>
+                <Text style={s.statusLabel}>Protection</Text>
+                <Text style={[s.statusValue, s.statusVerified]}>Active</Text>
               </View>
             </View>
 
@@ -246,7 +241,7 @@ export default function CallProtection() {
                     objectFit="cover"
                   />
                   <View style={s.videoOverlay}>
-                    <Text style={s.videoLabel}>Remote Audio Active</Text>
+                    <Text style={s.videoLabel}>Remote audio</Text>
                     <Mono>{callManager?.getRemoteStream() ? 'Receiving' : 'Connecting...'}</Mono>
                   </View>
                 </View>
@@ -261,8 +256,8 @@ export default function CallProtection() {
                     mirror={true}
                   />
                   <View style={s.videoOverlay}>
-                    <Text style={s.videoLabel}>Local Audio</Text>
-                    <Mono>{isMuted ? 'MUTED' : 'ACTIVE'}</Mono>
+                    <Text style={s.videoLabel}>Local audio</Text>
+                    <Mono>{isMuted ? 'Muted' : 'Active'}</Mono>
                   </View>
                 </View>
               )}
@@ -276,7 +271,7 @@ export default function CallProtection() {
                 disabled={!isActive}
               />
               <Button
-                label="End Call"
+                label="End call"
                 variant="danger"
                 onPress={handleEndCall}
                 disabled={!canEndCall}
@@ -366,7 +361,6 @@ const s = StyleSheet.create({
   statusValue: { color: colors.text, fontSize: 16, fontWeight: '600' },
   statusVerified: { color: colors.success },
   statusActive: { color: colors.accent },
-  statusLow: { color: colors.success },
   videoContainer: {
     flex: 1,
     flexDirection: 'column',
