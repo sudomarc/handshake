@@ -107,6 +107,26 @@ describe("lib/rateLimit", () => {
     const r5 = consume(key, max, windowMs, now + windowMs + 1000);
     assert.equal(r5.allowed, true);
   });
+
+  test("per-client IP rate limiting prevents pairId bypass attacks", () => {
+    const clientIp = "192.168.1.100";
+    const max = 10;
+    const windowMs = 60000;
+    const now = 2000000;
+
+    // Simulate 10 requests from same IP with different pairIds
+    for (let i = 0; i < max; i++) {
+      const pairId = `pair_${i}`;
+      const ipResult = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
+      const pairResult = consume(`analyze:pair:${pairId}`, max, windowMs, now);
+      assert.equal(ipResult.allowed, true);
+      assert.equal(pairResult.allowed, true);
+    }
+
+    // 11th request from same IP with a brand-new pairId should be blocked by IP rate limit
+    const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
+    assert.equal(ipResult11.allowed, false);
+  });
 });
 
 describe("lib/schemas", () => {

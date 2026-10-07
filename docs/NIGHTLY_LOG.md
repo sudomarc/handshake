@@ -79,3 +79,47 @@
 1. Re-verify release APK on device after CI build completes.
 2. Review remaining audit findings (F1/F2/F3) and Devpost submission checklist items.
 3. Rehearse `DEMO_SCRIPT.md` end to end.
+
+## 2026-10-07
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS.
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS.
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (21/21 passed).
+
+### Work Completed & Priority
+- **Priority 3 (Documented audit findings / Security Hardening - Finding F3):**
+  - Fixed Audit Finding F3: AI route rate limits (`/api/analyze` and `/api/challenge`) were previously keyed solely on caller-supplied `pairId`, enabling rate limit bypasses with randomized `pairId`s.
+  - Updated both API endpoints to enforce dual-bucket rate limiting (`consume("analyze:ip:" + clientKey(req), 10, 60_000)` and `consume("challenge:ip:" + clientKey(req), 10, 60_000)` alongside per-pair limits) to prevent Featherless AI credit exhaustion.
+  - Added unit test in `tests/lib.test.ts` verifying that per-client IP rate limits prevent `pairId` bypass attacks.
+  - Updated `ROADMAP.md` (F3) and `SECURITY.md` (T6) to document the fix.
+
+### Changes
+- `app/api/analyze/route.ts`: Enforced per-client IP rate limit alongside per-pair rate limit.
+- `app/api/challenge/route.ts`: Added `clientKey(req)` and enforced per-client IP rate limit alongside per-pair rate limit.
+- `tests/lib.test.ts`: Added `per-client IP rate limiting prevents pairId bypass attacks` unit test.
+- `ROADMAP.md`: Updated Audit Finding F3 status to FIXED.
+- `SECURITY.md`: Updated Threat T6 status to FIXED.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-07 nightly work and gate results.
+
+### Gates & Results
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+- Test suite (`npm test`): 22/22 tests passed (15 library tests + 7 plugin tests).
+
+### Known Risks & Open Findings
+- On-device test findings from `docs/DEVICE_TEST_REPORT_2026-10-06.md`:
+  - Release APK re-verification on device outstanding after CI build completes.
+  - Two-device WebRTC call flow remains untested due to lack of second physical device / emulator.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Two-device WebRTC call test.
+
+### Plan for Tomorrow
+1. Re-verify release APK on device after CI build completes.
+2. Review remaining audit findings (F1/F2) and Devpost submission checklist items.
+3. Rehearse `DEMO_SCRIPT.md` end to end.
