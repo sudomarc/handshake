@@ -18,7 +18,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://handshake-pi-amber.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://handshake-patrickk2s-projects.vercel.app"
       }
     },
     "production": {
@@ -27,7 +27,7 @@
         "gradleCommand": ":app:bundleRelease"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://handshake-pi-amber.vercel.app"
+        "EXPO_PUBLIC_API_BASE_URL": "https://handshake-patrickk2s-projects.vercel.app"
       }
     }
   },
