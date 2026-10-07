@@ -6,15 +6,11 @@ import {
   currentCodeResponseSchema,
   pressureCheckResponseSchema,
   verifyCodeResponseSchema,
-  createCallSessionResponseSchema,
-  callSessionSchema,
   type ChallengeResponse,
   type CreatePairResponse,
   type CurrentCode,
   type PressureCheckResponse,
   type VerifyCodeResponse,
-  type CreateCallSessionResponse,
-  type CallSession,
 } from "./apiTypes";
 
 export class ApiError extends Error {

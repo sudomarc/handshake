@@ -123,3 +123,44 @@
 1. Re-verify release APK on device after CI build completes.
 2. Review remaining audit findings (F1/F2) and Devpost submission checklist items.
 3. Rehearse `DEMO_SCRIPT.md` end to end.
+
+## 2026-10-07 (Run 2)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors, 2 ESLint warnings in `CreatePair.tsx`).
+  - Mobile (`cd mobile && npm ci && npm run typecheck`): FAIL (`TS2345` in `app/verify/[pairId].tsx` and missing imports in `lib/api.ts`).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (22/22 passed).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things - Typecheck & Lint baseline failures):**
+  - Resolved mobile TypeScript typecheck failure in `mobile/app/verify/[pairId].tsx` by creating a typed `targetPairId` variable to ensure TS narrows `string | null` to `string` in callback closure.
+  - Resolved mobile unused import errors in `mobile/lib/api.ts` by removing obsolete call session schema and type imports (`createCallSessionResponseSchema`, `callSessionSchema`, `CreateCallSessionResponse`, `CallSession`).
+  - Resolved root Next.js ESLint `@typescript-eslint/no-unused-vars` warnings in `components/CreatePair.tsx` by linking `handleCreate` and `handleReset` handlers to user interactions.
+
+### Changes
+- `mobile/app/verify/[pairId].tsx`: Narrowed `validPairId` via `targetPairId` in `confirmRemove` callback closure.
+- `mobile/lib/api.ts`: Removed obsolete `createCallSessionResponseSchema`, `callSessionSchema`, `CreateCallSessionResponse`, and `CallSession` imports.
+- `components/CreatePair.tsx`: Connected `handleCreate` and `handleReset` to button click events, clearing ESLint warnings.
+- `docs/NIGHTLY_LOG.md`: Recorded 2026-10-07 (Run 2) nightly run results and gate checks.
+
+### Gates & Results
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+- Test suite (`npm test`): 22/22 tests passed (15 library tests + 7 plugin tests).
+- Formatting check (`npm run format:check` & `cd mobile && npm run format:check`): PASS.
+
+### Known Risks & Open Findings
+- Release APK re-verification on physical Samsung SM-A175F remaining as open manual validation step.
+- Device testing of third-party call overlay warnings.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Devpost demo video recording rehearsal.
+
+### Plan for Tomorrow
+1. Perform final pre-submission validation checklist in `ROADMAP.md`.
+2. Re-verify release APK build on device.
+3. Complete video demo recording pass per `DEMO_SCRIPT.md`.

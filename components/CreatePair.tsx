@@ -58,7 +58,7 @@ export function CreatePair() {
         </div>
         <button
           type="button"
-          onClick={() => setStep("choosing")}
+          onClick={handleCreate}
           disabled={busy}
           className="btn-primary btn-lg btn-block"
         >
@@ -128,7 +128,7 @@ export function CreatePair() {
             <span className="block text-sm text-neutral-500 mt-1">Verify the call</span>
           </Link>
         </div>
-        <button onClick={() => setStep("idle")} className="btn-ghost btn-block">
+        <button onClick={handleReset} className="btn-ghost btn-block">
           Start over
         </button>
       </div>
@@ -183,7 +183,7 @@ export function CreatePair() {
         </Link>
       </div>
 
-      <button onClick={() => setStep("idle")} className="btn-ghost btn-block">
+      <button onClick={handleReset} className="btn-ghost btn-block">
         Add another person
       </button>
     </div>

@@ -31,8 +31,9 @@ export default function PersonScreen() {
     );
   }
 
+  const targetPairId = validPairId;
   const name = pair?.name ?? "Trusted person";
-  const isActive = activePair?.pairId === validPairId;
+  const isActive = activePair?.pairId === targetPairId;
 
   function confirmRemove() {
     Alert.alert("Remove trusted person?", `${name} will be removed from this phone.`, [
@@ -41,7 +42,7 @@ export default function PersonScreen() {
         text: "Remove",
         style: "destructive",
         onPress: () => {
-          void removePair(validPairId).then(() => router.back());
+          void removePair(targetPairId).then(() => router.back());
         },
       },
     ]);
