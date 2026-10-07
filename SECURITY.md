@@ -122,9 +122,9 @@ whether a `pairId` was ever "created" — an unknown but well-formed `pairId` yi
   read a code to a caller you don't already trust; the personal challenge is a
   second layer.
 - **Pressure check can reassure falsely.** The model only sees a text transcript. A
-  calm, convincing scam script can score low or be labelled "likely human". The
-  output is advisory about pressure tactics only; it says nothing about who is
-  speaking. See ROADMAP finding F1.
+  calm, convincing scam script can score low even when it is malicious. The output is
+  advisory about pressure tactics only; it says nothing about who is speaking. Identity
+  verification comes from the shared rotating code, not the model.
 - **No accounts/auth in the demo.** Anyone with a pair ID can use that pair.
   Production would need real authentication and device registration.
 - **LLM provider data handling.** Transcripts are sent to Featherless for
