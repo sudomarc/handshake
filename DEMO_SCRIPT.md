@@ -22,7 +22,7 @@ result.
 - The mobile result screen currently shows a label (*Likely human* / *Likely clone /
   scam pressure* / *Uncertain*), a pressure score, a "risk level" number and a
   short reasoning (see ROADMAP finding F1). Read out the **pressure score and the
-  reasoning only**; do not read the label or the "human likelihood" as a verdict
+  reasoning only**; do not read the label or the "risk level" as a verdict
   about the voice. A calm transcript scoring low means "little pressure in this text",
   not "this person is genuine".
 - *Personal question* returns a generic question on mobile (no private context can be
@@ -42,7 +42,7 @@ rehearsal; two real devices for the recording).
 
 | Role                    | Device                             | What it shows                                                             |
 | ----------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
-| "Mom" (receiver)        | **Device A** — Android phone       | Handshake **Verify a call** screen: types the code the caller says → verdict. No live code on this screen. |
+| "Mom" (receiver)        | **Device A** — Android phone       | Handshake **Verify person** screen: types the code the caller says → verdict. No live code on this screen. |
 | Real person (developer) | **Device B** — Android phone       | Handshake **My code** screen (6 digits + countdown, read aloud) + **Pressure check** + **The first hour** |
 | Scammer                 | speaker on Device A or a 2nd phone | plays the **cloned voice** scam audio                                     |
 
@@ -68,7 +68,7 @@ before the demo.
    is one the clone can't access: a code only the real person's phone can show."
 2. **(20 s) The scam.** Play the clone audio on speaker: _"Mom, it's me, I'm in
    trouble, I need $500 right now, don't tell anyone."_
-3. **(25 s) The reflex.** Device A (Mom's phone) on **Verify a call**. Narrate:
+3. **(25 s) The reflex.** Device A (Mom's phone) on **Verify person**. Narrate:
    "Mom doesn't guess and doesn't transfer. She asks the caller to say the
    code out loud. This screen shows no code — so there is nothing on screen to
    read. Only the real person's phone can produce it."
