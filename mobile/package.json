@@ -9,6 +9,7 @@
     "build:android": "eas build --platform android",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:android:production": "eas build --platform android --profile production",
+    "test": "node --test plugins/handshake-call-audio/plugin.test.js",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
