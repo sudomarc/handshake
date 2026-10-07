@@ -29,7 +29,7 @@ ever receives: short rotating codes, validated AI results, and static content.
 
 ## Data flows
 
-### 1. Codes (verify a call)
+### 1. Codes (verify a person)
 
 1. `POST /api/circle` — create a pair. The server derives a TOTP secret for the
    pair (see "Pair secrets") and never returns it.
