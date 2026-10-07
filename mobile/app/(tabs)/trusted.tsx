@@ -11,8 +11,8 @@ export default function TrustLedger() {
   const { pairs, activePair, loading, refresh } = usePairs();
 
   return (
-    <PageShell title="Trust Ledger">
-      <Body muted>The people you verify against. Tap a name to send a Trust Ping.</Body>
+    <PageShell title="Trusted people">
+      <Body muted>People you have set up for identity verification. Tap a name to verify them.</Body>
 
       {loading ? (
         <Body muted>Loading…</Body>
