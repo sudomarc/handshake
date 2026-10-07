@@ -21,7 +21,9 @@ async function chatCompletionWithRetry(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    // 30 s: model latency measured up to ~19 s in production (Vercel Hobby
+    // functions may run 300 s, see vercel.com/docs/functions/configuring-functions/duration).
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
     try {
       const response = await fetch(`${FEATHERLESS_BASE_URL}/chat/completions`, {
