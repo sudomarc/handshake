@@ -59,11 +59,7 @@ function copyNativeFiles() {
   }
 
   const files = [
-    "CallAudioModule.kt",
-    "CallAudioService.kt",
     "CallScreeningServiceImpl.kt",
-    "AudioCaptureManager.kt",
-    "VADProcessor.kt",
     "CallAudioPackage.kt",
     "HandshakeOverlayModule.kt",
     "HandshakeOverlayService.kt",
@@ -174,12 +170,8 @@ function withCallAudioPlugin(config) {
     const manifest = config.modResults;
 
     const permissions = [
-      "android.permission.RECORD_AUDIO",
-      "android.permission.FOREGROUND_SERVICE",
-      "android.permission.FOREGROUND_SERVICE_MICROPHONE",
       "android.permission.READ_PHONE_STATE",
       "android.permission.READ_CALL_LOG",
-      "android.permission.ANSWER_PHONE_CALLS",
       "android.permission.SYSTEM_ALERT_WINDOW",
       "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
     ];
