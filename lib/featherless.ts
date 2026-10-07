@@ -66,7 +66,10 @@ async function chatCompletionWithRetry(
       try {
         parsed = JSON.parse(content);
       } catch {
-        throw new Error("Featherless returned invalid JSON");
+        // TEMPORARY DIAGNOSTIC: report truncation state (no provider secrets).
+        throw new Error(
+          `Featherless returned invalid JSON (finish_reason=${String(message?.finish_reason ?? "unknown")}, len=${content.length})`,
+        );
       }
 
       return responseSchema.parse(parsed);
@@ -76,7 +79,7 @@ async function chatCompletionWithRetry(
 
       // Only retry on JSON parse failure or Zod validation failure (malformed model output)
       const isRetryable =
-        err.message === "Featherless returned invalid JSON" || error instanceof z.ZodError;
+        err.message.startsWith("Featherless returned invalid JSON") || error instanceof z.ZodError;
 
       if (attempt === 0 && isRetryable) {
         lastError = err;
