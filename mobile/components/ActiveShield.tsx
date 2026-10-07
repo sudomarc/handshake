@@ -146,8 +146,8 @@ export function ActiveShield() {
           <StatusRing
             status={passed ? "safe" : "threat"}
             size={176}
-            titleOverride={passed ? "Pass" : "Fail"}
-            subtitleOverride={passed ? "Identity confirmed by you" : "Identity not confirmed"}
+            titleOverride={passed ? "Verified" : "Verification failed"}
+            subtitleOverride={passed ? "You confirmed the private answer" : "The identity check did not match"}
           />
         </Centered>
         {passed ? (
