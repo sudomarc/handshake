@@ -53,7 +53,11 @@ until they are re-checked with evidence.
 
 The 2026-10-06 device report recorded two fatal crashes in the retired WebRTC/audio prototype. Those components have since been removed from the mobile product. The report remains archived as historical evidence and must not be treated as current shipped behavior.
 
-### FINAL VALIDATION (open before submission)
+### Android fake-call QA gate
+
+The repeatable QA handoff and current test matrix are maintained in [docs/ANDROID_FAKE_CALL_QA_2026-10-07.md](./docs/ANDROID_FAKE_CALL_QA_2026-10-07.md). Device results must be recorded there before any call/overlay behavior is marked VERIFIED.
+
+## FINAL VALIDATION (open before submission)
 
 - [ ] Rebuild the final Android APK from this branch.
 - [ ] Install the APK on the Samsung A17 and verify startup with no native crash.
