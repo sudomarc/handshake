@@ -25,7 +25,7 @@ export function TrustPing({ pairId, name }: TrustPingProps) {
       setReply("");
       setStep("ask");
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : "The ping failed. Try again.");
+      setError(e instanceof Error && e.message ? e.message : "Verification could not start. Try again.");
     } finally {
       setBusy(false);
     }
@@ -60,7 +60,7 @@ export function TrustPing({ pairId, name }: TrustPingProps) {
         <Text accessibilityLiveRegion="polite" style={[s.verdict, { color: colors.success }]}>
           Verified
         </Text>
-        <Body>It is really {name}.</Body>
+        <Body>Verification matched for {name}.</Body>
         <Button label="Done" variant="secondary" onPress={restart} />
       </Card>
     );
@@ -72,7 +72,7 @@ export function TrustPing({ pairId, name }: TrustPingProps) {
         <Text accessibilityLiveRegion="polite" style={[s.verdict, { color: colors.danger }]}>
           Verification failed
         </Text>
-        <Body>It is not {name}.</Body>
+        <Body>The shared code did not match.</Body>
         <Body>
           Do not send money or share information. Hang up and call back on a number you already
           know.
@@ -85,7 +85,7 @@ export function TrustPing({ pairId, name }: TrustPingProps) {
   if (step === "ask") {
     return (
       <Card>
-        <H2>Waiting for {name}</H2>
+        <H2>Verify {name}</H2>
         <Body muted>Ask {name} to say the current 6-digit code shown on their Handshake screen. Type the digits you hear.</Body>
         <TextInput
           value={reply}
@@ -113,10 +113,10 @@ export function TrustPing({ pairId, name }: TrustPingProps) {
 
   return (
     <Card>
-      <H2>Trust Ping</H2>
+      <H2>Verify {name}</H2>
       <Body muted>
-        Ask {name} to confirm it is really them. You will see Matched or Failed — nothing else to
-        figure out.
+        Ask {name} to confirm the interaction with the current shared code. Handshake will only tell you
+        whether the verification matched.
       </Body>
       <Button label="Start verification" onPress={() => void send()} busy={busy} />
       {error ? <ErrorBox message={error} /> : null}
