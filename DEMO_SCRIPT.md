@@ -20,7 +20,7 @@ result.
   advisory." Never say it detects a cloned voice, and never present its output as
   proof that a caller is real or fake.
 - The mobile result screen currently shows a label (*Likely human* / *Likely clone /
-  scam pressure* / *Uncertain*), a pressure score, a "human likelihood" number and a
+  scam pressure* / *Uncertain*), a pressure score, a "risk level" number and a
   short reasoning (see ROADMAP finding F1). Read out the **pressure score and the
   reasoning only**; do not read the label or the "human likelihood" as a verdict
   about the voice. A calm transcript scoring low means "little pressure in this text",
