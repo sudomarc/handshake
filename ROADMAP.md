@@ -40,89 +40,43 @@ until they are re-checked with evidence.
 
 ### COMPLETED
 
-- **VERIFIED** — `mobile/` Expo app (SDK 51, Expo Router) with the Personal flows:
-  trusted people, *My code*, *Verify a call*, Pressure check, Personal question,
-  The first hour. `tsc --noEmit`: 0 errors. ESLint: 0 problems.
-- **VERIFIED (source review)** — *Verify a call* never renders the live code
-  (`mobile/app/verify/[pairId].tsx`, `mobile/components/VerifyForm.tsx`). *My code*
-  shows it with a countdown, refetches at rotation, and has an error state with
-  *Try again* (`useLiveCode.ts`, `CodeDisplay.tsx`). Verify errors keep the form
-  usable (`VerifyForm.tsx`). Not yet observed on a device.
-- **VERIFIED locally** (Next dev server, throwaway `PAIR_DERIVATION_KEY`, no AI key):
-  - `POST /api/circle` → 201 with a 32-hex `pairId`.
-  - `GET /api/code/current` → 200 with a valid `pairId`; 400 when missing or malformed.
-  - `POST /api/code/verify` → `verified` for the current code, `not-verified` for a
-    wrong code; 400 for a malformed code, invalid JSON and empty body; the 6th
-    attempt for one pair inside a 30 s window → 429 with `Retry-After`.
-  - `POST /api/analyze`, `POST /api/challenge` → 400 on invalid input; 503
-    `not_configured` when `FEATHERLESS_API_KEY` is absent. Error bodies expose no
-    internals; server logs print variable names only, never values.
-- **VERIFIED** — secrets hygiene: a pattern scan of the full git history (GitHub
-  tokens, `sk-`/`rc_` keys, 64-hex strings, `*_KEY=` assignments) found nothing;
-  only the two `.env.example` files were ever tracked; the only `EXPO_PUBLIC_*`
-  variable is `EXPO_PUBLIC_API_BASE_URL` (a URL); no secret name is referenced
-  from `mobile/`.
-- **VERIFIED (configuration)** — EAS `preview` profile builds an APK and injects the
-  production API URL (`mobile/eas.json`).
-- **VERIFIED** — GitHub repository `sudomarc/handshake` is public (GitHub API, `private: false`).
+- VERIFIED — mobile/ Expo app with trusted people, shared rotating-code verification, the shield interaction flow and caller code display. Typecheck/lint were previously clean on the mobile project.
+- VERIFIED on device — app startup, trusted-person creation, rotating-code generation, correct-code verification, wrong-code rejection, Pressure Check and Personal Question reached the deployed backend on the Samsung A17.
+- VERIFIED — the Android overlay can be enabled for warnings above other apps.
+- VERIFIED — the mobile product no longer contains the Handshake-to-Handshake WebRTC call screen or WebRTC client dependency.
+- COMPLETED — the developer's own consented voice clone has been generated for the demo.
+- FIXED — Pressure Check no longer exposes human-likelihood or clone verdicts. Its result is limited to pressure score, risk level and reasoning.
+- FIXED — Personal Challenge can use a saved private verification detail from the trusted-person profile instead of falling back to a generic mobile context.
+- KNOWN LIMITATION — the Android overlay observes carrier phone-call state, but third-party apps such as WhatsApp do not expose their private two-way audio to Handshake through the current integration. Use the manual Check a call flow there.
 
-**OWNER-REPORTED, no evidence in the repository:** backend deployed on Vercel; APK
-built successfully; MVP validated on a Samsung A17; deployed routes tested. To turn
-these into VERIFIED, add the EAS build URL and screenshots/test notes to the repo.
+### ON-DEVICE HISTORY
 
-### ON-DEVICE TEST RESULTS (2026-10-06)
+The 2026-10-06 device report recorded two fatal crashes in the retired WebRTC/audio prototype. Those components have since been removed from the mobile product. The report remains archived as historical evidence and must not be treated as current shipped behavior.
 
-Real ADB test pass against the release APK built by CI run `37408976681`
-(head_sha `1bba6c6`) on a Samsung SM-A175F, Android 16 / API 36. Full log and
-crash traces: `docs/DEVICE_TEST_REPORT_2026-10-06.md`. This section supersedes
-the "Call Protection Implementation Progress" claims below, which were
-source-reviewed only.
+### FINAL VALIDATION (open before submission)
 
-**VERIFIED on device:**
+- [ ] Rebuild the final Android APK from this branch.
+- [ ] Install the APK on the Samsung A17 and verify startup with no native crash.
+- [ ] Verify trusted-person creation, rotating code, correct/wrong code and private detail save.
+- [ ] Verify Pressure Check and Personal Question against the deployed backend.
+- [ ] Verify overlay permission onboarding and the carrier-call warning pill.
+- [ ] Verify the Check a call flow while a third-party calling app is open.
+- [ ] Rehearse DEMO_SCRIPT.md, including one deliberate network failure.
+- [ ] Run the existing voice clone through a commercial detector and record only the observed result.
+- [ ] Final README/demo evidence pass.
+- [ ] Record the public 2–4 minute demo video.
+- [ ] Submit on Devpost before 12:00 PM EDT on Oct 10, 2026.
 
-- App startup, Home/Personal screen, tab navigation — no fatal at launch.
-- Trusted-person flow against the **deployed** backend: create connection →
-  pair `849d3b149d0cf133d5c9018995147c38`, "Mom" active.
-- Rotating-code generation: `771 794` → `537 378` across a window boundary.
-- Verification: wrong code → *Not verified* + guidance; correct code →
-  **Verified**.
-- Microphone permission dialog shown and granted (`RECORD_AUDIO` and
-  `FOREGROUND_SERVICE_MICROPHONE` both `granted=true`).
-- Pressure check: real model output, scam transcript → *Likely clone / scam
-  pressure*, `95/100`.
-- Personal question: real model output returned.
-- WebRTC native init, and Call Protection up to
-  `pc ctor → getUserMedia(audio) → addTrack → createOffer → setLocalDescription
-  → ICE gathering`.
+### Current audit findings
 
-**FAILED on device (fatal crashes, both reproduced):**
-
-- **Call Protection** dies with
-  `ClassCastException: RTCVideoViewManager cannot be cast to ViewGroupManager`.
-  Cause: children rendered inside `<RTCView>` in `mobile/app/call/protection.tsx`
-  (`RTCVideoViewManager` extends `SimpleViewManager`, so RN cannot manage
-  children). The offer is never POSTed, so remote audio, mute, end call and
-  connection-state transitions are untestable. **Code bug.**
-- **Call Audio Feasibility** dies with
-  `RuntimeException: Cannot convert argument of type class java.util.LinkedHashMap`
-  at `CallAudioModule.getAudioConfig`. Cause: promises/events resolved with
-  plain Kotlin `Map`/`ShortArray` instead of `WritableMap`/`WritableArray`.
-  **Code bug.**
-- Pressure check returned one transient HTTP 400 (`That input doesn't look
-  right`); an identical retry succeeded. Not reproducible.
-
-**BLOCKED:** two-device WebRTC call (only one device attached, no emulator
-installed); everything after the SDP offer (blocked by the Call Protection
-crash); rebuild/re-verify (no local JDK, CI is the only build path).
-
-**Fixes applied but NOT yet built or verified on device:**
-
-- `mobile/app/call/protection.tsx` — overlay moved out of `<RTCView>`.
-- `mobile/android/.../callaudio/CallAudioModule.kt` — added
-  `resolveWith`/`toWritableMap` marshalling for every promise and event.
-
-Nothing in this section may be presented as working functionality until an APK
-containing both fixes has been re-tested on the device.
+- F1 — FIXED. Pressure Check now describes pressure risk only; no human-likelihood or clone classification is exposed.
+- F2 — FIXED. Mobile trusted-person profiles now support a private verification detail, which is supplied to the personal-question capability when escalation occurs.
+- F3 — FIXED 2026-10-07. AI routes use client-IP and pair-based rate-limit buckets.
+- F4 — FIXED. Product documentation now reflects the Personal mobile product and the communication-companion model.
+- F5 — NOT VERIFIED. Expo Doctor's external checks still require a development environment with access to api.expo.dev.
+- F6 — NOT VERIFIED. The production web build has not been reproduced in this environment.
+- F7 — LOW PRIORITY. Baseline formatting cleanup remains separate from product correctness.
+- F8 — POST-HACKATHON. The production EAS profile environment variable remains separate from the preview APK used for the hackathon.
 
 ### FINAL VALIDATION (open before submission)
 
