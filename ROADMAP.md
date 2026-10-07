@@ -159,12 +159,10 @@ containing both fixes has been re-tested on the device.
 - **F2 — Personal question is not personalized on mobile.** The screen has no input
   for private context, so `/api/challenge` receives an empty context and returns a
   generic question. Do not present it as using saved personal details.
-- **F3 — AI-route rate limits are bypassable.** `/api/analyze` and `/api/challenge`
-  key their limiter on the caller-supplied `pairId`; pairs are stateless, so any
-  32-hex string is accepted. Observed: 40 of 40 requests with random `pairId`s
-  passed the limiter; the same `pairId` was limited after 10. Cost-abuse exposure on
-  a public URL (Featherless credits). Post-hackathon hardening, unless credits are at
-  risk before submission.
+- **F3 — AI-route rate limits were bypassable (FIXED 2026-10-07).** `/api/analyze` and
+  `/api/challenge` previously keyed rate limiting solely on caller-supplied `pairId`.
+  Fixed in nightly build: AI routes now enforce dual-bucket rate limiting (10 req/min
+  per client IP address and per pair ID) to prevent credit exhaustion via randomized `pairId`s.
 - **F4 — Root README is stale.** It still describes a "mobile-first web app", has a
   browser-only architecture diagram, and says pair data lives in server-side local
   storage, while the implementation is stateless (HMAC-derived secrets; see

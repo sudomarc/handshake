@@ -100,12 +100,9 @@ password.
 **Mitigation.** zod max-length on the transcript, per-IP-ish rate limiting at
 the route level (J3/J4), output token cap on model calls.
 **Residual risk.** Full abuse protection is a production concern.
-**Known gap (audit 2026-10-05).** `/api/analyze` and `/api/challenge` key their
-limiter on the caller-supplied `pairId`. Pairs are stateless, so any 32-hex string
-is accepted and starts a fresh bucket: 40 of 40 requests with random `pairId`s
-reached the AI stage, whereas repeating one `pairId` was limited after 10. Someone
-who finds the public URL can therefore burn AI credits. Not fixed during the
-feature freeze; fix is to also key on the client address (post-hackathon).
+**Fixed (2026-10-07).** `/api/analyze` and `/api/challenge` now enforce per-client IP
+rate limiting (10 req/min per IP) alongside per-pair rate limiting. An attacker
+attempting to bypass limits with randomized `pairId`s is blocked by the IP rate limit bucket.
 
 ### T7 — Data loss (storage)
 
