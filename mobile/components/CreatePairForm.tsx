@@ -62,21 +62,21 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
         accessibilityLabel="Name of the trusted person"
         maxLength={40}
       />
-      <Button label="Create a new connection" onPress={create} busy={busy} />
+      <Button label="Create connection" onPress={create} busy={busy} />
       {created ? (
         <>
-          <Body>Send this connection ID to your trusted person so they can join it:</Body>
+          <Body>Share this connection ID with your trusted person so they can join the same connection:</Body>
           <Text selectable style={s.id}>
             {created}
           </Text>
           <Button
-            label="Share the ID"
+            label="Share connection ID"
             variant="secondary"
             onPress={() => void Share.share({ message: created })}
           />
         </>
       ) : null}
-      <Body muted>Or join one that someone sent you:</Body>
+      <Body muted>Or join a connection someone sent you:</Body>
       <TextInput
         value={joinId}
         onChangeText={setJoinId}
