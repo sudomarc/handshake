@@ -44,24 +44,32 @@ mobile/
 │   ├── _layout.tsx         # Root layout (shield provider + overlay)
 │   ├── (tabs)/             # Tab navigation
 │   │   ├── _layout.tsx     # Tab bar config
-│   │   ├── index.tsx       # Shield home (global status + contextual action)
-│   │   └── trusted.tsx     # Trust Ledger
-│   ├── verify/[pairId].tsx # Verify person + private context
-│   ├── codes/[pairId].tsx  # Caller code screen
+│   │   ├── index.tsx       # Home (protection status + trusted people)
+│   │   └── trusted.tsx     # Trusted people management
+│   ├── verify/[pairId].tsx # Pre-call trust management for one person
+│   └── trusted/[pairId].tsx # Trusted person detail + device management
 ├── components/
 │   ├── ActiveShield.tsx    # Contextual shield overlay
 │   ├── StatusRing.tsx      # Global status indicator
-│   ├── TrustPing.tsx       # Conversational verification flow
-│   ├── CodeDisplay.tsx     # Rotating code display
 │   ├── CreatePairForm.tsx  # Trusted person creation
 │   └── PageShell.tsx
 ├── hooks/
-│   ├── useLiveCode.ts      # Live code polling hook
 │   └── usePairs.ts         # Trusted pairs management
 ├── lib/
 │   ├── shield/
-│   │   ├── capabilities.ts # Programmatic verification APIs
-│   │   └── engine.tsx      # Global shield state engine
+│   │   ├── capabilities.ts # Risk analysis APIs
+│   │   └── engine.tsx      # Shield state engine
+│   ├── trust/              # Trusted-call protocol
+│   │   ├── api.ts          # Trust API client
+│   │   ├── callState.ts    # Call state derivation
+│   │   ├── deviceIdentity.ts # Device ID + secret management
+│   │   ├── orchestrator.ts # Call detection → trust → overlay bridge
+│   │   ├── proof.ts        # Client-side proof computation
+│   │   └── session.ts      # In-call trust orchestration
+│   ├── audio/
+│   │   └── pipeline.ts     # Real-time audio analysis (Handshake-controlled only)
+│   ├── callOverlay.ts      # Android overlay bridge
+│   ├── overlayIntent.ts    # Overlay launch-intent consumer
 │   ├── api.ts              # API client
 │   ├── apiTypes.ts         # Zod schemas & types
 │   └── storage.ts          # SecureStore wrapper
@@ -74,14 +82,14 @@ mobile/
 
 ## Key Features
 
-- **Protection home**: simple READY / CHECKING / VERIFY states with one primary verification action
-- **Identity verification**: shared rotating-code verification that ends in Verified or Verification failed
-- **Risk escalation**: high-pressure text analysis can trigger a personal identity question
-- **Call warnings**: optional Android overlay for phone activity and companion use over third-party calling apps
-- **Caller code**: large rotating code display for reading aloud
-- Live code polling with server-anchored countdown
+- **Protection home**: calm trust centre showing protection status and trusted people
+- **Trusted people**: add, review, and revoke trusted people before a call
+- **Automatic trust**: during a call, both Handshake installations authenticate each other automatically — no codes read aloud, nothing typed
+- **Call warnings**: optional Android overlay showing honest call state (Trusted / Verify / Risk)
+- **Real-time audio analysis**: for Handshake-controlled calls only (audio → VAD → STT → risk engine)
+- **Device enrollment**: per-device identity with secure storage and server-side revocation
 - Rate limiting handled on server
-- Secure storage for pair IDs using expo-secure-store
+- Secure storage for pair IDs and device keys using expo-secure-store
 
 ## Environment Variables
 
@@ -119,5 +127,6 @@ eas build --platform android --profile production
 
 Handshake does not replace the system Phone app and does not place users into a Handshake-only call.
 The Android build can observe carrier call state and show an optional overlay above the phone or another app.
-For WhatsApp and similar apps, use **Check a call** manually and keep warnings enabled if overlay permission is granted.
-Handshake does not automatically receive private two-way audio from those third-party calls.
+The overlay shows honest state: **Trusted** (both phones confirmed the relationship), **Verify** (cannot confirm), or **Risk** (pressure detected).
+Handshake does not automatically receive private two-way audio from carrier calls or third-party calling apps such as WhatsApp.
+Real-time audio analysis is only available for Handshake-controlled calls where the app legitimately owns the audio stream.

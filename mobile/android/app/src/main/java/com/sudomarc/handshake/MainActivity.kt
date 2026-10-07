@@ -1,5 +1,6 @@
 package com.sudomarc.handshake
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 
@@ -7,6 +8,8 @@ import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
+
+import com.sudomarc.handshake.callaudio.MainActivityIntentBridge
 
 import expo.modules.ReactActivityDelegateWrapper
 
@@ -16,7 +19,21 @@ class MainActivity : ReactActivity() {
     // coloring the background, status bar, and navigation bar.
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
+    // Capture the overlay's action before React Native starts, so the JS layer
+    // can consume it on its first render rather than only on a warm start.
+    MainActivityIntentBridge.capture(intent)
     super.onCreate(null)
+  }
+
+  /**
+   * Warm starts: the overlay service uses FLAG_ACTIVITY_SINGLE_TOP, so tapping
+   * its action while the app is already running delivers a new intent here
+   * instead of creating a new activity.
+   */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    MainActivityIntentBridge.capture(intent)
   }
 
   /**
@@ -43,7 +60,7 @@ class MainActivity : ReactActivity() {
   /**
     * Align the back button behavior with Android S
     * where moving root activities to background instead of finishing activities.
-    * @see <a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()">onBackPressed</a>
+    * @see <a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()">onBackPressed()</a>
     */
   override fun invokeDefaultOnBackPressed() {
       if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {

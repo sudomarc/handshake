@@ -3,9 +3,18 @@ import { Share, StyleSheet, Text, TextInput } from "react-native";
 import { usePairs } from "@/hooks/usePairs";
 import { api } from "@/lib/api";
 import { pairIdSchema } from "@/lib/apiTypes";
+import { enrollDevice } from "@/lib/trust/api";
 import { colors } from "@/lib/theme";
 import { Body, Button, Card, ErrorBox, H2 } from "./ui";
 
+/**
+ * Adds a trusted person **before** the call.
+ *
+ * Creating or joining a connection also enrols this phone with the trust
+ * backend. That enrolment is what lets two Handshake installations recognise
+ * each other automatically during the call later — no code is read out loud and
+ * nothing is typed during the conversation itself.
+ */
 export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
   const { addPair } = usePairs();
   const [name, setName] = useState("");
@@ -13,16 +22,21 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
   const [created, setCreated] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function create() {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const result = await api.createPair();
       await addPair(result.pairId, name.trim() || undefined);
       setCreated(result.pairId);
       setName("");
       onChanged?.();
+      // Best effort: the relationship is saved locally regardless, and the
+      // person screen retries enrolment if this fails.
+      void enrollDevice(result.pairId, name.trim() || undefined).catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : "We couldn't create the trusted person.");
     } finally {
@@ -38,11 +52,18 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
     }
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       await addPair(parsed.data, name.trim() || undefined);
       setJoinId("");
       setName("");
       onChanged?.();
+      try {
+        await enrollDevice(parsed.data, name.trim() || undefined);
+        setNotice("This phone will confirm calls with this person automatically.");
+      } catch {
+        setNotice("Saved on this phone. Automatic confirmation needs the server when you next open this person.");
+      }
     } catch {
       setError("We couldn't save this trusted person on your phone.");
     } finally {
@@ -53,10 +74,13 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
   return (
     <Card>
       <H2>Add a trusted person</H2>
+      <Body muted>
+        Set this up before the call. During the call, both phones confirm it automatically.
+      </Body>
       <TextInput
         value={name}
         onChangeText={setName}
-        placeholder="Name (for example Mom)"
+        placeholder="Name (for example Mum)"
         placeholderTextColor="#52525b"
         style={s.input}
         accessibilityLabel="Name of the trusted person"
@@ -65,7 +89,7 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
       <Button label="Create connection" onPress={create} busy={busy} />
       {created ? (
         <>
-          <Body>Share this connection ID with your trusted person so they can join the same connection:</Body>
+          <Body>Share this connection ID with the other person so they can join:</Body>
           <Text selectable style={s.id}>
             {created}
           </Text>
@@ -88,6 +112,7 @@ export function CreatePairForm({ onChanged }: { onChanged?: () => void }) {
         accessibilityLabel="Connection ID to join"
       />
       <Button label="Join this connection" variant="secondary" onPress={join} disabled={busy} />
+      {notice ? <Body muted>{notice}</Body> : null}
       {error ? <ErrorBox message={error} /> : null}
     </Card>
   );

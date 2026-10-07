@@ -1,11 +1,14 @@
 import { api } from "@/lib/api";
-import type { ChallengeResponse, PressureCheckResponse, Verdict } from "@/lib/apiTypes";
+import type { PressureCheckResponse } from "@/lib/apiTypes";
 
 /**
- * Programmatic verification capabilities. The shield state engine triggers these;
- * no screen exposes them as a standalone tool.
+ * Risk-analysis capabilities.
+ *
+ * The spoken/shared-code verification capabilities (`openTrustPing`,
+ * `checkReply`) have been removed from the mobile product: trust is now
+ * established automatically between two enrolled devices, so there is no code
+ * to fetch, display, or type during a call.
  */
-
 export type RiskVerdict = "clear" | "threat";
 
 export interface TranscriptCheck {
@@ -13,9 +16,7 @@ export interface TranscriptCheck {
   verdict: RiskVerdict;
 }
 
-/**
- * Pressure Check is advisory. It detects social-engineering pressure, not voice identity.
- */
+/** Pressure Check is advisory. It detects social-engineering pressure only. */
 export const THREAT_PRESSURE_SCORE = 70;
 
 export function classifyPressure(result: PressureCheckResponse): RiskVerdict {
@@ -24,26 +25,14 @@ export function classifyPressure(result: PressureCheckResponse): RiskVerdict {
     : "clear";
 }
 
+/**
+ * Scores a text window. Used by the in-call pipeline for windows Handshake has
+ * already transcribed, and by tests. Never used as a manual user-facing tool.
+ */
 export async function checkTranscript(
   transcript: string,
   pairId?: string,
 ): Promise<TranscriptCheck> {
   const result = await api.analyzePressure(transcript, pairId);
   return { result, verdict: classifyPressure(result) };
-}
-
-export async function createPersonalQuestion(
-  pairId: string,
-  context?: string,
-): Promise<ChallengeResponse> {
-  return api.generateChallenge(pairId, context);
-}
-
-export async function openTrustPing(pairId: string): Promise<void> {
-  await api.getCurrentCode(pairId);
-}
-
-export async function checkReply(pairId: string, reply: string): Promise<Verdict> {
-  const res = await api.verifyCode(pairId, reply);
-  return res.verdict;
 }

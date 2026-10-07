@@ -63,6 +63,7 @@ function copyNativeFiles() {
     "CallAudioPackage.kt",
     "HandshakeOverlayModule.kt",
     "HandshakeOverlayService.kt",
+    "MainActivityIntentBridge.kt",
   ];
 
   for (const file of files) {

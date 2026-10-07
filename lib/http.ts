@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "./errors";
+import { TrustError } from "./trustStore";
 
 type ApiError = { code: string; message: string };
 
@@ -41,6 +42,18 @@ export function handleApiError(error: unknown) {
       code: "pair_not_found",
       message: "We couldn't find that pair. Check the code and try again.",
     });
+  }
+  if (error instanceof TrustError) {
+    // Trust failures are authentication/authorisation outcomes, not server bugs.
+    // Each one resolves to `unverified` on the client; none may be reported as
+    // a protection claim.
+    const status =
+      error.code === "device_revoked" || error.code === "device_not_enrolled" ? 403 : 409;
+    const message =
+      error.code === "invalid_proof" || error.code === "nonce_replayed"
+        ? "Handshake could not confirm this device."
+        : error.message;
+    return jsonError(status, { code: error.code, message });
   }
   console.error("Unhandled API error:", error);
   // TEMPORARY DIAGNOSTIC: echo the whitelisted provider failure branch so it can be

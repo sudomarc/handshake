@@ -4,6 +4,13 @@ import type { PairMeta } from "@/lib/apiTypes";
 const PAIRS_KEY = "handshake_pairs";
 const ACTIVE_PAIR_KEY = "handshake_active_pair";
 
+/**
+ * A trusted person, established **before** the call.
+ *
+ * There is no `code` field and nothing call-time derived: the rotating shared
+ * code and the caller-code screen have been removed from the product. Identity
+ * during a call comes from the enrolled-device protocol in `lib/trust/`.
+ */
 export interface StoredPair extends PairMeta {
   name?: string;
   role?: "caller" | "receiver";

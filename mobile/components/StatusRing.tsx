@@ -1,34 +1,41 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { ShieldStatus } from "@/lib/shield/engine";
 import { colors } from "@/lib/theme";
 
-const PRESENTATION: Record<ShieldStatus, { color: string; title: string; subtitle: string }> = {
-  safe: { color: colors.success, title: "Protection ready", subtitle: "Ready to verify" },
-  analyzing: { color: colors.accent, title: "Checking", subtitle: "Reviewing the interaction" },
-  threat: { color: colors.danger, title: "Verify", subtitle: "High pressure detected" },
-  escalated: { color: colors.warn, title: "Verify", subtitle: "Identity check running" },
+/**
+ * The one visual state indicator, shared by the home surface and the trusted
+ * person screen.
+ *
+ * It takes an explicit tone rather than an internal enum, so a screen can never
+ * render a protection colour it has not been given evidence for.
+ */
+export type StatusTone = "ready" | "trusted" | "verify" | "risk" | "offline";
+
+const PRESENTATION: Record<StatusTone, { color: string }> = {
+  ready: { color: colors.accent },
+  trusted: { color: colors.success },
+  verify: { color: colors.warn },
+  risk: { color: colors.danger },
+  offline: { color: colors.muted },
 };
 
 interface StatusRingProps {
-  status: ShieldStatus;
+  tone: StatusTone;
+  title: string;
+  subtitle?: string;
   size?: number;
-  titleOverride?: string;
-  subtitleOverride?: string;
 }
 
-export function StatusRing({ status, size = 208, titleOverride, subtitleOverride }: StatusRingProps) {
-  const presentation = PRESENTATION[status];
-  const title = titleOverride ?? presentation.title;
-  const subtitle = subtitleOverride ?? presentation.subtitle;
+export function StatusRing({ tone, title, subtitle, size = 208 }: StatusRingProps) {
+  const color = PRESENTATION[tone].color;
 
   return (
     <View
       accessible
       accessibilityRole="text"
-      accessibilityLabel={`${title}. ${subtitle}.`}
+      accessibilityLabel={subtitle ? `${title}. ${subtitle}.` : `${title}.`}
       style={[
         s.wrap,
-        { width: size, height: size, borderRadius: size / 2, borderColor: presentation.color },
+        { width: size, height: size, borderRadius: size / 2, borderColor: color },
       ]}
     >
       <View
@@ -38,7 +45,7 @@ export function StatusRing({ status, size = 208, titleOverride, subtitleOverride
             width: size - 20,
             height: size - 20,
             borderRadius: (size - 20) / 2,
-            borderColor: `${presentation.color}40`,
+            borderColor: `${color}40`,
           },
         ]}
       >
@@ -48,12 +55,14 @@ export function StatusRing({ status, size = 208, titleOverride, subtitleOverride
             { width: size - 48, height: size - 48, borderRadius: (size - 48) / 2 },
           ]}
         >
-          <Text style={[s.title, { color: presentation.color }]} numberOfLines={2}>
+          <Text style={[s.title, { color }]} numberOfLines={2}>
             {title}
           </Text>
-          <Text style={s.subtitle} numberOfLines={2}>
-            {subtitle}
-          </Text>
+          {subtitle ? (
+            <Text style={s.subtitle} numberOfLines={3}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       </View>
     </View>

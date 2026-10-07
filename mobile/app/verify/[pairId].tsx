@@ -2,12 +2,19 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useEffect, useState } from "react";
 import { PageShell } from "@/components/PageShell";
-import { TrustPing } from "@/components/TrustPing";
 import { Body, Button, Card, ErrorBox, H2 } from "@/components/ui";
 import { usePairs } from "@/hooks/usePairs";
 import { pairIdSchema } from "@/lib/apiTypes";
 import { colors } from "@/lib/theme";
 
+/**
+ * Pre-call trust management for one person.
+ *
+ * This screen is where the trusted relationship is established and managed —
+ * before any call. There is no code to read, no code to type, and no call-time
+ * verification workflow. During a call, both Handshake installations authenticate
+ * each other automatically through the trusted-pair protocol.
+ */
 export default function PersonScreen() {
   const { pairId } = useLocalSearchParams<{ pairId: string }>();
   const router = useRouter();
@@ -25,7 +32,7 @@ export default function PersonScreen() {
 
   if (!parsed.success || !validPairId) {
     return (
-      <PageShell title="Verify person">
+      <PageShell title="Trusted person">
         <ErrorBox message="Invalid pair code." />
       </PageShell>
     );
@@ -49,16 +56,26 @@ export default function PersonScreen() {
   }
 
   return (
-    <PageShell title="Verify person">
+    <PageShell title="Trusted person">
       <View style={s.identity}>
         <H2>{name}</H2>
-        {isActive ? <Text style={s.active}>Active</Text> : null}
+        {isActive ? <Text style={s.active}>Default</Text> : null}
       </View>
 
-      <TrustPing pairId={validPairId} name={name} />
+      <Card>
+        <H2>Automatic trust</H2>
+        <Body muted>
+          During a call between you and {name}, both phones confirm this trusted relationship
+          automatically. Nothing is read out loud and no code is typed.
+        </Body>
+        <Body muted>
+          Handshake can confirm the relationship, but it cannot hear the call on an ordinary phone
+          call or inside another calling app.
+        </Body>
+      </Card>
 
       <Card>
-        <H2>Private verification detail</H2>
+        <H2>Private detail</H2>
         <Body muted>
           Save a shared memory, nickname, or recent detail that only this person is likely to know.
           It stays on this phone until a personal identity question needs it.
@@ -89,16 +106,9 @@ export default function PersonScreen() {
       <Card>
         <H2>Manage person</H2>
         <Body muted>Only you on this phone see these controls.</Body>
-        <Button
-          label="Show my code"
-          variant="secondary"
-          onPress={() =>
-            router.push({ pathname: "/codes/[pairId]", params: { pairId: validPairId } })
-          }
-        />
         {!isActive ? (
           <Button
-            label="Make active"
+            label="Make default"
             variant="secondary"
             onPress={() => void setActive(validPairId)}
           />

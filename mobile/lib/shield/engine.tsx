@@ -8,192 +8,103 @@ import {
   type ReactNode,
 } from "react";
 import { usePairs } from "@/hooks/usePairs";
-import {
-  checkTranscript,
-  createPersonalQuestion,
-  type TranscriptCheck,
-} from "@/lib/shield/capabilities";
-import type { ChallengeResponse } from "@/lib/apiTypes";
+import type { TranscriptCheck } from "@/lib/shield/capabilities";
 import { callOverlayManager } from "@/lib/callOverlay";
 
-export type ShieldStatus = "safe" | "analyzing" | "threat" | "escalated";
-export type EscalationOutcome = "pass" | "fail";
+/**
+ * In-call risk state.
+ *
+ * The shield no longer runs a manual "check a call" transcript flow. That entry
+ * point has been removed from the product UX, because two competing models —
+ * manual transcript checking and automatic call analysis — cannot both be the
+ * primary architecture.
+ *
+ * What remains is the *sink* for automatic analysis: whatever produces
+ * incremental risk assessments for a call Handshake controls (see
+ * `lib/audio/pipeline.ts`) reports into this engine, and the engine maps the
+ * result to the single user-facing call state. There is currently no production
+ * source of those assessments on Android, so `status` stays `idle` until a
+ * Handshake-controlled audio surface exists. That is the honest state, and it is
+ * why the overlay can never claim "Protected" on its own.
+ */
+export type ShieldStatus = "idle" | "risk";
 
 export interface ShieldState {
   status: ShieldStatus;
-  transcript: string;
-  checking: boolean;
+  /** Latest incremental assessment, for the in-app surface. */
   check: TranscriptCheck | null;
-  error: string | null;
-  challenge: ChallengeResponse | null;
-  challengeLoading: boolean;
-  challengeError: string | null;
-  escalationOutcome: EscalationOutcome | null;
+  /** Whether Handshake currently has analysable audio for this call. */
+  audioAnalysable: boolean;
+  /** Reason analysis is unavailable, when it is. */
+  unavailableReason: string | null;
 }
 
 export interface ShieldApi extends ShieldState {
-  setTranscript: (value: string) => void;
-  startAnalysis: () => void;
-  submitTranscript: () => Promise<void>;
-  resolveEscalation: (outcome: EscalationOutcome) => void;
+  /** Called by the in-call audio pipeline for each analysed window. */
+  reportRisk: (assessment: TranscriptCheck) => void;
+  /** Marks a Handshake-controlled call as live so analysis can start. */
+  setAudioAnalysable: (analysable: boolean, reason?: string) => void;
+  /** Clears all call-time state; called when the call ends. */
   reset: () => void;
 }
 
 const INITIAL: ShieldState = {
-  status: "safe",
-  transcript: "",
-  checking: false,
+  status: "idle",
   check: null,
-  error: null,
-  challenge: null,
-  challengeLoading: false,
-  challengeError: null,
-  escalationOutcome: null,
+  audioAnalysable: false,
+  unavailableReason: null,
 };
 
 const ShieldContext = createContext<ShieldApi | null>(null);
 
-function messageOf(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
 export function ShieldProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ShieldState>(INITIAL);
-  const { activePair, pairs } = usePairs();
+  const { activePair } = usePairs();
   const runRef = useRef(0);
 
-  const setTranscript = useCallback((value: string) => {
-    setState((prev) => ({ ...prev, transcript: value, error: null }));
-  }, []);
+  const reportRisk = useCallback(
+    (assessment: TranscriptCheck) => {
+      const run = runRef.current;
+      setState((prev) =>
+        run === runRef.current && assessment.verdict === "threat"
+          ? { ...prev, status: "risk", check: assessment }
+          : prev,
+      );
+      if (assessment.verdict !== "threat") return;
+      void callOverlayManager
+        .showRisk(
+          "Risk detected",
+          assessment.result.reasoning ||
+            "Handshake detected pressure tactics during this call.",
+        )
+        .catch(() => {
+          // The overlay permission may be unavailable; in-app state stays authoritative.
+        });
+    },
+    [],
+  );
 
-  const startAnalysis = useCallback(() => {
-    runRef.current += 1;
-    setState({ ...INITIAL, status: "analyzing" });
+  const setAudioAnalysable = useCallback((analysable: boolean, reason?: string) => {
+    setState((prev) => ({
+      ...prev,
+      audioAnalysable: analysable,
+      unavailableReason: analysable ? null : reason ?? null,
+    }));
   }, []);
 
   const reset = useCallback(() => {
     runRef.current += 1;
-    setState(() => ({ ...INITIAL }));
-  }, []);
-
-  const escalate = useCallback(
-    (run: number) => {
-      const pair = activePair ?? pairs[0] ?? null;
-      const pairId = pair?.pairId ?? null;
-      if (!pairId) {
-        setState((prev) =>
-          run === runRef.current && prev.status === "threat"
-            ? {
-                ...prev,
-                challengeLoading: false,
-                challengeError: "Add a trusted person to run a personal question.",
-              }
-            : prev,
-        );
-        return;
-      }
-      setState((prev) =>
-        run === runRef.current && prev.status === "threat"
-          ? { ...prev, challengeLoading: true, challengeError: null }
-          : prev,
-      );
-      if (!pair?.privateContext?.trim()) {
-        setState((prev) =>
-          run === runRef.current && prev.status === "threat"
-            ? {
-                ...prev,
-                challengeLoading: false,
-                challengeError: "Add a private verification detail for this person first.",
-              }
-            : prev,
-        );
-        return;
-      }
-      createPersonalQuestion(pairId, pair.privateContext.trim())
-        .then((challenge) => {
-          setState((prev) =>
-            run === runRef.current && prev.status === "threat"
-              ? { ...prev, status: "escalated", challenge, challengeLoading: false }
-              : prev,
-          );
-        })
-        .catch((error: unknown) => {
-          setState((prev) =>
-            run === runRef.current && prev.status === "threat"
-              ? {
-                  ...prev,
-                  challengeLoading: false,
-                  challengeError: messageOf(error, "Could not create a personal question."),
-                }
-              : prev,
-          );
-        });
-    },
-    [activePair, pairs],
-  );
-
-  const submitTranscript = useCallback(async () => {
-    const run = runRef.current;
-    const transcript = state.transcript.trim();
-    if (!transcript) {
-      setState((prev) => ({ ...prev, error: "Type what they said." }));
-      return;
-    }
-    setState((prev) =>
-      prev.status === "analyzing" ? { ...prev, checking: true, error: null, check: null } : prev,
-    );
-    try {
-      const check = await checkTranscript(transcript, activePair?.pairId);
-      if (run !== runRef.current) return;
-      if (check.verdict === "clear") {
-        setState((prev) => (run === runRef.current ? { ...prev, checking: false, check } : prev));
-        return;
-      }
-      setState((prev) =>
-        run === runRef.current ? { ...prev, checking: false, check, status: "threat" } : prev,
-      );
-      void callOverlayManager
-        .showRisk(
-          "Suspicious interaction",
-          check.result.reasoning || "Handshake detected meaningful social-engineering risk signals.",
-        )
-        .catch(() => {
-          // The in-app shield remains authoritative if cross-app overlay permission is unavailable.
-        });
-      escalate(run);
-    } catch (error) {
-      setState((prev) =>
-        run === runRef.current
-          ? { ...prev, checking: false, error: messageOf(error, "The check failed. Try again.") }
-          : prev,
-      );
-    }
-  }, [state.transcript, activePair?.pairId, escalate]);
-
-  const resolveEscalation = useCallback((outcome: EscalationOutcome) => {
-    setState((prev) =>
-      prev.status === "escalated" ? { ...prev, escalationOutcome: outcome } : prev,
-    );
+    setState({ ...INITIAL });
   }, []);
 
   const value = useMemo<ShieldApi>(
-    () => ({
-      ...state,
-      setTranscript,
-      startAnalysis,
-      submitTranscript,
-      resolveEscalation,
-      reset,
-    }),
-    [
-      state,
-      setTranscript,
-      startAnalysis,
-      submitTranscript,
-      resolveEscalation,
-      reset,
-    ],
+    () => ({ ...state, reportRisk, setAudioAnalysable, reset }),
+    [state, reportRisk, setAudioAnalysable, reset],
   );
+
+  // `activePair` is read so that trust evaluation and risk evaluation share one
+  // notion of "who is this call with".
+  void activePair;
 
   return <ShieldContext.Provider value={value}>{children}</ShieldContext.Provider>;
 }
