@@ -25,25 +25,24 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Current product direction
 
 Handshake Personal is the primary hackathon client. The long-term UX direction is
-an automated, user-controlled trust layer around supported communication
-sessions. Outside a call, Personal should be a calm trust center; during a
-supported call/session, it should use a minimal **Call Protection Mode** with a
-single understandable state such as **Protected / Verify / Risk**.
+an automated, user-controlled trust layer around ordinary phone calls and
+third-party calling apps. Outside active call use, Personal should be a calm trust
+center. During an interaction, it should surface one understandable state:
+**Protected / Verify / Risk**.
 
-Pressure Check, Personal Challenge and rotating-code verification are capabilities
-to be orchestrated rather than a manual toolbox. The intended orchestration is:
+Pressure Check, Personal Challenge and rotating-code verification are internal
+capabilities. Users should not have to choose technical tools one by one. The
+intended orchestration is:
 
-```text
 communication session
   ↓
-available trust / context / transcript / audio signals
+available trust / context / message signals
   ↓
 smallest useful verification or risk check
   ↓
 Protected / Verify / Risk
   ↓
 contextual action
-```
 
 Real-time call analysis is a future capability and is **not implemented merely by
 requesting RECORD_AUDIO**. Android's microphone foreground services can continue
@@ -59,10 +58,9 @@ incoming/outgoing carrier calls, speakerphone, earpiece, Bluetooth, foreground a
 background states. Do not implement the full audio→STT→risk pipeline until that
 gate is passed.
 
-Do not claim automatic interception of every call, two-way carrier-call capture,
-real-time live phone-call analysis, cloned-voice detection, invisible background
-listening, or Android/iOS parity until each capability is independently verified
-on-device.
+Do not claim automatic access to every calling app's audio, real-time analysis of
+third-party call audio, cloned-voice detection, invisible background listening,
+or Android/iOS parity until each capability is independently verified on-device.
 
 Call analysis must remain explicit, user-controlled and privacy-preserving. Never
 build covert surveillance or fabricate platform access.
