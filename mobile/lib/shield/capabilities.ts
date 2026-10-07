@@ -14,21 +14,14 @@ export interface TranscriptCheck {
 }
 
 /**
- * A high pressure score is the primary escalation signal. A clone verdict alone
- * is not enough: voice-authenticity uncertainty is not the same thing as scam risk.
+ * Pressure Check is advisory. It detects social-engineering pressure, not voice identity.
  */
 export const THREAT_PRESSURE_SCORE = 70;
-export const CLONE_ESCALATION_PRESSURE_SCORE = 50;
-export const MAX_HUMAN_LIKELIHOOD_FOR_CLONE_ESCALATION = 30;
 
 export function classifyPressure(result: PressureCheckResponse): RiskVerdict {
-  const highPressure = result.pressureScore >= THREAT_PRESSURE_SCORE;
-  const corroboratedCloneRisk =
-    result.verdict === "likely_clone" &&
-    result.pressureScore >= CLONE_ESCALATION_PRESSURE_SCORE &&
-    result.humanLikelihood <= MAX_HUMAN_LIKELIHOOD_FOR_CLONE_ESCALATION;
-
-  return highPressure || corroboratedCloneRisk ? "threat" : "clear";
+  return result.pressureScore >= THREAT_PRESSURE_SCORE || result.riskLevel === "high"
+    ? "threat"
+    : "clear";
 }
 
 export async function checkTranscript(
