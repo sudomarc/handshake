@@ -68,10 +68,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
 
   const startAnalysis = useCallback(() => {
     runRef.current += 1;
-    setState((prev) => ({
-      ...INITIAL,
-      status: "analyzing",
-    }));
+    setState({ ...INITIAL, status: "analyzing" });
   }, []);
 
   const reset = useCallback(() => {
@@ -132,7 +129,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
           );
         });
     },
-    [activePair?.pairId, pairs],
+    [activePair, pairs],
   );
 
   const submitTranscript = useCallback(async () => {
@@ -190,7 +187,6 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     }),
     [
       state,
-      primaryLabel,
       setTranscript,
       startAnalysis,
       submitTranscript,
