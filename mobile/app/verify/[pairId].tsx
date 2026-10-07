@@ -1,12 +1,12 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
 import { PageShell } from "@/components/PageShell";
 import { TrustPing } from "@/components/TrustPing";
 import { Body, Button, Card, ErrorBox, H2 } from "@/components/ui";
 import { usePairs } from "@/hooks/usePairs";
 import { pairIdSchema } from "@/lib/apiTypes";
 import { colors } from "@/lib/theme";
-import { useEffect, useState } from "react";
 
 export default function PersonScreen() {
   const { pairId } = useLocalSearchParams<{ pairId: string }>();
@@ -16,7 +16,14 @@ export default function PersonScreen() {
   const [privateContext, setPrivateContext] = useState("");
   const [savingContext, setSavingContext] = useState(false);
 
-  if (!parsed.success) {
+  const validPairId = parsed.success ? parsed.data : null;
+  const pair = validPairId ? pairs.find((p) => p.pairId === validPairId) : undefined;
+
+  useEffect(() => {
+    setPrivateContext(pair?.privateContext ?? "");
+  }, [pair?.privateContext, validPairId]);
+
+  if (!parsed.success || !validPairId) {
     return (
       <PageShell title="Verify person">
         <ErrorBox message="Invalid pair code." />
@@ -24,12 +31,6 @@ export default function PersonScreen() {
     );
   }
 
-  const validPairId: string = parsed.data;
-  const pair = pairs.find((p) => p.pairId === validPairId);
-
-  useEffect(() => {
-    setPrivateContext(pair?.privateContext ?? "");
-  }, [pair?.privateContext, validPairId]);
   const name = pair?.name ?? "Trusted person";
   const isActive = activePair?.pairId === validPairId;
 
@@ -47,7 +48,7 @@ export default function PersonScreen() {
   }
 
   return (
-    <PageShell title="Trust Ping">
+    <PageShell title="Verify person">
       <View style={s.identity}>
         <H2>{name}</H2>
         {isActive ? <Text style={s.active}>Active</Text> : null}
@@ -77,6 +78,7 @@ export default function PersonScreen() {
           onPress={() => {
             setSavingContext(true);
             void updatePair(validPairId, { privateContext: privateContext.trim() })
+              .catch(() => {})
               .finally(() => setSavingContext(false));
           }}
           busy={savingContext}
@@ -109,5 +111,13 @@ export default function PersonScreen() {
 const s = StyleSheet.create({
   identity: { flexDirection: "row", alignItems: "center", gap: 12 },
   active: { color: colors.accent, fontWeight: "600", fontSize: 14 },
-  contextInput: { color: colors.text, fontSize: 16, minHeight: 110, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 14 },
+  contextInput: {
+    color: colors.text,
+    fontSize: 16,
+    minHeight: 110,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+  },
 });
