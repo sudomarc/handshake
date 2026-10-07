@@ -90,7 +90,8 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
 
   const escalate = useCallback(
     (run: number, context: string) => {
-      const pairId = activePair?.pairId ?? pairs[0]?.pairId ?? null;
+      const pair = activePair ?? pairs[0] ?? null;
+      const pairId = pair?.pairId ?? null;
       if (!pairId) {
         setState((prev) =>
           run === runRef.current && prev.status === "threat"
@@ -108,7 +109,19 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
           ? { ...prev, challengeLoading: true, challengeError: null }
           : prev,
       );
-      createPersonalQuestion(pairId, context)
+      if (!pair?.privateContext?.trim()) {
+        setState((prev) =>
+          run === runRef.current && prev.status === "threat"
+            ? {
+                ...prev,
+                challengeLoading: false,
+                challengeError: "Add a private verification detail for this person first.",
+              }
+            : prev,
+        );
+        return;
+      }
+      createPersonalQuestion(pairId, pair.privateContext.trim())
         .then((challenge) => {
           setState((prev) =>
             run === runRef.current && prev.status === "threat"
