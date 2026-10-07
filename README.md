@@ -46,34 +46,32 @@ the fake is.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  subgraph browser ["Your phone (browser, mobile-first)"]
-    verify["Verify screen<br/>huge code + countdown"]
-    codes["My codes screen"]
-    analyze["Pressure check"]
-    challenge["Personal challenge"]
-    firsthour["The first hour"]
-  end
+Handshake Personal (Android)
+    ↓
+Protection-ready home
+    ├── Trusted people + shared rotating codes
+    ├── Verify person
+    └── Check a call
+          ↓
+    Shield orchestration
+    ├── Pressure Check (advisory)
+    └── Personal Challenge (when needed)
+          ↓
+    Protected / Verify / Risk
 
-  subgraph server ["Next.js server (API routes)"]
-    totp["Codes module<br/>(otplib, standard TOTP)"]
-    llm["AI module<br/>(server-only client)"]
-    derivation["Stateless derived secrets<br/>HMAC-SHA256(PAIR_KEY, pairId)"]
-  end
+Android companion layer
+    ├── Operator call-state awareness
+    └── Optional warning overlay above phone and calling apps
 
-  llm -- "HTTPS, key stays server-side" --> fea["Featherless AI API<br/>(OpenAI-compatible)"]
+Next.js backend
+    ├── Rotating-code verification
+    ├── Pressure analysis
+    └── Personal-question generation
 
-  verify -- "GET current code · POST claimed code" --> totp
-  codes -- "GET current code" --> totp
-  analyze -- "POST transcript (treated as untrusted data)" --> llm
-  challenge -- "POST saved private context" --> llm
-  totp --- derivation
-```
-
-All secrets — pair secrets and the AI key — live on the server only. The browser
-never sees them. Full details in [ARCHITECTURE.md](./ARCHITECTURE.md); the threat
-model and its honest limits in [SECURITY.md](./SECURITY.md).
+The mobile client does not replace the system Phone app and does not create a Handshake-only
+call. For WhatsApp and other third-party calling apps, Handshake is a companion layer: the
+user can run Check a call manually and keep warnings visible with overlay permission.
+Handshake does not claim automatic access to private two-way audio from those apps.
 
 ## Stack
 
