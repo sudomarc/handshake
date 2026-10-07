@@ -1,5 +1,5 @@
-import { api } from "@/lib/api";
-import type { ChallengeResponse, PressureCheckResponse, Verdict } from "@/lib/apiTypes";
+import { api } from "../api";
+import type { ChallengeResponse, PressureCheckResponse, Verdict } from "../apiTypes";
 
 /**
  * Programmatic verification capabilities. The shield state engine triggers these;

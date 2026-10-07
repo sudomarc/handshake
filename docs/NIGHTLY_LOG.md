@@ -204,3 +204,43 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-07 (Run 4)
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (0 errors).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (32/32 passed).
+
+### Work Completed & Priority
+- **Priority 4 (Continuous Improvement Loop - Mobile Unit Test Coverage & Import Hygiene):**
+  - Updated `mobile/lib/shield/capabilities.ts` imports to relative paths (`../api` and `../apiTypes`) so mobile capabilities resolve cleanly across both root node test runners and mobile Metro/Expo bundlers.
+  - Added mobile unit test suite in `tests/mobile.test.ts` testing `ApiError` class (status, error codes, network/timeout errors, and retry-after headers), `classifyPressure` risk categorization logic, `THREAT_PRESSURE_SCORE` threshold constant, and mobile Zod schema contracts (`pairIdSchema`, `sixDigitCodeSchema`, `pressureCheckResponseSchema`, `challengeResponseSchema`, `createPairResponseSchema`).
+  - Updated root `package.json` test runner to execute `tests/mobile.test.ts` as part of `npm test`.
+
+### Changes
+- `mobile/lib/shield/capabilities.ts`: Converted `@/lib/api` and `@/lib/apiTypes` to relative imports `../api` and `../apiTypes`.
+- `tests/mobile.test.ts`: Added unit tests for mobile API error handling, shield risk classification logic, and mobile Zod schema contracts.
+- `package.json`: Updated `npm test` script to `"npx tsx --test tests/lib.test.ts tests/api.test.ts tests/mobile.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"`.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-07 (Run 4) nightly run details, gate results, risks, and next steps.
+
+### Gates & Results
+- `npm test`: PASS (41/41 tests passed across 4 test suites: 15 lib + 10 api + 9 mobile + 7 plugin).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors).
+
+### Known Risks & Open Findings
+- Release APK build on Samsung SM-A175F requires physical device verification.
+- Device testing of call overlay warnings above third-party calling apps.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Record final Devpost demo video following `DEMO_SCRIPT.md`.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Re-verify release APK on device after CI build completes.
+3. Final rehearsal and recording of public Devpost demo video.
