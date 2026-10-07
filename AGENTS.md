@@ -64,3 +64,5 @@ or Android/iOS parity until each capability is independently verified on-device.
 
 Call analysis must remain explicit, user-controlled and privacy-preserving. Never
 build covert surveillance or fabricate platform access.
+
+11. For Android call/overlay QA, read `docs/ANDROID_FAKE_CALL_QA_2026-10-07.md` before testing or changing related behavior. Physical call behavior may only be marked VERIFIED from direct device evidence. Use the configured fake-call app for simulated incoming/outgoing calls where appropriate, and record the exact APK commit/device/test evidence in the QA report. Never treat simulator/fake-call behavior as proof of real carrier or third-party-call audio access.
