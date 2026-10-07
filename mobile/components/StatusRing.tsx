@@ -3,48 +3,23 @@ import type { ShieldStatus } from "@/lib/shield/engine";
 import { colors } from "@/lib/theme";
 
 const PRESENTATION: Record<ShieldStatus, { color: string; title: string; subtitle: string }> = {
-  safe: {
-    color: colors.success,
-    title: "Protection Active",
-    subtitle: "No active threats",
-  },
-  analyzing: {
-    color: colors.accent,
-    title: "Analyzing",
-    subtitle: "Checking the interaction",
-  },
-  threat: {
-    color: colors.danger,
-    title: "High Risk",
-    subtitle: "Pressure detected",
-  },
-  escalated: {
-    color: colors.warn,
-    title: "Verifying",
-    subtitle: "Identity check running",
-  },
+  safe: { color: colors.success, title: "Protection ready", subtitle: "Ready to verify" },
+  analyzing: { color: colors.accent, title: "Checking", subtitle: "Reviewing the interaction" },
+  threat: { color: colors.danger, title: "Verify", subtitle: "High pressure detected" },
+  escalated: { color: colors.warn, title: "Verify", subtitle: "Identity check running" },
 };
 
 interface StatusRingProps {
   status: ShieldStatus;
-  callActive?: boolean;
   size?: number;
   titleOverride?: string;
   subtitleOverride?: string;
 }
 
-export function StatusRing({
-  status,
-  callActive = false,
-  size = 208,
-  titleOverride,
-  subtitleOverride,
-}: StatusRingProps) {
+export function StatusRing({ status, size = 208, titleOverride, subtitleOverride }: StatusRingProps) {
   const presentation = PRESENTATION[status];
   const title = titleOverride ?? presentation.title;
-  const subtitle =
-    subtitleOverride ??
-    (status === "safe" && callActive ? "Protected call in progress" : presentation.subtitle);
+  const subtitle = subtitleOverride ?? presentation.subtitle;
 
   return (
     <View
@@ -68,7 +43,10 @@ export function StatusRing({
         ]}
       >
         <View
-          style={[s.core, { width: size - 48, height: size - 48, borderRadius: (size - 48) / 2 }]}
+          style={[
+            s.core,
+            { width: size - 48, height: size - 48, borderRadius: (size - 48) / 2 },
+          ]}
         >
           <Text style={[s.title, { color: presentation.color }]} numberOfLines={2}>
             {title}
@@ -83,24 +61,9 @@ export function StatusRing({
 }
 
 const s = StyleSheet.create({
-  wrap: {
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-  },
-  inner: {
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  core: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    backgroundColor: colors.bg,
-  },
+  wrap: { borderWidth: 2, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
+  inner: { borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  core: { alignItems: "center", justifyContent: "center", paddingHorizontal: 6, paddingVertical: 6, backgroundColor: colors.bg },
   title: { fontSize: 20, fontWeight: "700", textAlign: "center", lineHeight: 24 },
   subtitle: { color: colors.muted, fontSize: 12, textAlign: "center", marginTop: 4 },
 });
