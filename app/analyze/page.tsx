@@ -5,6 +5,15 @@ import { PageShell } from "@/components/PageShell";
 
 type PressureResult = {
   pressureScore: number;
+  riskLevel: "low" | "medium" | "high";
+  reasoning: string;
+};e client";
+
+import { useState, FormEvent, ChangeEvent } from "react";
+import { PageShell } from "@/components/PageShell";
+
+type PressureResult = {
+  pressureScore: number;
   humanLikelihood: number;
   reasoning: string;
   verdict: "likely_human" | "likely_clone" | "uncertain";
@@ -17,52 +26,13 @@ type ApiError = {
   };
 };
 
-const verdictConfig: Record<
-  PressureResult["verdict"],
-  { label: string; icon: React.ReactNode; color: "success" | "danger" | "warning" }
+const riskConfig: Record<
+  PressureResult["riskLevel"],
+  { label: string; color: "success" | "danger" | "warning" }
 > = {
-  likely_human: {
-    label: "Likely human",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    color: "success",
-  },
-  likely_clone: {
-    label: "Likely clone",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m-2 2l2 2m-2-2h.01M12 22a10 10 0 110-20a10 10 0 010 20z"
-        />
-      </svg>
-    ),
-    color: "danger",
-  },
-  uncertain: {
-    label: "Uncertain",
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c.867 0 1.542-.565.906-1.542l-2.982-5.964A2 2 0 0015.196 3H8.804a2 2 0 00-1.906 1.542L3.194 17.964A2 2 0 005.106 21h13.802a2 2 0 001.906-1.542L20.806 12H4.194z"
-        />
-      </svg>
-    ),
-    color: "warning",
-  },
+  low: { label: "Low pressure", color: "success" },
+  medium: { label: "Medium pressure", color: "warning" },
+  high: { label: "High pressure", color: "danger" },
 };
 
 const colorStyles = {
@@ -268,8 +238,7 @@ export default function AnalyzePage() {
                   <span
                     className={`badge ${colorStyles[verdictConfig[result.verdict].color]} flex items-center gap-1.5`}
                   >
-                    {verdictConfig[result.verdict].icon}
-                    {verdictConfig[result.verdict].label}
+                    {riskConfig[result.riskLevel].label}
                   </span>
                 </div>
 
@@ -285,12 +254,11 @@ export default function AnalyzePage() {
                   </div>
                   <div className="rounded-xl bg-neutral-900/50 p-5 text-center">
                     <p className="text-xs text-neutral-400 uppercase tracking-wide mb-1">
-                      Human likelihood
+                      Risk level
                     </p>
-                    <p className="text-4xl font-bold tabular-nums text-neutral-50">
-                      {result.humanLikelihood}
+                    <p className="text-2xl font-bold text-neutral-50 capitalize">
+                      {result.riskLevel}
                     </p>
-                    <p className="text-xs text-neutral-500">/ 100</p>
                   </div>
                 </div>
 
@@ -334,8 +302,7 @@ export default function AnalyzePage() {
                     <div>
                       <p className="font-medium text-amber-300">Advisory signal</p>
                       <p className="text-sm text-amber-400 mt-1">
-                        This is an additional warning signal, not a guarantee. Always verify with
-                        the rotating code.
+                        This is an advisory pressure signal, not proof of fraud or identity. Use the rotating code to verify a trusted person.
                       </p>
                     </div>
                   </div>
