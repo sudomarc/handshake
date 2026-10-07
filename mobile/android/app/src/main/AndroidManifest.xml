@@ -27,7 +27,7 @@
       <meta-data android:name="android.telecom.CALL_SCREENING_SERVICE_UI" android:value="false"/>
     </service>
     <service android:name="com.sudomarc.handshake.callaudio.HandshakeOverlayService" android:exported="false" android:foregroundServiceType="specialUse">
-      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-enabled call protection overlay shown above supported communication apps"/>
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-enabled Handshake warning overlay shown above phone and calling apps"/>
     </service>
     <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
       <intent-filter>
