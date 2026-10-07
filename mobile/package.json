@@ -11,6 +11,7 @@
     "build:android:production": "eas build --platform android --profile production",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
+    "test": "npx tsx --test tests/lib.test.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "android": "expo run:android",
