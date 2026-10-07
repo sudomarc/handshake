@@ -12,13 +12,13 @@ ever receives: short rotating codes, validated AI results, and static content.
 
 | Component          | Location                            | Responsibility                                                                          |
 | ------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| Home               | `app/page.tsx`                      | Primary "Verify a person", secondary "My trusted people", tertiary AI tools             |
-| Verify screen      | `app/verify/[pairId]/page.tsx`      | Receiver: huge code + countdown + claimed-code entry + actionable verdict               |
-| My codes screen    | `app/codes/[pairId]/page.tsx`       | Caller: huge code + countdown, to read aloud                                            |
-| My trusted people  | `app/circle/page.tsx`               | Create trusted pairs with human language (parent, sibling, partner, friend)             |
-| Pressure check     | `app/analyze/page.tsx`              | Transcript in → pressure score + human likelihood + verdict (advisory)                  |
+| Home               | `mobile/app/(tabs)/index.tsx`       | Protection-ready home, person verification, call check and warning setup               |
+| Verify screen      | `mobile/app/verify/[pairId].tsx`    | Trusted-person verification with shared rotating code and actionable verdict           |
+| My codes screen    | `mobile/app/codes/[pairId].tsx`     | Caller: large rotating code + countdown, to read aloud                                  |
+| Trusted people     | `mobile/app/(tabs)/trusted.tsx`     | Create, join and manage trusted relationships                                           |
+| Pressure check     | `app/analyze/page.tsx`              | Transcript in → pressure score + risk level + reasoning (advisory)                      |
 | Personal challenge | `app/challenge/[pairId]/page.tsx`   | Private context → one personalized question (advisory)                                  |
-| First hour         | `app/first-hour/page.tsx`           | Static checklist (placeholder)                                                          |
+| Call warnings      | `mobile/lib/callOverlay.ts`         | Optional Android overlay above phone/calling apps                                       |
 | Demo mode          | `app/demo/page.tsx`                 | Creates pair, shows both /verify and /codes links side-by-side for desktop demo         |
 | Codes module       | `lib/totp.ts`                       | `otplib` wrapper: derive secret, current code, verify with window                       |
 | AI module          | `lib/llm.ts` / `lib/featherless.ts` | Server-only `fetch` client for Featherless (OpenAI-compatible `chat/completions`)       |
@@ -176,9 +176,9 @@ recording.
 ### Privacy boundary
 
 The default product should be user-controlled and privacy-preserving: explicit
-session consent, a clear indication when protection is active, minimal data
-collection, no hidden recording, and short-lived handling of transcripts or
-call-derived data unless the user explicitly chooses persistence.
+consent for sensitive checks, a clear indication when warnings are enabled,
+minimal data collection, no hidden recording, and short-lived handling of
+transcripts or call-derived data unless the user explicitly chooses persistence.
 
 ### API boundary
 
@@ -240,3 +240,14 @@ POST /api/code/verify      claimed code → verdict (rate-limited)
 POST /api/analyze          transcript → pressure check JSON
 POST /api/challenge        context → challenge JSON
 ```
+
+## Mobile communication model
+
+Handshake does not replace the system Phone app and does not create a Handshake-only call.
+The Android layer observes carrier call state for the warning overlay. Third-party calling apps
+such as WhatsApp are companion surfaces: the user can keep warnings enabled and run the manual
+Check a call flow, but Handshake does not automatically receive private two-way audio from them.
+
+The shared rotating code remains the authoritative identity verification mechanism.
+Pressure Check is an advisory risk signal only; it must never be represented as a voice-clone or
+human-authenticity detector.
