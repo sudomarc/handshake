@@ -89,7 +89,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const escalate = useCallback(
-    (run: number, context: string) => {
+    (run: number) => {
       const pair = activePair ?? pairs[0] ?? null;
       const pairId = pair?.pairId ?? null;
       if (!pairId) {
@@ -172,7 +172,7 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           // The in-app shield remains authoritative if cross-app overlay permission is unavailable.
         });
-      escalate(run, transcript);
+      escalate(run);
     } catch (error) {
       setState((prev) =>
         run === runRef.current
