@@ -17,6 +17,7 @@ import { GET as qrHandler } from "../app/api/trust/invite/[inviteId]/qr/route";
 import { GET as circleHandler } from "../app/api/trust/circle/route";
 import { trustStore } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
+import { parsePairInvite } from "../mobile/lib/trust/parseInvite";
 
 const TEST_KEY = "0123456789abcdef0123456789abcdef";
 const OWNER = { deviceId: "a".repeat(32), deviceSecret: "1".repeat(64) };
@@ -217,9 +218,11 @@ describe("QR pairing invitations", () => {
     const inviteId = created.body.inviteId as string;
 
     // Force expiry (120 s TTL) through the store.
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     const accept = await acceptInvite(inviteId, "Bob", PEER);
@@ -252,9 +255,11 @@ describe("QR pairing invitations", () => {
   test("sweep removes expired invites", async () => {
     const created = await createInvite("Alice");
     const inviteId = created.body.inviteId as string;
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -289,5 +294,42 @@ describe("QR pairing invitations", () => {
     );
     assert.equal(reused.status, 409);
     assert.equal((await reused.json()).error.code, "inviting_not_pending");
+  });
+
+  describe("parsePairInvite URL helper", () => {
+    test("parses valid handshake scheme deep link", () => {
+      assert.equal(
+        parsePairInvite("handshake://pair?invite=1234567890abcdef1234567890abcdef"),
+        "1234567890abcdef1234567890abcdef",
+      );
+    });
+
+    test("parses web URL deep link", () => {
+      assert.equal(
+        parsePairInvite("https://handshake.app/pair?invite=abcdef1234567890abcdef1234567890"),
+        "abcdef1234567890abcdef1234567890",
+      );
+    });
+
+    test("parses URL with extra query params", () => {
+      assert.equal(
+        parsePairInvite("handshake://pair?foo=bar&invite=abc123def456&baz=qux"),
+        "abc123def456",
+      );
+    });
+
+    test("parses unparseable / fallback URL formats", () => {
+      assert.equal(parsePairInvite("/pair?invite=fallback123"), "fallback123");
+    });
+
+    test("returns null for missing, empty, or invalid input", () => {
+      assert.equal(parsePairInvite(null), null);
+      assert.equal(parsePairInvite(undefined), null);
+      assert.equal(parsePairInvite(""), null);
+      assert.equal(parsePairInvite("   "), null);
+      assert.equal(parsePairInvite("handshake://other?invite=123"), null);
+      assert.equal(parsePairInvite("https://handshake.app/pair"), null);
+      assert.equal(parsePairInvite("https://handshake.app/pair?invite="), null);
+    });
   });
 });
