@@ -17,6 +17,7 @@ import { GET as qrHandler } from "../app/api/trust/invite/[inviteId]/qr/route";
 import { GET as circleHandler } from "../app/api/trust/circle/route";
 import { trustStore } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
+import { proofPreImage, TRUST_PROTOCOL } from "../lib/trustCrypto";
 
 const TEST_KEY = "0123456789abcdef0123456789abcdef";
 const OWNER = { deviceId: "a".repeat(32), deviceSecret: "1".repeat(64) };
@@ -217,9 +218,11 @@ describe("QR pairing invitations", () => {
     const inviteId = created.body.inviteId as string;
 
     // Force expiry (120 s TTL) through the store.
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     const accept = await acceptInvite(inviteId, "Bob", PEER);
@@ -252,9 +255,11 @@ describe("QR pairing invitations", () => {
   test("sweep removes expired invites", async () => {
     const created = await createInvite("Alice");
     const inviteId = created.body.inviteId as string;
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -262,6 +267,23 @@ describe("QR pairing invitations", () => {
 
     const read = await getInvite(inviteId);
     assert.equal(read.res.status, 404);
+  });
+
+  test("proofPreImage formats canonical device proof pre-image with secret in final position", () => {
+    const input = {
+      pairId: "pair123",
+      deviceId: "deviceA",
+      sessionId: "sessionXYZ",
+      nonce: "nonce456",
+      issuedAt: 1700000000000,
+      deviceSecret: "secret789",
+    };
+
+    const preImage = proofPreImage(input);
+    const expected = `${TRUST_PROTOCOL}|proof|pair123|deviceA|sessionXYZ|nonce456|1700000000000|secret789`;
+
+    assert.equal(preImage, expected);
+    assert.ok(preImage.endsWith("|" + input.deviceSecret));
   });
 
   test("QR endpoint serves a PNG containing only the invite deep link", async () => {
