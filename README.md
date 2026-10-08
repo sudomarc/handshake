@@ -2,9 +2,11 @@
 
 > **The voice can be cloned. The person can still prove who they are.**
 
-Handshake helps you verify _who is actually on the other end_ of a phone call or message — even when the voice sounds exactly like someone you love. Instead of trying to detect the fake (an arms race that voice
-detectors keep losing), Handshake checks something a clone can never have: access
-to a secret your trusted circle shares.
+Handshake helps you verify _who is actually on the other end_ of a phone call or
+message — even when the voice sounds exactly like someone you love. Instead of
+trying to detect the fake (an arms race that voice detectors keep losing),
+Handshake checks something a clone can never have: a phone that you paired and
+confirmed, in person, before the call.
 
 Built solo for the **AI + Cybersecurity** track at
 [ForgeHacks 2026](https://www.forgehacks.dev/) (Oct 3–10, 2026).
@@ -22,65 +24,94 @@ usually alone, on the phone, under time pressure.
 
 Deepfake detection is an arms race: every detector is eventually outpaced by a
 better generator. Handshake changes the question. We stop asking
-_"is this voice real?"_ and ask _"does the person on this call have access to
-something only the real person has?"_
+_"is this voice real?"_ and ask _"is this call coming from a phone I paired and
+confirmed with a real person I trust?"_
 
-The real person can always prove who they are in seconds — no matter how perfect
-the fake is.
+The real person&rsquo;s paired phone is recognized automatically — no matter how
+perfect the fake is.
 
 ## Features (in build priority)
 
-1. **Trusted Circle + rotating codes.** You and a trusted contact create a
-   private pair. The pair shares a secret that produces a short code, changing
-   every 30 seconds. During a call, the caller is asked to say the current code;
-   you compare it with the huge code on your screen, or type what you heard for a
-   server-confirmed verdict. A clone can't say a code it has never seen.
+1. **Automatic trusted-call recognition (QR pairing).** Add a trusted person by
+   putting two phones together: tap **"Show my QR"** on one and **"Scan a QR"**
+   on the other. The invitation is short-lived and single-use; both people
+   confirm on their own phones, and the relationship is mutual. No code to type
+   or read out loud. During a call, Handshake recognizes a previously paired
+   device and shows one of three honest states: **Trusted connection** (both
+   phones confirmed and the backend verified the session), **Verify** (peer
+   offline / not paired / backend unreachable), or **Risk detected** (a real
+   local risk signal). It never shows "Protected" without evidence.
 2. **Pressure check (AI).** Paste what the caller said (a transcript or message).
    An LLM flags manipulation tactics — artificial urgency, secrecy, immediate
    payment, authority pressure — and returns a risk level plus reasons, as
    validated structured data. Advisory, not a verdict.
-3. **Personal challenge (AI).** After a meaningful pressure signal, Handshake can generate a private verification question for the trusted person.
+3. **Personal question (AI).** After a meaningful pressure signal, Handshake can generate a private verification question for the trusted person. An internal capability; users don't have to choose it as a separate tool.
 4. **The first hour.** A calm, static checklist for the 60 minutes after money
    has already moved. No AI, no decisions made under stress — just the right
    steps, in order.
+
+## Pairing model
+
+Pairing is physical, mutual, and happens once:
+
+1. **Create an invitation** — Phone A: "Add a trusted person" → "Show my QR".
+   Handshake creates a short-lived, single-use QR invitation (see
+   `POST /api/trust/invite` in ARCHITECTURE.md).
+2. **Scan and accept** — Phone B: "Scan a QR". Accepting enrolls Phone B into
+   the new circle immediately.
+3. **Both confirm** — Phone A confirms on its own screen, which completes the
+   pairing (`confirmed`) and enrolls Phone A too.
+4. **Recognized during calls** — from then on, the two phones authenticate each
+   other through a server-confirmed, locally-verified call session.
+
+The server-issued relation id is an **internal** identifier: it is never shown
+to users and never needs to be typed or read. The QR invitation is the only
+thing that leaves the phone, and it dies after first use or on expiry.
 
 ## Architecture
 
 Handshake Personal (Android)
     ↓
 Protection-ready home
-    ├── Trusted people + shared rotating codes
-    ├── Verify person
-    └── Check a call
+    ├── Trusted people (QR pairing: invite → accept → confirm)
+    ├── Automatic device recognition during calls
+    └── Honest overlay: Trusted / Verify / Risk detected
           ↓
-    Shield orchestration
-    ├── Pressure Check (advisory)
-    └── Personal Challenge (when needed)
-          ↓
-    Protected / Verify / Risk
+    Trust backend
+    ├── QR invitations (`/api/trust/invite*`)
+    ├── Device enrollment (`/api/trust/enroll`)
+    ├── Call sessions + attestation (`/api/trust/session*`)
+    └── Revocation (`/api/trust/revoke`)
 
 Android companion layer
     ├── Operator call-state awareness
     └── Optional warning overlay above phone and calling apps
 
 Next.js backend
-    ├── Rotating-code verification
-    ├── Pressure analysis
-    └── Personal-question generation
+    ├── Trust protocol (device proof + session attestation)
+    ├── Pressure analysis (`/api/analyze`)
+    └── Legacy code-verification routes (`/api/code/*`,
+        `/api/circle`) kept for backward compatibility
 
 The mobile client does not replace the system Phone app and does not create a Handshake-only
-call. For WhatsApp and other third-party calling apps, Handshake is a companion layer: the
-user can run Check a call manually and keep warnings visible with overlay permission.
-Handshake does not claim automatic access to private two-way audio from those apps.
+call. For WhatsApp and other third-party calling apps, Handshake is a companion layer:
+the overlay stays visible with overlay permission, and call recognition only ever reports
+what the trust backend actually confirmed. Handshake does not claim automatic access to
+private two-way audio from those apps.
 
 ## Stack
 
 - **Next.js 16** (App Router) + **TypeScript** (strict) + **Tailwind CSS**
-- **`otplib`** for the rotating codes (standard TOTP — no custom crypto)
+- **Trust protocol** (`lib/trustCrypto.ts`, `lib/trustStore.ts`,
+  `lib/trustSchemas.ts`) — device enrollment, single-use proofs, call-session
+  attestation. Production direction is asymmetric device keys (Ed25519)
+- **`otplib`** for the legacy rotating-code routes (`/api/code/*`), kept for
+  backward compatibility — no longer the primary identity mechanism
 - **`zod`** validates every API input and output, including LLM output
 - **Featherless AI** (OpenAI-compatible API) for the two AI features; the key
   exists only in server environment variables
-- **Stateless HMAC derivation** for TOTP pair secrets (see ARCHITECTURE.md) · hosted on **Vercel**
+- **Stateless HMAC derivation** for the legacy TOTP pair secrets (see
+  ARCHITECTURE.md) · hosted on **Vercel**
 
 ## Quick start
 
@@ -102,19 +133,19 @@ committed).
 | `FEATHERLESS_API_KEY`  | for AI features  | API key, server-side only                                                   |
 | `FEATHERLESS_BASE_URL` | no (default set) | `https://api.featherless.ai/v1`                                             |
 | `FEATHERLESS_MODEL`    | no (default set) | e.g. `Qwen/Qwen3.8-27B`                                                     |
-| `PAIR_DERIVATION_KEY`  | for codes        | server secret used to derive pair secrets (lands with the codes module, J2) |
+| `PAIR_DERIVATION_KEY`  | for legacy codes | server secret used to derive pair secrets (legacy `/api/code/*` compat routes) |
 
 ## The demo
 
 Handshake is being built as a **working hackathon prototype**, not a simulated
-click-through. The core verification flow is expected to work for real:
+click-through. The pairing and recognition flow is expected to work for real:
 
-1. create a trusted pair;
-2. open the receiver flow on one device;
-3. open the caller code on another device;
-4. receive the same rotating code on both devices;
-5. enter the claimed code;
-6. get a real **Verified** or **Not verified** result.
+1. pair two phones by QR (one shows, one scans);
+2. both people confirm on their own phones;
+3. a call from the paired device is recognized automatically and shows
+   **Trusted connection**;
+4. an unpaired or offline peer shows **Verify** — never a false "Protected";
+5. a real local risk signal shows **Risk detected**.
 
 The AI features should also call the configured Featherless endpoint when they are
 presented as working features. A screenshot, prerecorded clip, or visual mockup
@@ -150,11 +181,12 @@ protection readiness and trusted people.
 
 When the user is dealing with a phone call or a third-party calling app such as
 WhatsApp, Handshake should act as a small companion layer: optional warnings can
-stay visible above other apps, and the user can run a manual interaction check when
-needed.
+stay visible above other apps, and recognition states appear automatically based
+on what the trust backend actually confirmed.
 
-The user-facing states are **Protected**, **Verify** and **Risk**. Pressure Check,
-Personal Challenge and rotating-code verification remain internal capabilities.
+The user-facing states are **Trusted connection**, **Verify** and **Risk
+detected** — never "Protected" without evidence. Pressure Check and Personal
+Question remain internal capabilities; the product chooses whether to use them.
 
 ### Current call integration boundary
 
@@ -170,9 +202,11 @@ carrier calls or third-party calling apps such as WhatsApp. Audio analysis there
 cannot be presented as live call analysis until a supported platform surface is
 independently verified.
 
-For any interaction, the current reliable path is user-provided text or transcript
-input → pressure analysis → contextual verification. The shared rotating-code
-flow remains the authoritative identity check.
+For any interaction, the current reliable path is device-level trust: a paired
+phone is recognized through the trust backend, and user-provided text can
+additionally feed pressure analysis. The rotating-code routes remain available
+server-side for backward compatibility but are no longer part of the mobile
+user flow.
 
 ### Real-time call analysis direction
 
@@ -211,21 +245,27 @@ listening.
 See [ROADMAP.md](./ROADMAP.md) for the complete call-protection UX,
 real-time-analysis pipeline, Android integration layers and phased plan.
 ## Honest limitations
-- **Stateless pair secrets.** Pair secrets are derived on demand using
-  `HMAC-SHA256(PAIR_DERIVATION_KEY, pairId)`. There is no pair database or
-  server-side state to lose across serverless redeploys. Anyone with the pair ID
-  can generate and verify codes. A production version would require real
-  accounts/auth, device registration, and encrypted secret storage — see
-  ARCHITECTURE.md and SECURITY.md.
+- **In-memory trust store.** The trust backend keeps devices, invitations and
+  sessions in memory per server instance. On serverless hosting with multiple
+  instances, an enrollment or invitation created on instance A is invisible to
+  instance B. Production requires a shared, durable store.
+- **Legacy stateless pair secrets.** The `/api/code/*` compatibility routes still
+  derive TOTP secrets with `HMAC-SHA256(PAIR_DERIVATION_KEY, pairId)`. They are
+  kept only for backward compatibility, not as the primary identity mechanism.
 - **The AI features are advisory.** The pressure check and challenge are LLM
   outputs: helpful signals, not guarantees. We do not claim detection accuracy
   numbers because we have not measured them and would not report unprovable
   ones.
-- **Shared-secret trust model.** The codes prove the caller can access a device
-  enrolled in the circle. If that device is stolen, the codes go with it — the
-  same trust model as any one-time-password system.
-- **No accounts in the demo.** Anyone who knows a pair ID can interact with that
-  pair; the pair ID is the shared secret, not a username.
+- **Invitation misuse window.** A QR invitation is short-lived and single-use,
+  but if a stranger scans it before the intended person does, they could accept
+  and become a confirmed peer. Pairing should happen with both phones physically
+  together.
+- **Compromised device trust model.** Trust is bound to the devices you paired.
+  If a paired phone is stolen, the stolen device can still take part in trusted
+  sessions until it is revoked. Same model as any device-based credential.
+- **No accounts in the demo.** The server-issued relation id is never shown to
+  users, and enrollment uses per-device secrets rather than accounts; full
+  accounts with auth and device-recovery flows are production work.
 
 ## Ethics & consent
 

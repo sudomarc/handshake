@@ -25,6 +25,8 @@ import type { TrustState } from "./trustSchemas";
 export const SESSION_TTL_MS = 5 * 60_000;
 /** How long an enrolled device stays "recently seen" before it is swept. */
 export const DEVICE_TTL_MS = 90 * 24 * 60 * 60_000;
+/** How long a QR pairing invitation stays valid before it expires. */
+export const INVITE_TTL_MS = 120_000;
 const CLEANUP_INTERVAL_MS = 5 * 60_000;
 const MAX_PAIRS = 10_000;
 const MAX_SESSIONS_PER_PAIR = 8;
@@ -52,6 +54,28 @@ export interface StoredSession {
   state: TrustState;
 }
 
+export type InviteState = "pending" | "accepted" | "confirmed" | "expired" | "cancelled";
+
+/**
+ * One-time QR pairing invitation (see GET /api/trust/invite/*).
+ *
+ * The `inviteId` is a short-lived single-use capability: it is the only thing
+ * carried by the QR deep link, and it is only usable while `state === "pending"`.
+ * `pairId` is an internal server-generated relation id, never shown to users.
+ */
+export interface StoredInvite {
+  inviteId: string;
+  ownerDisplayName: string;
+  /** Set when the peer accepts (state → "accepted"). */
+  peerDisplayName: string | null;
+  state: InviteState;
+  /** Set when the peer accepts; required (and matched) at confirm time. */
+  pairId: PairId | null;
+  createdAt: number;
+  expiresAt: number;
+  updatedAt: number;
+}
+
 export type TrustErrorCode =
   | "device_not_enrolled"
   | "device_revoked"
@@ -61,7 +85,12 @@ export type TrustErrorCode =
   | "session_already_bound"
   | "session_same_device"
   | "nonce_replayed"
-  | "circle_limit";
+  | "circle_limit"
+  | "inviting_not_found"
+  | "inviting_expired"
+  | "inviting_not_pending"
+  | "inviting_already_confirmed"
+  | "inviting_pair_mismatch";
 
 export class TrustError extends Error {
   constructor(
@@ -73,12 +102,8 @@ export class TrustError extends Error {
   }
 }
 
-function hex(bytes: number): string {
-  return Buffer.from(bytes).toString("hex");
-}
-
 function newId(): string {
-  return hex(randomBytes(16));
+  return randomBytes(16).toString("hex");
 }
 
 function now(): number {
@@ -88,6 +113,7 @@ function now(): number {
 class TrustStore {
   private pairs = new Map<PairId, Map<DeviceId, StoredDevice>>();
   private sessions = new Map<string, StoredSession>();
+  private invites = new Map<string, StoredInvite>();
   private timer: NodeJS.Timeout | null;
 
   constructor() {
@@ -319,6 +345,149 @@ class TrustStore {
   }
 
   /* ---------------------------------------------------------------- */
+  /* QR pairing invitations                                           */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Creates a one-time pairing invitation owned by this display name.
+   *
+   * Nothing is enrolled yet: the peer device is enrolled when the invite is
+   * accepted, and the owner's device when it is confirmed. The returned `url`
+   * (built by the route) is the only thing the peer needs to scan.
+   */
+  createInvite(input: { ownerDisplayName: string }): StoredInvite {
+    const at = now();
+    const invite: StoredInvite = {
+      inviteId: newId(),
+      ownerDisplayName: input.ownerDisplayName,
+      peerDisplayName: null,
+      state: "pending",
+      pairId: null,
+      createdAt: at,
+      expiresAt: at + INVITE_TTL_MS,
+      updatedAt: at,
+    };
+    this.invites.set(invite.inviteId, invite);
+    return invite;
+  }
+
+  /**
+   * Reads an invitation, flipping a stale `pending`/`accepted` invite's state to
+   * `expired` on read so the field always reflects reality. Returns `null` for
+   * an unknown invite id.
+   */
+  getInvite(inviteId: string): StoredInvite | null {
+    const invite = this.invites.get(inviteId);
+    if (!invite) return null;
+    if (
+      invite.expiresAt <= now() &&
+      (invite.state === "pending" || invite.state === "accepted")
+    ) {
+      invite.state = "expired";
+      invite.updatedAt = now();
+    }
+    return invite;
+  }
+
+  /**
+   * The peer's half of the pairing handshake.
+   *
+   * Only valid from `pending`. Generates the circle's internal `pairId` and
+   * enrolls the peer device into it (same semantics as `POST /api/trust/enroll`).
+   * The invite can never be accepted again once this succeeds.
+   */
+  acceptInvite(input: {
+    inviteId: string;
+    peerDisplayName: string;
+    deviceId: DeviceId;
+    deviceSecret: string;
+    label?: string;
+  }): { invite: StoredInvite; device: StoredDevice } {
+    const invite = this.invites.get(input.inviteId);
+    if (!invite) {
+      throw new TrustError("inviting_not_found", "This invitation does not exist.");
+    }
+    if (invite.expiresAt <= now()) {
+      invite.state = "expired";
+      invite.updatedAt = now();
+      throw new TrustError("inviting_expired", "This invitation has expired.");
+    }
+    if (invite.state !== "pending") {
+      throw new TrustError(
+        "inviting_not_pending",
+        "This invitation can no longer be accepted.",
+      );
+    }
+
+    const pairId = newId() as PairId;
+    invite.pairId = pairId;
+    invite.peerDisplayName = input.peerDisplayName;
+    invite.state = "accepted";
+    invite.updatedAt = now();
+    const device = this.enroll({
+      pairId,
+      deviceId: input.deviceId,
+      deviceSecret: input.deviceSecret,
+      label: input.label,
+    });
+    return { invite, device };
+  }
+
+  /**
+   * The owner's half of the pairing handshake.
+   *
+   * Requires the invite to be `accepted` (the peer already enrolled) and the
+   * caller to present the exact `pairId` the server generated at accept time.
+   * Enrolls the owner device and moves the invite to its terminal `confirmed`
+   * state, which can never change afterwards.
+   */
+  confirmInvite(input: {
+    inviteId: string;
+    pairId: PairId;
+    deviceId: DeviceId;
+    deviceSecret: string;
+    label?: string;
+  }): StoredInvite {
+    const invite = this.invites.get(input.inviteId);
+    if (!invite) {
+      throw new TrustError("inviting_not_found", "This invitation does not exist.");
+    }
+    if (invite.expiresAt <= now()) {
+      invite.state = "expired";
+      invite.updatedAt = now();
+      throw new TrustError("inviting_expired", "This invitation has expired.");
+    }
+    if (invite.state === "confirmed") {
+      throw new TrustError(
+        "inviting_already_confirmed",
+        "This invitation is already confirmed.",
+      );
+    }
+    if (invite.state !== "accepted") {
+      throw new TrustError(
+        "inviting_not_pending",
+        "This invitation has not been accepted by the peer yet.",
+      );
+    }
+    if (invite.pairId !== input.pairId) {
+      throw new TrustError(
+        "inviting_pair_mismatch",
+        "This invitation does not match the pair you confirmed.",
+      );
+    }
+
+    this.enroll({
+      pairId: invite.pairId,
+      deviceId: input.deviceId,
+      deviceSecret: input.deviceSecret,
+      label: input.label,
+    });
+    invite.state = "confirmed";
+    invite.updatedAt = now();
+    return invite;
+  }
+
+  /* ---------------------------------------------------------------- */
   /* Helpers                                                          */
   /* ---------------------------------------------------------------- */
 
@@ -360,7 +529,15 @@ class TrustStore {
     proof: string;
     deviceSecret: string;
   }): void {
-    const ok = verifyDeviceProof(input);
+    const ok = verifyDeviceProof({
+      expected: input.proof,
+      pairId: input.pairId,
+      deviceId: input.deviceId,
+      sessionId: input.sessionId,
+      nonce: input.nonce,
+      issuedAt: input.issuedAt,
+      deviceSecret: input.deviceSecret,
+    });
     if (!ok) throw new TrustError("invalid_proof", "This device could not be authenticated.");
   }
 
@@ -368,6 +545,10 @@ class TrustStore {
     const at = now();
     for (const [sessionId, session] of this.sessions) {
       if (session.expiresAt <= at) this.sessions.delete(sessionId);
+    }
+    // Expired invites are terminal and can never be reused.
+    for (const [inviteId, invite] of this.invites) {
+      if (invite.expiresAt <= at) this.invites.delete(inviteId);
     }
     for (const [pairId, devices] of this.pairs) {
       for (const [deviceId, device] of devices) {
@@ -382,6 +563,7 @@ class TrustStore {
   reset(): void {
     this.pairs.clear();
     this.sessions.clear();
+    this.invites.clear();
   }
 }
 

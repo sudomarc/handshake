@@ -14,6 +14,7 @@
 
 import { type AppStateStatus } from "react-native";
 import { callOverlayManager } from "@/lib/callOverlay";
+import { getAllPairs } from "@/lib/storage";
 import { runCallTrust, type CallRole, type CallTrustResult } from "@/lib/trust/session";
 import { deriveCallState } from "@/lib/trust/callState";
 
@@ -82,6 +83,89 @@ export async function clearCallState(): Promise<void> {
     await callOverlayManager.stopProtection();
   } catch {
     // Nothing to clear on builds without the overlay module.
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Automatic call-start trust (JS side)                               */
+/* ------------------------------------------------------------------ */
+
+/** Minimum gap between two automatic cycles, to swallow duplicate events. */
+const MIN_AUTOMATIC_INTERVAL_MS = 2_000;
+
+let automaticInFlight = false;
+let lastAutomaticRunAt = 0;
+
+/**
+ * Runs one automatic trust cycle for a started call, without any user input.
+ *
+ * The loop tries every stored trusted relation (initiator role) until one
+ * resolves `trusted`. The first relation that confirms wins; otherwise the
+ * first result (an honest `verify`, or `risk` if a risk signal was present) is
+ * published. With no trusted relations at all, the result is a `verify` with
+ * copy that points at pairing — never `protected`.
+ *
+ * Guards:
+ *   - a module-level in-flight flag prevents overlapping cycles;
+ *   - a last-event timestamp ignores duplicate "ringing"/"active" emissions
+ *     that arrive in quick succession from the native side.
+ *
+ * Risk is deliberately not produced here: the JS trust cycle passes
+ * `riskDetected: false` because there is no production JS risk source for
+ * carrier calls. Real risk signals arrive from the (future) audio pipeline via
+ * the shield engine's `reportRisk`, which outranks everything in
+ * `deriveCallState`.
+ */
+export async function autoEvaluateCallTrust(): Promise<CallTrustResult | null> {
+  const now = Date.now();
+  if (automaticInFlight || now - lastAutomaticRunAt < MIN_AUTOMATIC_INTERVAL_MS) {
+    return null;
+  }
+  automaticInFlight = true;
+  lastAutomaticRunAt = now;
+  try {
+    const pairs = await getAllPairs();
+    let first: CallTrustResult | null = null;
+
+    for (const pair of pairs) {
+      const result = await runCallTrust({
+        pairId: pair.pairId,
+        role: "initiator",
+        hasTrustedCircle: true,
+        deviceAuthorized: true,
+        riskDetected: false,
+      });
+      first = first ?? result;
+      if (result.state === "trusted") {
+        await defaultPublish(result);
+        return result;
+      }
+    }
+
+    if (first) {
+      await defaultPublish(first);
+      return first;
+    }
+
+    const noRelations = deriveCallState({
+      callActive: true,
+      hasTrustedCircle: false,
+      deviceAuthorized: true,
+      backendReachable: true,
+      trust: null,
+      riskDetected: false,
+    });
+    const result: CallTrustResult = {
+      ...noRelations,
+      backendReachable: true,
+      sessionAttempted: false,
+      sessionId: null,
+      peerDeviceId: null,
+    };
+    await defaultPublish(result);
+    return result;
+  } finally {
+    automaticInFlight = false;
   }
 }
 

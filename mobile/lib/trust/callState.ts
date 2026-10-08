@@ -13,6 +13,10 @@
  * also verified locally against its own circle secret. Anything else — no
  * session, expired session, rejected proof, unreachable backend, unconfirmed
  * audio analysis — is `verify`.
+ *
+ * Precedence is enforced here and relied on by the automatic call-start loop
+ * (`lib/trust/orchestrator.ts`): risk outranks trust, trust outranks verify,
+ * and "protected" is not a state this module can produce.
  */
 
 export type CallState = "trusted" | "verify" | "risk";

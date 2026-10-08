@@ -38,16 +38,25 @@ Status tags: **VERIFIED** (observed during the 2026-10-05 audit), **OWNER-REPORT
 **KNOWN LIMITATION**. This section supersedes the unchecked boxes of J6/J7 below
 until they are re-checked with evidence.
 
+> **Update 2026-10-08 — pairing rework.** The product flow has moved to **QR-based
+> physical pairing** (two phones together → scan → both confirm → automatic
+> recognition during calls). The rotating spoken code, MyCode/codes screens,
+> pairId-as-user-secret, Check-a-call manual flow and "Default trusted person"
+> concept are **retired**; the trust protocol + QR invitations replace them.
+> Items below that reference the rotating code are retained as history and are
+> no longer targets for new verification. See
+> `docs/TRUSTED_CALL_ARCHITECTURE.md` for the current architecture.
+
 ### COMPLETED
 
-- VERIFIED — mobile/ Expo app with trusted people, shared rotating-code verification, the shield interaction flow and caller code display. Typecheck/lint were previously clean on the mobile project.
-- VERIFIED on device — app startup, trusted-person creation, rotating-code generation, correct-code verification, wrong-code rejection, Pressure Check and Personal Question reached the deployed backend on the Samsung A17.
+- VERIFIED — mobile/ Expo app with trusted people, QR pairing surface, the device-to-device trust/session flow and the honest overlay states. Typecheck/lint were previously clean on the mobile project. *(The earlier "shared rotating-code verification" version of this item is retired by the 2026-10-08 pairing rework.)*
+- VERIFIED on device — app startup, trusted-person creation, rotating-code generation, correct-code verification, wrong-code rejection, Pressure Check and Personal Question reached the deployed backend on the Samsung A17. *(Rotating-code verification remains implemented server-side for compatibility but is no longer the primary user flow.)*
 - VERIFIED — the Android overlay can be enabled for warnings above other apps.
 - VERIFIED — the mobile product no longer contains the Handshake-to-Handshake WebRTC call screen or WebRTC client dependency.
 - COMPLETED — the developer's own consented voice clone has been generated for the demo.
 - FIXED — Pressure Check no longer exposes human-likelihood or clone verdicts. Its result is limited to pressure score, risk level and reasoning.
 - FIXED — Personal Challenge can use a saved private verification detail from the trusted-person profile instead of falling back to a generic mobile context.
-- KNOWN LIMITATION — the Android overlay observes carrier phone-call state, but third-party apps such as WhatsApp do not expose their private two-way audio to Handshake through the current integration. Use the manual Check a call flow there.
+- KNOWN LIMITATION — the Android overlay observes carrier phone-call state, but third-party apps such as WhatsApp do not expose their private two-way audio to Handshake through the current integration. *(The manual "Check a call" fallback this limitation used to point to has been removed from the mobile navigation; recognition states still require the backend.)*
 
 ### ON-DEVICE HISTORY
 
@@ -61,10 +70,12 @@ The repeatable QA handoff and current test matrix are maintained in [docs/ANDROI
 
 - [ ] Rebuild the final Android APK from this branch.
 - [ ] Install the APK on the Samsung A17 and verify startup with no native crash.
-- [ ] Verify trusted-person creation, rotating code, correct/wrong code and private detail save.
+- [ ] Verify QR pairing end-to-end: create invite → scan → accept → confirm → mutual enrollment.
+- [ ] Verify the invitation is single-use and expires; a used/expired invite cannot pair again.
+- [ ] Verify automatic recognition during a call: paired phone → **Trusted connection**; unpaired/offline → **Verify** (never a false "Protected").
 - [ ] Verify Pressure Check and Personal Question against the deployed backend.
 - [ ] Verify overlay permission onboarding and the carrier-call warning pill.
-- [ ] Verify the Check a call flow while a third-party calling app is open.
+- [ ] Verify the trust backend (`/api/trust/*`) is deployed and reachable from the APK.
 - [ ] Rehearse DEMO_SCRIPT.md, including one deliberate network failure.
 - [ ] Run the existing voice clone through a commercial detector and record only the observed result.
 - [ ] Final README/demo evidence pass.
@@ -88,12 +99,16 @@ The checklist above is the single current pre-submission checklist. Historical a
 
 ### J5 — Wed Oct 7: Personal-first redesign + demo ✅
 
+> Superseded in part by the 2026-10-08 pairing rework: items about the rotating
+> code UI and "Protected" wording are retained as history. The current flow is
+> QR pairing + automatic recognition with Trusted / Verify / Risk detected.
+
 - [x] Home page centered on one primary verification action
 - [x] Trusted people flow uses human language
-- [x] Verification flow uses clear instructions and a large code field
-- [x] Caller code is large and readable with a rotation countdown
+- [x] Verification flow uses clear instructions and a large code field *(retired — replaced by QR pairing)*
+- [x] Caller code is large and readable with a rotation countdown *(retired — no codes)*
 - [x] Internal risk checks are orchestrated by the shield engine
-- [x] Simplified status language to **Protected / Verify / Risk**
+- [x] Simplified status language to Trusted / Verify / Risk detected
 - [x] Removed WebRTC-only Call Protection from the mobile product
 - [x] Kept optional Android overlay for warnings above phone/calling apps
 - [x] Clone of the developer's own voice generated with consent
@@ -103,16 +118,20 @@ The checklist above is the single current pre-submission checklist. Historical a
 
 ### J6 — Thu Oct 8: Protection companion + QA
 
+> The manual **Check a call** item below is retired: the flow was removed from
+> mobile navigation (verified in the 2026-10-08 QA run). The overlay/recognition
+> states now come from the trust backend.
+
 - [x] Keep ordinary operator calls as the primary phone-call surface
 - [x] Do not replace the system phone UI with a Handshake-only call
 - [x] Remove the Handshake-to-Handshake WebRTC call product
 - [x] Add clear overlay-permission onboarding
-- [x] Keep manual **Check a call** for phone calls, WhatsApp and other third-party calling apps
+- [x] Keep manual **Check a call** for phone calls, WhatsApp and other third-party calling apps *(retired by the 2026-10-08 pairing rework — removed from navigation)*
 - [x] Keep Pressure Check and Personal Challenge behind one shield experience
 - [ ] Finalize overlay behavior on the Samsung A17
 - [ ] Verify carrier call-state awareness on the release APK
 - [ ] Verify warning overlay appears above the phone app
-- [ ] Verify the manual check flow while another calling app is open
+- [ ] Verify QR pairing + automatic recognition end-to-end on two devices *(replaces the retired manual-check item)*
 - [ ] Final UI polish: spacing, contrast, hierarchy, error and loading states
 
 **Important boundary:** Handshake does not automatically receive private two-way audio from
@@ -123,7 +142,7 @@ analysis for those surfaces unless independently verified.
 
 - [ ] Full manual test pass on the mobile app
 - [ ] Build and install the final Android APK
-- [ ] Verify startup, trusted people, rotating code, correct/wrong verification
+- [ ] Verify startup, trusted people, QR pairing, mutual confirmation, recognition states
 - [ ] Verify Pressure Check and Personal Challenge against the deployed backend
 - [ ] Verify overlay permission flow and warning UI
 - [ ] Test one deliberate network failure
@@ -140,8 +159,8 @@ phone calls and third-party calling apps. Handshake does not replace the phone a
 and the mobile product no longer contains a Handshake-to-Handshake WebRTC call screen.
 
 The existing Next.js web app remains the working web prototype and API reference.
-The mobile product keeps the shared-code verification model, the shield orchestration,
-and the optional Android warning overlay.
+The mobile product keeps the device-to-device trust model (QR pairing + automatic
+recognition), the shield orchestration, and the optional Android warning overlay.
 
 ## Post-hackathon product direction
 
@@ -149,8 +168,8 @@ and the optional Android warning overlay.
 2. Keep the web product as the basis for Handshake Business after the hackathon.
 3. Keep one shared Handshake Core/API for verification and risk policy.
 4. Move internal checks behind an orchestration layer instead of exposing a toolbox.
-5. Add accounts, device enrollment/revocation, persistent storage and distributed
-   abuse controls before consumer security claims.
+5. Add accounts, durable/distributed trust storage, recovery flows and abuse
+   controls before consumer security claims.
 
 ## Post-hackathon roadmap — communication companion
 
@@ -158,7 +177,8 @@ and the optional Android warning overlay.
 - Finish Samsung A17 release validation.
 - Make overlay permission setup explicit and reversible.
 - Keep carrier call-state awareness separate from audio analysis.
-- Make the manual interaction check easy to use beside WhatsApp and other calling apps.
+- Complete the automatic recognition loop beside WhatsApp and other calling apps
+  (replaces the retired manual "Check a call" flow).
 
 **Exit:** the user can reliably protect a phone interaction without replacing the
 calling application.
@@ -166,7 +186,7 @@ calling application.
 ### Phase 2 — Evidence-driven risk orchestration
 - Combine pressure signals, trusted-person context and user input.
 - Select the smallest useful check automatically.
-- Keep the user-facing states to **Protected / Verify / Risk**.
+- Keep the user-facing states to **Trusted / Verify / Risk detected**.
 - Trigger the smallest contextual action: verify, challenge or recovery guidance.
 
 **Exit:** one clear action is presented instead of multiple security tools.
@@ -185,7 +205,7 @@ audio access without independent device/platform evidence.
 
 ### Phase 4 — Production trust model
 - Real accounts
-- Device enrollment and revocation
+- Durable device enrollment and revocation
 - Persistent encrypted trust relationships
 - Durable/distributed abuse controls
 - Privacy and retention controls
@@ -200,9 +220,9 @@ Outside active interaction:
 → privacy/settings
 
 During an interaction:
-**Protected**
+**Trusted connection**
 → **Verify**
-→ **Risk**
+→ **Risk detected**
 
 The user should not need to know whether Handshake used Pressure Check, Personal
 Challenge or another internal capability. The product chooses the check and presents

@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePairs } from "@/hooks/usePairs";
 import type { TranscriptCheck } from "@/lib/shield/capabilities";
 import { callOverlayManager } from "@/lib/callOverlay";
 
@@ -59,7 +58,6 @@ const ShieldContext = createContext<ShieldApi | null>(null);
 
 export function ShieldProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ShieldState>(INITIAL);
-  const { activePair } = usePairs();
   const runRef = useRef(0);
 
   const reportRisk = useCallback(
@@ -101,10 +99,6 @@ export function ShieldProvider({ children }: { children: ReactNode }) {
     () => ({ ...state, reportRisk, setAudioAnalysable, reset }),
     [state, reportRisk, setAudioAnalysable, reset],
   );
-
-  // `activePair` is read so that trust evaluation and risk evaluation share one
-  // notion of "who is this call with".
-  void activePair;
 
   return <ShieldContext.Provider value={value}>{children}</ShieldContext.Provider>;
 }

@@ -1,23 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   addPair as storeAdd,
-  getActivePair,
   getAllPairs,
   removePair as storeRemove,
   updatePair as storeUpdate,
-  setActivePair,
   type StoredPair,
 } from "@/lib/storage";
 
 export function usePairs() {
   const [pairs, setPairs] = useState<StoredPair[]>([]);
-  const [activePair, setActivePairState] = useState<StoredPair | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [all, active] = await Promise.all([getAllPairs(), getActivePair()]);
+    const all = await getAllPairs();
     setPairs(all);
-    setActivePairState(active);
     setLoading(false);
   }, []);
 
@@ -41,21 +37,13 @@ export function usePairs() {
     [refresh],
   );
 
-  const setActive = useCallback(
-    async (pairId: string) => {
-      await setActivePair(pairId);
-      await refresh();
-    },
-    [refresh],
-  );
-
   const updatePair = useCallback(
-    async (pairId: string, patch: { name?: string; privateContext?: string }) => {
+    async (pairId: string, patch: { name?: string }) => {
       await storeUpdate(pairId, patch);
       await refresh();
     },
     [refresh],
   );
 
-  return { pairs, activePair, loading, addPair, removePair, setActive, updatePair, refresh };
+  return { pairs, loading, addPair, removePair, updatePair, refresh };
 }

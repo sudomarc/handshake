@@ -18,59 +18,59 @@ import { colors } from "@/lib/theme";
 /**
  * Pre-call trust management for one person.
  *
- * This screen deliberately has **no code to read, no code to type, and no
- * `MyCode` entry point**. Trust is established once, here, before the call; from
- * then on the two Handshake installations authenticate each other automatically
- * during the call.
+ * Simple and nontechnical: the person's name, the relationship state, the
+ * phones that are enrolled, and ways to remove trust. Trust is established
+ * automatically during calls — nothing is read aloud, typed, or shared here.
  */
 export default function TrustedPersonScreen() {
-  const { pairId } = useLocalSearchParams<{ pairId: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const parsed = pairIdSchema.safeParse(pairId);
-  const { pairs, activePair, removePair, setActive, updatePair } = usePairs();
+  const parsed = pairIdSchema.safeParse(id);
+  const { pairs, removePair, updatePair } = usePairs();
 
   const [devices, setDevices] = useState<CircleDevice[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [localDeviceId, setLocalDeviceId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
-  const validPairId = parsed.success ? parsed.data : null;
-  const pair = validPairId ? pairs.find((p) => p.pairId === validPairId) : undefined;
+  const validId = parsed.success ? parsed.data : null;
+  const pair = validId ? pairs.find((p) => p.pairId === validId) : undefined;
   const name = pair?.name ?? "Trusted person";
-  const isActive = activePair?.pairId === validPairId;
 
   const load = useCallback(async () => {
-    if (!validPairId) return;
+    if (!validId) return;
     setLoading(true);
     setError(null);
     try {
-      const [status, deviceId] = await Promise.all([getCircle(validPairId), getDeviceId()]);
+      const [status, deviceId] = await Promise.all([getCircle(validId), getDeviceId()]);
       setDevices(status.devices);
       setLocalDeviceId(deviceId);
-    } catch (e) {
+    } catch {
       setDevices(null);
-      setError(
-        e instanceof Error && e.message ? e.message : "We couldn't load this trusted circle.",
-      );
+      setError("Could not load this trusted circle. Check your connection.");
     } finally {
       setLoading(false);
     }
-  }, [validPairId]);
+  }, [validId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  if (!parsed.success || !validPairId) {
+  if (!parsed.success || !validId) {
     return (
       <PageShell title="Trusted person">
-        <ErrorBox message="That connection ID is not valid." />
+        <ErrorBox message="That trusted person is not valid." />
       </PageShell>
     );
   }
 
-  const targetPairId = validPairId;
+  // Narrowed once more because function declarations below are hoisted and do
+  // not inherit TypeScript's narrowing from the early return above.
+  const targetId: string = validId;
 
   function confirmRevoke(deviceId: string, deviceLabel: string) {
     Alert.alert(
@@ -83,11 +83,9 @@ export default function TrustedPersonScreen() {
           style: "destructive",
           onPress: () => {
             setBusy(true);
-            void revokeDevice({ pairId: targetPairId, targetDeviceId: deviceId })
+            void revokeDevice({ pairId: targetId, targetDeviceId: deviceId })
               .then(() => load())
-              .catch((e: unknown) =>
-                setError(e instanceof Error ? e.message : "We couldn't remove that device."),
-              )
+              .catch(() => setError("We couldn't remove that device."))
               .finally(() => setBusy(false));
           },
         },
@@ -102,17 +100,49 @@ export default function TrustedPersonScreen() {
         text: "Remove",
         style: "destructive",
         onPress: () => {
-          void removePair(targetPairId).then(() => router.back());
+          void removePair(targetId).then(() => router.back());
         },
       },
     ]);
   }
 
+  async function saveName() {
+    const trimmed = editedName.trim();
+    if (trimmed && trimmed !== name) {
+      await updatePair(targetId, { name: trimmed });
+    }
+    setEditing(false);
+  }
+
   return (
     <PageShell title="Trusted person">
       <View style={s.identity}>
-        <H2>{name}</H2>
-        {isActive ? <Text style={s.active}>Default</Text> : null}
+        {editing ? (
+          <View style={s.nameEdit}>
+            <TextInput
+              value={editedName}
+              onChangeText={setEditedName}
+              placeholder={name}
+              placeholderTextColor="#52525b"
+              style={s.nameInput}
+              autoFocus
+              maxLength={40}
+            />
+            <Button label="Save" variant="secondary" onPress={() => void saveName()} />
+          </View>
+        ) : (
+          <>
+            <H2>{name}</H2>
+            <Button
+              label="Rename"
+              variant="secondary"
+              onPress={() => {
+                setEditedName(name);
+                setEditing(true);
+              }}
+            />
+          </>
+        )}
       </View>
 
       <Card>
@@ -122,8 +152,8 @@ export default function TrustedPersonScreen() {
           automatically. Nothing is read out loud and no code is typed.
         </Body>
         <Body muted>
-          Handshake can confirm the relationship, but it cannot hear the call on an ordinary phone
-          call or inside another calling app.
+          Handshake can confirm the relationship, but it cannot hear the call on an ordinary
+          phone call or inside another calling app.
         </Body>
       </Card>
 
@@ -168,77 +198,26 @@ export default function TrustedPersonScreen() {
       </Card>
 
       <Card>
-        <H2>Private detail</H2>
-        <Body muted>
-          Saved only on this phone, used only if Handshake ever needs to ask {name} a personal
-          question.
-        </Body>
-        <PrivateDetailEditor
-          pairId={validPairId}
-          initialValue={pair?.privateContext ?? ""}
-          onSave={(value) => updatePair(targetPairId, { privateContext: value })}
-        />
-      </Card>
-
-      <Card>
         <H2>Manage person</H2>
-        {!isActive ? (
-          <Button
-            label="Make default"
-            variant="secondary"
-            onPress={() => void setActive(validPairId)}
-          />
-        ) : null}
-        <Button label={`Remove ${name} from this phone`} variant="danger" onPress={confirmRemoveLocally} />
+        <Button label={`Remove ${name}`} variant="danger" onPress={confirmRemoveLocally} />
       </Card>
     </PageShell>
   );
 }
 
-function PrivateDetailEditor({
-  pairId,
-  initialValue,
-  onSave,
-}: {
-  pairId: string;
-  initialValue: string;
-  onSave: (value: string) => Promise<void>;
-}) {
-  const [value, setValue] = useState(initialValue);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue, pairId]);
-
-  return (
-    <View style={s.editorWrap}>
-      <TextInput
-        value={value}
-        onChangeText={setValue}
-        multiline
-        maxLength={2000}
-        placeholder="Example: Our dog is called Rover"
-        placeholderTextColor="#52525b"
-        style={s.contextInput}
-        textAlignVertical="top"
-        accessibilityLabel="Private verification detail"
-      />
-      <Button
-        label={saving ? "Saving…" : "Save private detail"}
-        busy={saving}
-        onPress={() => {
-          setSaving(true);
-          void onSave(value.trim()).finally(() => setSaving(false));
-        }}
-      />
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
   identity: { flexDirection: "row", alignItems: "center", gap: 12 },
-  active: { color: colors.accent, fontWeight: "600", fontSize: 14 },
+  nameEdit: { flex: 1, gap: 8 },
+  nameInput: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "700",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    minHeight: 48,
+  },
   deviceRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,14 +228,4 @@ const s = StyleSheet.create({
   deviceMain: { flexShrink: 1, gap: 2 },
   deviceMeta: { color: colors.muted, fontSize: 13 },
   revoked: { color: colors.danger, fontSize: 13 },
-  editorWrap: { maxHeight: 260 },
-  contextInput: {
-    color: colors.text,
-    fontSize: 16,
-    minHeight: 110,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-  },
 });
