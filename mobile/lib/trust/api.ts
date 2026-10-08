@@ -177,8 +177,229 @@ export async function getCircle(pairId: string): Promise<{
   devices: CircleDevice[];
   authorized: boolean;
 }> {
-  const result = await request(`/api/trust/circle?pairId=${encodeURIComponent(pairId)}`, circleSchema);
+  const deviceId = await getDeviceId();
+  const deviceSecret = await getDeviceSecret();
+  const nonce = newNonce();
+  const issuedAt = Date.now();
+  const proof = await computeDeviceProof({
+    pairId,
+    deviceId,
+    sessionId: TRUST_PROTOCOL,
+    nonce,
+    issuedAt,
+    deviceSecret,
+  });
+  const query = new URLSearchParams({
+    pairId,
+    deviceId,
+    nonce,
+    issuedAt: String(issuedAt),
+    proof,
+  });
+  const result = await request(`/api/trust/circle?${query.toString()}`, circleSchema);
   return { devices: result.devices, authorized: result.authorized };
+}
+
+/**
+ * Relationship state shown next to a trusted person on the list and detail
+ * screens.
+ *
+ * "Trusted" means the circle is confirmed and at least one enrolled phone has
+ * not been revoked. "Verify" covers everything else: revocation, or a pairing
+ * that has only just begun (the other phone has not confirmed yet).
+ */
+export function relationState(circle: {
+  devices: CircleDevice[];
+  authorized: boolean;
+}): "trusted" | "verify" {
+  if (!circle.authorized) return "verify";
+  const activeDevice = circle.devices.some((device) => device.revokedAt === null);
+  return activeDevice ? "trusted" : "verify";
+}
+
+/* ------------------------------------------------------------------ */
+/* Short-lived QR physical pairing (invite flow)                       */
+/* ------------------------------------------------------------------ */
+
+export const inviteStateSchema = z.enum([
+  "pending",
+  "accepted",
+  "confirmed",
+  "expired",
+  "cancelled",
+]);
+export type InviteState = z.infer<typeof inviteStateSchema>;
+
+export interface InviteStatus {
+  inviteId: string;
+  displayName: string;
+  peerName: string | null;
+  state: InviteState;
+  createdAt: string;
+  expiresAt: string;
+  pairId?: string;
+}
+
+const createInviteSchema = z.object({
+  inviteId: z.string().min(1),
+  displayName: z.string(),
+  expiresAt: z.string(),
+  url: z.string(),
+});
+
+const inviteStatusSchema = z.object({
+  inviteId: z.string(),
+  displayName: z.string(),
+  peerName: z.string().nullable().optional(),
+  state: inviteStateSchema,
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  pairId: z.string().optional(),
+});
+
+/**
+ * The accept/confirm responses are intentionally parsed loosely: the parallel
+ * backend may add fields (e.g. `enrolledAt`, `label`), and the client only
+ * needs the state and the opaque `pairId`.
+ */
+const acceptedResponseSchema = z
+  .object({
+    state: z.literal("accepted"),
+    pairId: z.string().min(1),
+  })
+  .passthrough();
+
+const confirmedResponseSchema = z
+  .object({
+    state: z.literal("confirmed"),
+    pairId: z.string().min(1),
+  })
+  .passthrough();
+
+/** Creates a one-time pairing invite for this phone's QR code. */
+export async function createInvite(displayName: string): Promise<{
+  inviteId: string;
+  displayName: string;
+  expiresAt: string;
+  url: string;
+}> {
+  return request("/api/trust/invite", createInviteSchema, {
+    method: "POST",
+    body: { displayName },
+  });
+}
+
+/** Reads one invite's live status. Read-only: never changes the invite. */
+export async function getInvite(inviteId: string): Promise<InviteStatus> {
+  const result = await request(
+    `/api/trust/invite/${encodeURIComponent(inviteId)}`,
+    inviteStatusSchema,
+  );
+  return {
+    inviteId: result.inviteId,
+    displayName: result.displayName,
+    peerName: result.peerName ?? null,
+    state: result.state,
+    createdAt: result.createdAt,
+    expiresAt: result.expiresAt,
+    pairId: result.pairId,
+  };
+}
+
+/** Enrols the scanning phone (Device B) into the new relation. */
+export async function acceptInvite(input: {
+  inviteId: string;
+  displayName: string;
+  label?: string;
+}): Promise<{ state: "accepted"; pairId: string }> {
+  const deviceId = await getDeviceId();
+  const deviceSecret = await getDeviceSecret();
+  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/accept`, acceptedResponseSchema, {
+    method: "POST",
+    body: {
+      displayName: input.displayName,
+      deviceId,
+      deviceSecret,
+      label: input.label,
+    },
+  });
+  return { state: result.state, pairId: result.pairId };
+}
+
+/** Enrols the QR owner (Device A) after the peer accepted. */
+export async function confirmInvite(input: {
+  inviteId: string;
+  pairId: string;
+  label?: string;
+}): Promise<{ state: "confirmed"; pairId: string }> {
+  const deviceId = await getDeviceId();
+  const deviceSecret = await getDeviceSecret();
+  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/confirm`, confirmedResponseSchema, {
+    method: "POST",
+    body: {
+      pairId: input.pairId,
+      deviceId,
+      deviceSecret,
+      label: input.label,
+    },
+  });
+  return { state: result.state, pairId: result.pairId };
+}
+
+/**
+ * URL of the server-rendered QR PNG for an invite. Rendered directly with an
+ * `<Image source={{ uri }}>`, so no API response parsing is involved.
+ */
+export function inviteQrUrl(inviteId: string): string | null {
+  if (!API_BASE_URL) return null;
+  return `${API_BASE_URL}/api/trust/invite/${encodeURIComponent(inviteId)}/qr`;
+}
+
+/**
+ * Extracts the invite id from a scanned/linked pairing URL.
+ *
+ * Accepts both forms the product renders or shares:
+ *   handshake://pair?invite=<id>
+ *   https://<host>/pair?invite=<id>
+ *
+ * The invite id is opaque to the client: there is deliberately no format check
+ * beyond "non-empty", because the backend owns its id scheme.
+ */
+export function parsePairInvite(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const candidate = String(url).trim();
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(candidate);
+    const path = parsed.pathname.replace(/\/+$/, "");
+    if (path !== "/pair") return null;
+    const invite = parsed.searchParams.get("invite")?.trim();
+    return invite ? invite : null;
+  } catch {
+    // Not a parseable URL (e.g. a bare "pair?invite=..." in automation). Fall
+    // back to a tolerant scan so emulator/deep-link testing keeps working.
+    const match = candidate.match(/\/pair[?&#]+(?:[^&#]*&)*invite=([^&#\s]+)/i);
+    return match?.[1]?.trim() ? match[1].trim() : null;
+  }
+}
+
+/**
+ * Lightweight reachability probe used by the home surface. Any HTTP response
+ * (including 4xx/5xx) means the server answered; only a transport failure
+ * means offline. Never used to make a trust claim.
+ */
+export async function pingBackend(): Promise<boolean> {
+  if (!API_BASE_URL) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5_000);
+  try {
+    await fetch(`${API_BASE_URL}/api/trust/ping`, { signal: controller.signal });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
