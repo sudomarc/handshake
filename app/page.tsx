@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CodePreview } from "@/components/CodePreview";
 
 export const metadata: Metadata = {
-  title: "Handshake — Verify the person. Not just the voice.",
+  title: "Handshake — Know who's really on the line.",
   description:
-    "Voice cloning can make a fake sound real. Handshake gives trusted people a simple rotating code to verify who they are before a conversation turns into a scam.",
+    "Voice cloning can make a fake sound real. Handshake pairs the phones of people you trust, then recognizes them automatically during calls — with an honest Trusted / Verify / Risk detected overlay.",
   openGraph: {
     title: "Handshake",
-    description: "Verify the person. Not just the voice.",
+    description: "Know who's really on the line. No codes to read or type.",
     type: "website",
   },
 };
@@ -16,36 +15,36 @@ export const metadata: Metadata = {
 const steps = [
   {
     number: "01",
-    title: "Choose someone you trust",
-    text: "Create a private connection with a family member, partner, or friend.",
+    title: "Add a trusted person",
+    text: "In the Handshake app, choose someone you trust in real life — a parent, partner, sibling, or close friend.",
   },
   {
     number: "02",
-    title: "Get a changing code",
-    text: "Handshake generates a short code that changes every 30 seconds.",
+    title: "Put two phones together",
+    text: "Tap \"Show my QR\" on one phone and \"Scan a QR\" on the other. The invitation is short-lived and single-use. Both people confirm on their own phone — the trust is mutual.",
   },
   {
     number: "03",
-    title: "Verify before you act",
-    text: "Ask the person for the current code. Match it before sending money or sensitive information.",
+    title: "Recognized during every call",
+    text: "When one of you calls the other, Handshake automatically recognizes the paired phone and shows one honest state instead of guessing.",
   },
 ];
 
 const states = [
   {
-    name: "Protected",
+    name: "Trusted connection",
     dot: "bg-emerald-400",
-    text: "Known contact, current code matches. Carry on.",
+    text: "Both phones confirmed the relationship and the backend verified the session. Carry on.",
   },
   {
     name: "Verify",
     dot: "bg-amber-400",
-    text: "Something is off. Ask for the current code before trusting.",
+    text: "The other phone is offline, isn't paired, or the backend is unreachable. Slow down and confirm another way.",
   },
   {
-    name: "Risk",
+    name: "Risk detected",
     dot: "bg-red-400",
-    text: "Signals point to a scam. Stop and confirm another way.",
+    text: "A real local risk signal flagged the interaction. Stop and confirm out-of-band before acting.",
   },
 ];
 
@@ -67,6 +66,48 @@ function Mark() {
   );
 }
 
+function OverlayPreview() {
+  return (
+    <div
+      className="rounded-2xl border border-white/10 bg-neutral-950 p-6 sm:p-9"
+      aria-label="What the Handshake overlay looks like during a call"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-neutral-500">Overlay during a call — product preview</span>
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-emerald-400">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          Trusted connection
+        </span>
+      </div>
+
+      <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+        <div className="flex items-center gap-3">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold text-white">Handshake · Trusted connection</p>
+            <p className="text-xs text-neutral-500">This phone was paired and confirmed by both of you.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-xs uppercase tracking-wider text-neutral-500">Identity</p>
+          <p className="mt-2 font-medium text-white">Paired device</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-xs uppercase tracking-wider text-neutral-500">Trust</p>
+          <p className="mt-2 font-medium text-white">Mutual confirmation</p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-xs uppercase tracking-wider text-neutral-500">State</p>
+          <p className="mt-2 font-medium text-white">Trusted / Verify / Risk</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden">
@@ -84,7 +125,7 @@ export default function Home() {
           href="/circle"
           className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
         >
-          Get started
+          How pairing works
         </Link>
       </header>
 
@@ -97,13 +138,14 @@ export default function Home() {
           </p>
 
           <h1 className="text-balance text-5xl font-semibold tracking-[-0.04em] text-white sm:text-7xl">
-            Verify the person.
-            <span className="block text-neutral-500">Not just the voice.</span>
+            Know who&rsquo;s really
+            <span className="block text-neutral-500">on the line.</span>
           </h1>
 
           <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-neutral-400 sm:text-xl">
-            Voice cloning can make a fake sound real. Handshake gives people a simple way to verify
-            who they are before a trusted conversation turns into a scam.
+            Voice cloning can make a fake sound real. Handshake pairs the phones of the people you
+            trust — once, in person, with a QR scan — then recognizes them automatically during
+            calls. No codes to read or type.
           </p>
 
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
@@ -123,7 +165,7 @@ export default function Home() {
         </div>
 
         <div className="mx-auto mt-16 max-w-4xl rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/30 sm:mt-20 sm:p-6">
-          <CodePreview />
+          <OverlayPreview />
         </div>
       </section>
 
@@ -147,6 +189,12 @@ export default function Home() {
             </li>
           ))}
         </ul>
+
+        <p className="mt-6 text-sm leading-6 text-neutral-500">
+          Handshake never shows &ldquo;Protected&rdquo; without evidence. It only shows a trusted
+          connection after both phones have confirmed the relationship and the backend verified the
+          session. Risk detected requires a real local risk signal.
+        </p>
       </section>
 
       <section id="how-it-works" aria-labelledby="how-heading" className="border-y border-white/10 bg-white/[0.02]">
@@ -157,7 +205,7 @@ export default function Home() {
               id="how-heading"
               className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
             >
-              A simple check before trust becomes a costly mistake.
+              Trust is built once, then recognized automatically.
             </h2>
           </div>
 
@@ -179,28 +227,31 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-24">
         <div className="grid gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-end">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-400">Built around trust</p>
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-sky-400">Where pairing happens</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              The goal is not to guess. It is to verify.
+              The QR lives in the mobile app.
             </h2>
           </div>
           <p className="leading-7 text-neutral-400">
-            Handshake keeps verification simple: trusted people share a secret, and the proof changes
-            over time. Other risk signals can help you slow down, but they do not replace human
-            judgment.
+            This page explains the model. The actual pairing — showing and scanning the
+            short-lived QR, then confirming on both phones — happens in the Handshake app on two
+            phones side by side. The web app is a companion that describes what your circle looks
+            like after pairing.
           </p>
         </div>
 
         <div className="mt-10 flex flex-col items-start justify-between gap-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:p-8">
           <div>
             <h3 className="text-xl font-semibold text-white">Ready to protect your circle?</h3>
-            <p className="mt-2 text-neutral-400">Set up your first trusted connection.</p>
+            <p className="mt-2 text-neutral-400">
+              Learn how pairing works, then grab two phones to set up your first trusted connection.
+            </p>
           </div>
           <Link
             href="/circle"
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 font-semibold text-neutral-950 transition hover:bg-neutral-200"
           >
-            Get started
+            How pairing works
           </Link>
         </div>
       </section>
@@ -208,7 +259,7 @@ export default function Home() {
       <footer className="border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-8 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p>Handshake</p>
-          <p>Verify the person. Not just the voice.</p>
+          <p>Know who&rsquo;s really on the line.</p>
         </div>
       </footer>
     </main>

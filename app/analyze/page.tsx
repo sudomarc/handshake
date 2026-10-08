@@ -189,8 +189,8 @@ export default function AnalyzePage() {
                 <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-4">
                   <p className="font-medium text-amber-300">Advisory signal</p>
                   <p className="text-sm text-amber-400 mt-1">
-                    This checks pressure tactics only. It does not prove fraud or identity. Use the
-                    rotating code to verify a trusted person.
+                    This checks pressure tactics only. It does not prove fraud or identity. Handshake
+                    identifies trusted people automatically through paired devices during calls.
                   </p>
                 </div>
               </div>
