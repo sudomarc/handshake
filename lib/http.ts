@@ -48,7 +48,11 @@ export function handleApiError(error: unknown) {
     // Each one resolves to `unverified` on the client; none may be reported as
     // a protection claim.
     const status =
-      error.code === "device_revoked" || error.code === "device_not_enrolled" ? 403 : 409;
+      error.code === "device_revoked" || error.code === "device_not_enrolled"
+        ? 403
+        : error.code === "inviting_not_found"
+          ? 404
+          : 409;
     const message =
       error.code === "invalid_proof" || error.code === "nonce_replayed"
         ? "Handshake could not confirm this device."

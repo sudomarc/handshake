@@ -170,3 +170,87 @@ export const circleStatusResponseSchema = z.object({
   authorized: z.boolean(),
 });
 export type CircleStatusResponse = z.infer<typeof circleStatusResponseSchema>;
+
+/* ------------------------------------------------------------------ */
+/* QR pairing invitations                                              */
+/* ------------------------------------------------------------------ */
+
+export const inviteIdSchema = z.string().regex(/^[a-f0-9]{32}$/, "An invite id is 32 hex characters");
+export type InviteId = z.infer<typeof inviteIdSchema>;
+
+/** Human-facing display name shown inside the pairing flow, 1..60 chars. */
+export const displayNameSchema = z.string().trim().min(1).max(60);
+export type DisplayName = z.infer<typeof displayNameSchema>;
+
+/**
+ * Lifecycle of a pairing invitation.
+ *
+ *   pending  → accepted → confirmed
+ *   pending  → expired | cancelled   (terminal, never reused)
+ *   accepted → expired                (terminal)
+ *
+ * `accepted` means the *peer* device accepted and is enrolled; the inviter's
+ * device is enrolled at `confirmed`, which is the terminal state.
+ */
+export const inviteStateSchema = z.enum(["pending", "accepted", "confirmed", "expired", "cancelled"]);
+export type InviteState = z.infer<typeof inviteStateSchema>;
+
+export const createInviteRequestSchema = z.object({
+  displayName: displayNameSchema,
+});
+export type CreateInviteRequest = z.infer<typeof createInviteRequestSchema>;
+
+export const createInviteResponseSchema = z.object({
+  inviteId: inviteIdSchema,
+  displayName: displayNameSchema,
+  expiresAt: z.string().datetime(),
+  /** Deep link the peer scans: handshake://pair?invite=<inviteId>. */
+  url: z.string().url(),
+});
+export type CreateInviteResponse = z.infer<typeof createInviteResponseSchema>;
+
+export const getInviteResponseSchema = z.object({
+  inviteId: inviteIdSchema,
+  displayName: displayNameSchema,
+  peerName: displayNameSchema.nullable(),
+  state: inviteStateSchema,
+  createdAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+  /** Only present once the peer has accepted. */
+  pairId: pairIdSchema.optional(),
+});
+export type GetInviteResponse = z.infer<typeof getInviteResponseSchema>;
+
+export const acceptInviteRequestSchema = z.object({
+  /** Peer's display name, chosen at accept time. */
+  displayName: displayNameSchema,
+  deviceId: deviceIdSchema,
+  deviceSecret: deviceSecretSchema,
+  label: z.string().trim().min(1).max(60).optional(),
+});
+export type AcceptInviteRequest = z.infer<typeof acceptInviteRequestSchema>;
+
+export const acceptInviteResponseSchema = z.object({
+  inviteId: inviteIdSchema,
+  displayName: displayNameSchema,
+  peerName: displayNameSchema,
+  state: z.literal("accepted"),
+  pairId: pairIdSchema,
+  deviceId: deviceIdSchema,
+  enrolledAt: z.string().datetime(),
+});
+export type AcceptInviteResponse = z.infer<typeof acceptInviteResponseSchema>;
+
+export const confirmInviteRequestSchema = z.object({
+  pairId: pairIdSchema,
+  deviceId: deviceIdSchema,
+  deviceSecret: deviceSecretSchema,
+  label: z.string().trim().min(1).max(60).optional(),
+});
+export type ConfirmInviteRequest = z.infer<typeof confirmInviteRequestSchema>;
+
+export const confirmInviteResponseSchema = z.object({
+  state: z.literal("confirmed"),
+  pairId: pairIdSchema,
+});
+export type ConfirmInviteResponse = z.infer<typeof confirmInviteResponseSchema>;
