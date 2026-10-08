@@ -204,3 +204,40 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-08
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (typecheck 0 errors, lint had 4 warnings for unused variables/imports).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (71/71 passed).
+
+### Work Completed & Priority
+- **Priority 1 & 4 (Mobile Code Hygiene & Linting):**
+  - Resolved all 4 ESLint warnings in the mobile project (`mobile/app/_layout.tsx` and `mobile/components/PairingFlow.tsx`).
+  - Removed unused imports (`checkRuntimePermissions`, `needsPermissionBanner`, `View`) and declared state setter `setPollFailures` in `PairingFlow.tsx` used by poll error handling.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and declared `setPollFailures` state setter.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-08 nightly run results and verification gate outputs.
+
+### Gates & Results
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+- Test suite (`npm test`): PASS (71/71 tests passed across lib, api, pairing, trust, and plugin suites).
+
+### Known Risks & Open Findings
+- Release APK re-verification on physical Samsung SM-A175F remaining as open manual validation step before submission.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Record final Devpost demo video following `DEMO_SCRIPT.md`.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Re-verify release APK on device after CI build completes.
+3. Final rehearsal and recording of public Devpost demo video.
