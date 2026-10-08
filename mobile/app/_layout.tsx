@@ -10,11 +10,7 @@ import { consumeOverlayAction } from "@/lib/overlayIntent";
 import { colors } from "@/lib/theme";
 import { subscribeCallState } from "@/lib/callBridge";
 import { autoEvaluateCallTrust, clearCallState } from "@/lib/trust/orchestrator";
-import {
-  checkRuntimePermissions,
-  needsPermissionBanner,
-  requestRuntimePermissions,
-} from "@/lib/permissions";
+import { requestRuntimePermissions } from "@/lib/permissions";
 import { parsePairInvite } from "@/lib/trust/api";
 import { storePendingInvite } from "@/lib/pairing";
 
