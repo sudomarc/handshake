@@ -41,9 +41,11 @@ function makeDevice(pairId: PairId, deviceId: string, deviceSecret: string): Dev
   return { deviceId: deviceId as DeviceId, deviceSecret, pairId };
 }
 
+let nonceSeq = 0;
 /** All nonces/secrets in these tests must be valid hex to match the schemas. */
 function nonce(): string {
-  return "d".repeat(32);
+  nonceSeq++;
+  return nonceSeq.toString(16).padStart(32, "d");
 }
 
 async function enroll(device: Device, label?: string): Promise<Response> {
@@ -91,7 +93,7 @@ async function openSession(device: Device, now = Date.now()) {
 }
 
 async function joinSession(device: Device, sessionId: string, now = Date.now()) {
-  const n = "a".repeat(32);
+  const n = nonce();
   const res = await joinHandler(
     new NextRequest(`http://localhost/api/trust/session/${sessionId}/join`, {
       method: "POST",
@@ -110,7 +112,7 @@ async function joinSession(device: Device, sessionId: string, now = Date.now()) 
 }
 
 async function pollSession(device: Device, sessionId: string, now = Date.now()) {
-  const n = "b".repeat(32);
+  const n = nonce();
   const res = await sessionHandler(
     new NextRequest(
       `http://localhost/api/trust/session/${sessionId}?deviceId=${device.deviceId}&nonce=${n}&issuedAt=${now}&proof=${await proof(device, sessionId, n, now)}`,
@@ -121,14 +123,14 @@ async function pollSession(device: Device, sessionId: string, now = Date.now()) 
 }
 
 async function findPending(device: Device, now = Date.now()) {
-  const n = "e".repeat(32);
+  const n = nonce();
   const url = `http://localhost/api/trust/session/pending?pairId=${device.pairId}&deviceId=${device.deviceId}&nonce=${n}&issuedAt=${now}&proof=${await proof(device, TRUST_PROTOCOL, n, now)}`;
   const res = await pendingHandler(new NextRequest(url));
   return { res, body: await res.json() };
 }
 
 async function revoke(actor: Device, targetDeviceId: string, revokeWholeCircle = false) {
-  const n = "c".repeat(32);
+  const n = nonce();
   const issuedAt = Date.now();
   const res = await revokeHandler(
     new NextRequest("http://localhost/api/trust/revoke", {
@@ -197,8 +199,8 @@ describe("trusted-call protocol", () => {
 
     test("an unenrolled device cannot open a session", async () => {
       const { res, body } = await openSession(stranger);
-      assert.equal(res.status, 500);
-      assert.equal(body.error.code, "internal_error");
+      assert.equal(res.status, 403);
+      assert.equal(body.error.code, "device_not_enrolled");
     });
 
     test("the circle does not leak devices of another circle", async () => {
@@ -274,7 +276,7 @@ describe("trusted-call protocol", () => {
 
       const joined = await joinSession(stranger, sessionId);
       assert.equal(joined.body.state, undefined);
-      assert.equal(joined.res.status, 500);
+      assert.equal(joined.res.status, 403);
 
       // And the session did not become trusted.
       const polled = await pollSession(alice, sessionId);
@@ -417,9 +419,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -450,6 +454,7 @@ describe("trusted-call protocol", () => {
 
     test("pending discovery requires a valid proof", async () => {
       await enroll(alice);
+      await enroll(bob);
       await openSession(alice);
       const res = await pendingHandler(
         new NextRequest(
@@ -610,8 +615,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -640,9 +651,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();

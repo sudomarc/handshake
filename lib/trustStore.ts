@@ -73,12 +73,8 @@ export class TrustError extends Error {
   }
 }
 
-function hex(bytes: number): string {
-  return Buffer.from(bytes).toString("hex");
-}
-
 function newId(): string {
-  return hex(randomBytes(16));
+  return randomBytes(16).toString("hex");
 }
 
 function now(): number {
@@ -360,7 +356,15 @@ class TrustStore {
     proof: string;
     deviceSecret: string;
   }): void {
-    const ok = verifyDeviceProof(input);
+    const ok = verifyDeviceProof({
+      expected: input.proof,
+      pairId: input.pairId,
+      deviceId: input.deviceId,
+      sessionId: input.sessionId,
+      nonce: input.nonce,
+      issuedAt: input.issuedAt,
+      deviceSecret: input.deviceSecret,
+    });
     if (!ok) throw new TrustError("invalid_proof", "This device could not be authenticated.");
   }
 

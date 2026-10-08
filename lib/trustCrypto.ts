@@ -36,6 +36,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { ConfigError } from "./errors";
 import { deviceIdSchema, pairIdSchema, type DeviceId, type PairId } from "./trustSchemas";
+export type { DeviceId, PairId };
 
 /** Domain separator. Bump only together with a mobile client release. */
 export const TRUST_PROTOCOL = "handshake-trust-v1";
