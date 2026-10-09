@@ -204,3 +204,42 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-09
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (0 errors, 4 ESLint warnings in `_layout.tsx` and `PairingFlow.tsx`).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (71/71 tests passed across lib, api, trust, pairing, and plugin suites).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things / Lint hygiene):**
+  - Resolved 4 ESLint warnings in the mobile client (`mobile/app/_layout.tsx` and `mobile/components/PairingFlow.tsx`) to achieve a completely clean lint check across both root and mobile projects.
+  - Removed unused imports (`checkRuntimePermissions`, `needsPermissionBanner`, `View`).
+  - Converted unused state variable `pollFailures` to a `useRef` counter to prevent unnecessary re-renders while keeping the polling error threshold intact.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and converted `pollFailures` state to `pollFailuresRef`.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-09 nightly run and baseline gates.
+
+### Gates & Results
+- `npm test`: PASS (71/71 tests passed: 15 lib + 10 api + 32 trust + 7 pairing + 7 plugin).
+- Root lint & build (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+
+### Known Risks & Open Findings
+- Pre-submission final validation checklist items in `ROADMAP.md` require physical Samsung A17 device verification and demo video recording before the Devpost submission deadline on Oct 10, 2026.
+
+### Needs Human
+- Final end-to-end QR pairing rehearsal on two physical devices.
+- Record 2–4 minute demo video for Devpost.
+- Submit on Devpost before 12:00 PM EDT on Oct 10, 2026.
+
+### Plan for Tomorrow
+1. Execute final Devpost submission checklist verification in `ROADMAP.md`.
+2. Final device verification of Samsung A17 release APK.
+3. Confirm public Devpost submission and GitHub repo availability.
