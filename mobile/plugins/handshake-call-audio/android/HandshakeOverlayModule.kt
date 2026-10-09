@@ -1,5 +1,6 @@
 package com.sudomarc.handshake.callaudio
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -92,6 +93,36 @@ class HandshakeOverlayModule(
     @ReactMethod
     fun canDrawOverlays(promise: Promise) {
         promise.resolve(Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context))
+    }
+
+    /** True only after the user grants Android notification access to Handshake. */
+    @ReactMethod
+    fun isNotificationAccessEnabled(promise: Promise) {
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            "enabled_notification_listeners",
+        ).orEmpty()
+        val listenerClass = WhatsAppCallNotificationListener::class.java.name
+        promise.resolve(
+            enabled.split(':').any { flattened ->
+                val component = ComponentName.unflattenFromString(flattened)
+                component?.packageName == context.packageName && component.className == listenerClass
+            },
+        )
+    }
+
+    /** Opens the system's special-access screen; the user must enable Handshake manually. */
+    @ReactMethod
+    fun openNotificationAccessSettings(promise: Promise) {
+        try {
+            context.startActivity(
+                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            promise.resolve(true)
+        } catch (error: Exception) {
+            promise.reject("NOTIFICATION_ACCESS_SETTINGS_FAILED", error.message, error)
+        }
     }
 
     @ReactMethod
