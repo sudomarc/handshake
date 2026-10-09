@@ -202,3 +202,68 @@ Need a fake-call app that can simulate outgoing calls.
 | Automated tests | **64/64 PASS** |
 | Physical device tests | **17/21 PASS, 4 BLOCKED** |
 | APK/CI build | **PASS** |
+
+---
+
+## Update 2026-10-09 (device run) — API 30 launch crash fixed; both test devices now run v0.1.1
+
+The previous section covers the recovery work up to commit `b8b1bde`. This section records the follow-up device run: the Android 11 launch crash found during two-device installation, its fix, and the verified outcomes. The audit text above is preserved unchanged.
+
+### Incident (VERIFIED on device)
+
+- **SM-T295** (Samsung Galaxy Tab A, Android 11, API 30, arm64-v8a, Wi-Fi ADB, serial `adb-R9WNB1G6ZWJ-i9i8ZP._adb-tls-connect._tcp`) **crashed on launch** of the `b8b1bde` APK.
+- Logcat reproduced the failure at every cold launch:
+  - `FATAL EXCEPTION` originating in `PhoneStateListener.<init>` with a `NullPointerException` (`Looper.myLooper() == null`), thrown while `HandshakeOverlayModule` constructed its `PhoneStateListener` field initializer during React-context creation → React Native context never became ready → the app closed immediately.
+  - Exact site: `HandshakeOverlayModule.kt` legacy-listener field initializer (line ~67 in the then-current source).
+- **SM-A175F** (Android 16, API 36) launches fine on the same APK because it takes the `TelephonyCallback` branch (`Build.VERSION.SDK_INT >= S`) and never constructs the legacy `PhoneStateListener`.
+
+### Root cause (VERIFIED via logcat + `javap`)
+
+- The no-arg `PhoneStateListener()` constructor binds to `Looper.myLooper()`. On API < 31 the module was constructed on a thread without a Looper (the React-context creation thread), so the constructor threw NPE.
+- **Fix attempt 1** (`20d2fe9010c919211c31e044071c53064facca46`): passed `Looper.getMainLooper()` into the constructor. **CI compile FAILED** (run `37983890936`): the android-34 compile SDK no longer exposes `PhoneStateListener(Looper)` — `javap` shows only `()` and `(Executor)` — so the compiler resolved to the `Executor` overload (`Type mismatch: inferred type is Looper! but Executor was expected`).
+- **Fix attempt 2 — shipped** (`ddfdc206c7b8d8350ffd3a8d4b7012efd6ef87af`, "fix(android): build legacy PhoneStateListener on main thread (API<31 crash)"):
+  - `HandshakeOverlayModule` builds the legacy listener **lazily on the main thread** via `context.runOnUiQueueThread {}` using the no-arg constructor. Registration is asynchronous; the module re-registers on every `setCallState()` if `callStateListenerActive` is false, so the native → JS bridge still comes alive once the permission is granted.
+  - `HandshakeOverlayService` keeps the no-arg listener (a `Service` is always constructed on the main thread, where `Looper.myLooper()` is non-null).
+  - Removed the `android.os.Looper` imports.
+  - Changes applied consistently to both the plugin source (`mobile/plugins/handshake-call-audio/android/`) and the generated app project (`mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/`).
+  - Version bumped **versionCode 1 → 2 / versionName 0.1.0 → 0.1.1** (`mobile/android/app/build.gradle`, `mobile/app.json`) so installs are distinguishable.
+
+### Artifact identity (what is installed on the devices)
+
+| Item | Value |
+| --- | --- |
+| CI run | `37984778870` (success; head `ddfdc206c7b8d8350ffd3a8d4b7012efd6ef87af`), workflow `android-apk` |
+| Artifact (GitHub) | `handshake-apk`, id `11642742945`, zip 36,778,875 bytes, SHA-256 `f8fd3f03b1aac338637965ad96488719481b4bac3ef691b1ba25a362bf4258e3` (matches GitHub digest byte-for-byte) |
+| APK on devices | `app-release.apk`, 82,841,416 bytes, SHA-256 `42fde02c62c54a8ce85fb1ba26cb8672bddd9802755c6b7007c67f1614c319b6` |
+| Installed version | versionCode 2 / versionName 0.1.1 |
+
+### Device results (2026-10-09)
+
+| Device | Android / API | Install | Version | Launch | Home | Overlay service | FATAL in logcat |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| SM-A175F (`RFGL516YXCB`) | 16 / 36 | `Success` (`install -r`) | 0.1.1 (vc 2) | OK | "Protection ready" | `isForeground=true`, id 1002 | NONE |
+| SM-T295 (`adb-R9WNB1G6ZWJ...`) | 11 / 30 | `Success` (`install -r`) | 0.1.1 (vc 2) | OK | "Protection ready" | `isForeground=true`, id 1002 | NONE |
+
+- **The crash is fixed on the T295**: cold launch and force-stop relaunch both reach the Home screen; the overlay foreground service runs; no FATAL EXCEPTION in logcat.
+- **Permissions (T295):** `READ_PHONE_STATE` granted; `SYSTEM_ALERT_WINDOW` appop = allow. `POST_NOTIFICATIONS` **cannot be granted on API 30** (the permission was only introduced in API 33), so the app still shows its "Finish setup / Allow permissions" banner even though every grantable permission is granted — a cosmetic API-30 quirk, not a crash and not a functional block (the overlay service still runs).
+- **Permissions (A175F):** `READ_PHONE_STATE` and `POST_NOTIFICATIONS` granted; overlay appop = allow.
+- **Fake-call smoke (T295):** Phony (`com.upnp.fakeCall` v2.6) active call ("Mum / 66666") rendered in Samsung InCallUI; Handshake remained stable, no crash. As with the A175F run, Phony uses a self-managed/VOIP connection, so `dumpsys telephony.registry` stays `mCallState=0` while the Telecom call is live — expected, not a defect.
+
+### QR pairing between the two devices — FAIL (owner-observed, deferred)
+
+- The owner tested the two-device QR round trip on 2026-10-09: scanning a Handshake QR with the app reports **"isn't a Handshake QR code"** instead of proceeding to pairing.
+- The backend endpoints themselves passed in isolation (see the summary table and `TEST EVIDENCE` — `POST /api/trust/invite` → `GET /qr` → `accept` → `confirm` return the expected payloads), so this is **not** claimed as explained: the QR format Handshake writes/reads on-device does not satisfy its own recognizer in this build.
+- **Status:** FAIL — reproducible on-device; fix deferred at the owner's request. This is a real finding, so it is recorded here and the "QR Pairing PASS" row above applies only to the isolated backend-endpoint test, not to the on-device round trip. Next step when taken up: capture the exact generated QR (`handshake://pair?invite=...`) and compare it against what the scanner accepts (regex/prefix validation in the scanner code), then re-test the round trip.
+
+### Tests skipped at the owner's request (this run)
+
+- **Deferred:** the in-call trust/analysis flow — the overlay currently shows the honest `verify`/`Phone call` states and does **not** perform live analysis (real-time call analysis remains a future capability per `AGENTS.md`; it is only claimed once independently verified on-device). The owner asked to skip this test pass; no analysis result is claimed here.
+- **Deferred (FAIL recorded above):** two-device QR round trip — "isn't a Handshake QR code".
+- **Not re-run:** offline/permission-denied overlay flows (out of scope for this crash-fix run; see "REPRODUCTION STEPS FOR REMAINING ISSUES").
+
+### Files fixed for this crash (all in `ddfdc20`)
+
+- `mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/HandshakeOverlayModule.kt` — lazy main-thread legacy listener registration.
+- `mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/HandshakeOverlayService.kt` — reverted to no-arg listener (main-thread construction).
+- `mobile/plugins/handshake-call-audio/android/HandshakeOverlayModule.kt` / `HandshakeOverlayService.kt` — plugin-source twins kept in sync.
+- `mobile/android/app/build.gradle`, `mobile/app.json` — versionCode 2 / 0.1.1.
