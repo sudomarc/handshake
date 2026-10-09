@@ -106,7 +106,9 @@ class HandshakeOverlayModule(
         promise.resolve(
             enabled.split(':').any { flattened ->
                 val component = ComponentName.unflattenFromString(flattened)
-                component?.packageName == context.packageName && component.className == listenerClass
+                component != null &&
+                    component.packageName == context.packageName &&
+                    component.className == listenerClass
             },
         )
     }
