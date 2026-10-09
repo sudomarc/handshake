@@ -80,7 +80,7 @@ export default function ShieldHome() {
       const allowed = await callOverlayManager.canDrawOverlays();
       if (!allowed) {
         Alert.alert(
-          "Turn on protection",
+          "Enable call overlay",
           "Allow Handshake to show a small status over the Phone app and other calling apps. It tells you whether it can confirm a trusted person — it does not read calls.",
           [
             { text: "Not now", style: "cancel" },
@@ -93,8 +93,8 @@ export default function ShieldHome() {
       setOverlayAllowed(true);
     } catch (error) {
       Alert.alert(
-        "Protection unavailable",
-        error instanceof Error ? error.message : "Handshake could not enable protection.",
+        "Call overlay unavailable",
+        error instanceof Error ? error.message : "Handshake could not enable the call overlay.",
       );
     }
   };
@@ -128,7 +128,7 @@ export default function ShieldHome() {
           <H2>Finish setup</H2>
           <Body muted>
             Handshake needs the phone-state and notification permissions to notice calls and
-            keep protection running. Without them it cannot check calls automatically.
+            keep the call overlay running. Without them it cannot observe operator-call state automatically.
           </Body>
           <Button
             label={askingPermissions ? "Asking…" : "Allow permissions"}
@@ -176,7 +176,7 @@ export default function ShieldHome() {
           <H2>Call overlay off</H2>
           <Body muted>
             Handshake stays honest only when it can sit over the calling screen. Turn on
-            protection to see trusted / verify / risk during calls.
+            the overlay to see trusted / verify / risk states during supported calls.
           </Body>
           <Button label="Enable call overlay" variant="secondary" onPress={() => void enableProtection()} />
         </Card>
