@@ -158,31 +158,49 @@ test("is a no-op on the already-correct committed MainApplication.kt", () => {
 
 
 test("call overlay always explains status and never implies live audio analysis", () => {
-  const source = fs.readFileSync(
+  const sourcePaths = [
     path.join(__dirname, "android", "HandshakeOverlayService.kt"),
-    "utf8",
-  );
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "sudomarc",
+      "handshake",
+      "callaudio",
+      "HandshakeOverlayService.kt",
+    ),
+  ];
+  const sources = sourcePaths.map((sourcePath) => fs.readFileSync(sourcePath, "utf8"));
 
-  assert.ok(
-    source.includes("Live call audio is not being analyzed by this overlay."),
-    "active-call overlay must explicitly disclose that speech analysis is not running",
-  );
-  assert.ok(
-    source.includes("Live call audio is not available to analyze on Android."),
-    "ringing state must explain the audio-access limitation",
-  );
+  for (const [index, source] of sources.entries()) {
+    assert.ok(
+      source.includes("Live call audio is not being analyzed by this overlay."),
+      `overlay copy ${index + 1} must disclose that speech analysis is not running`,
+    );
+    assert.ok(
+      source.includes("Live call audio is not available to analyze on Android."),
+      `overlay copy ${index + 1} must explain the audio-access limitation while ringing`,
+    );
+    assert.strictEqual(
+      source.includes("callActive && !callRinging && callStateDetail.isNotEmpty()"),
+      false,
+      `overlay copy ${index + 1} must not hide detail while ringing`,
+    );
+    assert.strictEqual(
+      source.includes("val state = if (callRinging) STATE_VERIFY else callState"),
+      false,
+      `overlay copy ${index + 1} must not overwrite the current state while ringing`,
+    );
+  }
+
   assert.strictEqual(
-    source.includes("callActive && !callRinging && callStateDetail.isNotEmpty()"),
-    false,
-    "overlay detail must not disappear during ringing",
-  );
-  assert.strictEqual(
-    source.includes("val state = if (callRinging) STATE_VERIFY else callState"),
-    false,
-    "ringing must not overwrite a real state with a permanent Verify label",
-  );
-  assert.strictEqual(
-    source.includes('text = if (callRinging) "Handshake Protected" else "Handshake Protected"'),
+    sources[0].includes('text = if (callRinging) "Handshake Protected" else "Handshake Protected"'),
     false,
     "overlay must never hard-code a protection claim",
   );
