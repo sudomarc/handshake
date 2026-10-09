@@ -156,6 +156,10 @@ class HandshakeOverlayService : Service() {
             @Suppress("DEPRECATION")
             registerReceiver(whatsappCallReceiver, filter)
         }
+        sendBroadcast(
+            Intent(WhatsAppCallNotificationListener.ACTION_REFRESH_WHATSAPP_CALL_STATE)
+                .setPackage(packageName),
+        )
         registerCallStateListener()
     }
 
