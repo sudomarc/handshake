@@ -155,3 +155,108 @@ test("is a no-op on the already-correct committed MainApplication.kt", () => {
   const out = patchMainApplication(committed, { isKotlin: true });
   assert.strictEqual(out, committed, "plugin must not rewrite an already-correct file");
 });
+
+
+test("call overlay always explains status and never implies live audio analysis", () => {
+  const sourcePaths = [
+    path.join(__dirname, "android", "HandshakeOverlayService.kt"),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "sudomarc",
+      "handshake",
+      "callaudio",
+      "HandshakeOverlayService.kt",
+    ),
+  ];
+  const sources = sourcePaths.map((sourcePath) => fs.readFileSync(sourcePath, "utf8"));
+
+  for (const [index, source] of sources.entries()) {
+    assert.ok(
+      source.includes("Live call audio is not being analyzed by this overlay."),
+      `overlay copy ${index + 1} must disclose that speech analysis is not running`,
+    );
+    assert.ok(
+      source.includes("Live call audio is not available to analyze on Android."),
+      `overlay copy ${index + 1} must explain the audio-access limitation while ringing`,
+    );
+    assert.strictEqual(
+      source.includes("callActive && !callRinging && callStateDetail.isNotEmpty()"),
+      false,
+      `overlay copy ${index + 1} must not hide detail while ringing`,
+    );
+    assert.strictEqual(
+      source.includes("val state = if (callRinging) STATE_VERIFY else callState"),
+      false,
+      `overlay copy ${index + 1} must not overwrite the current state while ringing`,
+    );
+  }
+
+  assert.strictEqual(
+    sources[0].includes('text = if (callRinging) "Handshake Protected" else "Handshake Protected"'),
+    false,
+    "overlay must never hard-code a protection claim",
+  );
+});
+
+
+test("WhatsApp call notification access is declared and wired to the overlay", () => {
+  const plugin = fs.readFileSync(path.join(__dirname, "plugin.js"), "utf8");
+  const listener = fs.readFileSync(
+    path.join(__dirname, "android", "WhatsAppCallNotificationListener.kt"),
+    "utf8",
+  );
+  const overlaySource = fs.readFileSync(
+    path.join(__dirname, "android", "HandshakeOverlayService.kt"),
+    "utf8",
+  );
+  const manifest = fs.readFileSync(
+    path.join(__dirname, "..", "..", "android", "app", "src", "main", "AndroidManifest.xml"),
+    "utf8",
+  );
+  const moduleSource = fs.readFileSync(
+    path.join(__dirname, "android", "HandshakeOverlayModule.kt"),
+    "utf8",
+  );
+
+  const packagedListener = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "sudomarc",
+      "handshake",
+      "callaudio",
+      "WhatsAppCallNotificationListener.kt",
+    ),
+    "utf8",
+  );
+
+  assert.ok(plugin.includes('"WhatsAppCallNotificationListener.kt"'));
+  assert.ok(plugin.includes("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"));
+  assert.ok(listener.includes("NotificationListenerService"));
+  assert.ok(listener.includes("Notification.CATEGORY_CALL"));
+  assert.ok(listener.includes("ACTION_WHATSAPP_CALL_STATE"));
+  assert.ok(listener.includes("ACTION_REFRESH_WHATSAPP_CALL_STATE"));
+  assert.ok(overlaySource.includes("ACTION_REFRESH_WHATSAPP_CALL_STATE"));
+  assert.strictEqual(packagedListener, listener, "packaged listener must match plugin source");
+  assert.ok(overlaySource.includes("WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE"));
+  assert.ok(overlaySource.includes("whatsappCallActive"));
+  assert.ok(moduleSource.includes("isNotificationAccessEnabled"));
+  assert.ok(moduleSource.includes("ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+  assert.ok(manifest.includes("com.sudomarc.handshake.callaudio.WhatsAppCallNotificationListener"));
+  assert.ok(manifest.includes("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"));
+});

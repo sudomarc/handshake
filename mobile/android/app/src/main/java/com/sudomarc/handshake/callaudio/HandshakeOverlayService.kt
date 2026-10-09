@@ -4,8 +4,10 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.Typeface
@@ -75,8 +77,38 @@ class HandshakeOverlayService : Service() {
     private var vibrator: Vibrator? = null
     private var toneGenerator: ToneGenerator? = null
 
-    private var callActive = false
-    private var callRinging = false
+    private var carrierCallActive = false
+    private var carrierCallRinging = false
+    private var whatsappCallActive = false
+    private var whatsappCallRinging = false
+    private val callActive: Boolean get() = carrierCallActive || whatsappCallActive
+    private val callRinging: Boolean get() = carrierCallRinging || whatsappCallRinging
+
+    private val whatsappCallReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE) return
+            when (intent.getStringExtra(WhatsAppCallNotificationListener.EXTRA_CALL_STATE)) {
+                "ringing" -> {
+                    if (!callActive) resetCallTrust()
+                    whatsappCallActive = true
+                    whatsappCallRinging = true
+                    renderCallState()
+                }
+                "active" -> {
+                    if (!callActive) resetCallTrust()
+                    whatsappCallActive = true
+                    whatsappCallRinging = false
+                    renderCallState()
+                }
+                "idle" -> {
+                    whatsappCallActive = false
+                    whatsappCallRinging = false
+                    if (!callActive) resetCallTrust()
+                    renderCallState()
+                }
+            }
+        }
+    }
 
     /** Last trust state pushed by the JS layer. Default is the honest default. */
     private var callState: String = STATE_VERIFY
@@ -117,6 +149,17 @@ class HandshakeOverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
         vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        val filter = IntentFilter(WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(whatsappCallReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(whatsappCallReceiver, filter)
+        }
+        sendBroadcast(
+            Intent(WhatsAppCallNotificationListener.ACTION_REFRESH_WHATSAPP_CALL_STATE)
+                .setPackage(packageName),
+        )
         registerCallStateListener()
     }
 
@@ -191,23 +234,22 @@ class HandshakeOverlayService : Service() {
     private fun handleCallState(state: Int) {
         when (state) {
             TelephonyManager.CALL_STATE_RINGING -> {
-                callActive = true
-                callRinging = true
-                // A new call resets trust: whatever was true of the previous call
-                // says nothing about this one.
-                resetCallTrust()
+                if (!callActive) resetCallTrust()
+                carrierCallActive = true
+                carrierCallRinging = true
                 renderCallState()
             }
             TelephonyManager.CALL_STATE_OFFHOOK -> {
-                callActive = true
-                callRinging = false
+                if (!callActive) resetCallTrust()
+                carrierCallActive = true
+                carrierCallRinging = false
                 renderCallState()
             }
             TelephonyManager.CALL_STATE_IDLE -> {
-                callActive = false
-                callRinging = false
-                resetCallTrust()
-                removeOverlay()
+                carrierCallActive = false
+                carrierCallRinging = false
+                if (!callActive) resetCallTrust()
+                renderCallState()
             }
         }
     }
@@ -244,14 +286,17 @@ class HandshakeOverlayService : Service() {
         if (!callActive) {
             "Handshake is watching" to "Waiting for a call."
         } else if (callRinging) {
-            "Handshake · Phone call" to "Checking this call."
+            "Handshake · Call detected" to
+                "Live call audio is not available to Handshake for analysis."
         } else when (callState) {
             STATE_TRUSTED -> "Handshake · Trusted connection" to
                 "Both phones confirmed the same trusted relationship."
             STATE_RISK -> "Handshake · Risk detected" to
                 "Pressure tactics detected during this call."
             else -> "Handshake · Verify" to
-                (callStateDetail.ifEmpty { "Handshake cannot confirm this call." })
+                (callStateDetail.ifEmpty {
+                    "Caller identity is not confirmed. Live call audio is not being analyzed."
+                })
         }
 
     /**
@@ -264,7 +309,8 @@ class HandshakeOverlayService : Service() {
     private fun showCallState() {
         removeOverlay()
 
-        val state = if (callRinging) STATE_VERIFY else callState
+        // Ringing is call metadata, not evidence that audio analysis is running.
+        val state = callState
         val (labelText, dotColor, accent) = when (state) {
             STATE_TRUSTED ->
                 Triple("Handshake · Trusted connection", Color.rgb(74, 222, 128), Color.rgb(40, 60, 48))
@@ -298,10 +344,16 @@ class HandshakeOverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val detail = TextView(this).apply {
-            text = if (callActive && !callRinging && callStateDetail.isNotEmpty()) {
-                callStateDetail
-            } else {
-                ""
+            text = when {
+                callRinging -> listOf(
+                    callStateDetail.takeIf { it.isNotBlank() } ?: "Call detected.",
+                    "Live call audio is not available to analyze on Android.",
+                ).joinToString("\n")
+                callStateDetail.isNotBlank() -> listOf(
+                    callStateDetail,
+                    "Live call audio is not being analyzed by this overlay.",
+                ).joinToString("\n")
+                else -> "Caller identity is not confirmed. Live call audio is not being analyzed."
             }
             setTextColor(Color.rgb(170, 170, 170))
             textSize = 12f
@@ -511,6 +563,10 @@ class HandshakeOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        try {
+            unregisterReceiver(whatsappCallReceiver)
+        } catch (_: Exception) {
+        }
         unregisterCallStateListener()
         removeOverlay()
         toneGenerator?.release()

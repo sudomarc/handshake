@@ -35,6 +35,9 @@ jobs:
         run: npm ci
         working-directory: mobile
 
+      - name: Run Android overlay regression tests
+        run: node --test mobile/plugins/handshake-call-audio/plugin.test.js
+
       - name: Build release APK (arm64)
         run: |
           chmod +x gradlew

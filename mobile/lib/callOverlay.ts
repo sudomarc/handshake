@@ -4,6 +4,8 @@ import type { CallState } from "@/lib/trust/callState";
 type OverlayModule = {
   canDrawOverlays: () => Promise<boolean>;
   openOverlaySettings: () => Promise<boolean>;
+  isNotificationAccessEnabled: () => Promise<boolean>;
+  openNotificationAccessSettings: () => Promise<boolean>;
   startProtection: () => Promise<boolean>;
   setCallState: (state: CallState, detail: string) => Promise<boolean>;
   showRisk: (title: string, message: string) => Promise<boolean>;
@@ -22,6 +24,18 @@ class CallOverlayManager {
     return nativeOverlay.canDrawOverlays();
   }
 
+  async isNotificationAccessEnabled(): Promise<boolean> {
+    if (!this.available || !nativeOverlay) return false;
+    return nativeOverlay.isNotificationAccessEnabled();
+  }
+
+  async openNotificationAccessSettings(): Promise<void> {
+    if (!this.available || !nativeOverlay) {
+      throw new Error("WhatsApp call detection is only available in the Android build.");
+    }
+    await nativeOverlay.openNotificationAccessSettings();
+  }
+
   async openSettings(): Promise<void> {
     if (this.available && nativeOverlay) {
       await nativeOverlay.openOverlaySettings();
@@ -32,7 +46,7 @@ class CallOverlayManager {
 
   async startProtection(): Promise<boolean> {
     if (!this.available || !nativeOverlay) {
-      throw new Error("Cross-app protection is only available in the Android build.");
+      throw new Error("The cross-app call overlay is only available in the Android build.");
     }
     return nativeOverlay.startProtection();
   }
@@ -51,7 +65,7 @@ class CallOverlayManager {
 
   async showRisk(title: string, message: string): Promise<boolean> {
     if (!this.available || !nativeOverlay) {
-      throw new Error("Cross-app protection is only available in the Android build.");
+      throw new Error("The cross-app call overlay is only available in the Android build.");
     }
     return nativeOverlay.showRisk(title, message);
   }

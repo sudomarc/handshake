@@ -22,6 +22,7 @@ import {
 export default function ShieldHome() {
   const router = useRouter();
   const [overlayAllowed, setOverlayAllowed] = useState<boolean | null>(null);
+  const [whatsappAccessEnabled, setWhatsappAccessEnabled] = useState<boolean | null>(null);
   const [backendReachable, setBackendReachable] = useState(true);
   const [permissionState, setPermissionState] = useState<RuntimePermissionState | null>(
     null,
@@ -30,9 +31,20 @@ export default function ShieldHome() {
 
   const refresh = useCallback(async () => {
     try {
-      setOverlayAllowed(await callOverlayManager.canDrawOverlays());
+      const allowed = await callOverlayManager.canDrawOverlays();
+      setOverlayAllowed(allowed);
+      if (allowed) {
+        // Returning from Android's special-access settings should restore the
+        // foreground service immediately, not require a second manual tap.
+        await callOverlayManager.startProtection().catch(() => false);
+      }
     } catch {
       setOverlayAllowed(false);
+    }
+    try {
+      setWhatsappAccessEnabled(await callOverlayManager.isNotificationAccessEnabled());
+    } catch {
+      setWhatsappAccessEnabled(false);
     }
     setBackendReachable(await pingBackend());
     setPermissionState(await checkRuntimePermissions());
@@ -68,7 +80,7 @@ export default function ShieldHome() {
       const allowed = await callOverlayManager.canDrawOverlays();
       if (!allowed) {
         Alert.alert(
-          "Turn on protection",
+          "Enable call overlay",
           "Allow Handshake to show a small status over the Phone app and other calling apps. It tells you whether it can confirm a trusted person — it does not read calls.",
           [
             { text: "Not now", style: "cancel" },
@@ -81,8 +93,8 @@ export default function ShieldHome() {
       setOverlayAllowed(true);
     } catch (error) {
       Alert.alert(
-        "Protection unavailable",
-        error instanceof Error ? error.message : "Handshake could not enable protection.",
+        "Call overlay unavailable",
+        error instanceof Error ? error.message : "Handshake could not enable the call overlay.",
       );
     }
   };
@@ -116,7 +128,7 @@ export default function ShieldHome() {
           <H2>Finish setup</H2>
           <Body muted>
             Handshake needs the phone-state and notification permissions to notice calls and
-            keep protection running. Without them it cannot check calls automatically.
+            keep the call overlay running. Without them it cannot observe operator-call state automatically.
           </Body>
           <Button
             label={askingPermissions ? "Asking…" : "Allow permissions"}
@@ -127,14 +139,46 @@ export default function ShieldHome() {
         </Card>
       ) : null}
 
+      {whatsappAccessEnabled === true ? (
+        <Card>
+          <H2>WhatsApp call detection enabled</H2>
+          <Body muted>
+            Handshake can monitor WhatsApp call notifications. Detection still depends on
+            WhatsApp publishing a recognizable call notification; call audio is not accessible.
+          </Body>
+        </Card>
+      ) : null}
+
+      {whatsappAccessEnabled === false ? (
+        <Card>
+          <H2>Enable WhatsApp call detection</H2>
+          <Body muted>
+            Android requires a separate notification-access setting for Handshake to notice
+            WhatsApp call notifications. Enable Handshake on the next screen, then return here.
+            This can detect call-state notifications only; it does not give Handshake access to
+            WhatsApp call audio.
+          </Body>
+          <Button
+            label="Open notification access settings"
+            variant="secondary"
+            onPress={() => void callOverlayManager.openNotificationAccessSettings().catch((error) =>
+              Alert.alert(
+                "Settings unavailable",
+                error instanceof Error ? error.message : "Android settings could not be opened.",
+              ),
+            )}
+          />
+        </Card>
+      ) : null}
+
       {overlayAllowed === false ? (
         <Card>
-          <H2>Protection off</H2>
+          <H2>Call overlay off</H2>
           <Body muted>
             Handshake stays honest only when it can sit over the calling screen. Turn on
-            protection to see trusted / verify / risk during calls.
+            the overlay to see trusted / verify / risk states during supported calls.
           </Body>
-          <Button label="Turn on protection" variant="secondary" onPress={() => void enableProtection()} />
+          <Button label="Enable call overlay" variant="secondary" onPress={() => void enableProtection()} />
         </Card>
       ) : null}
     </PageShell>

@@ -20,9 +20,9 @@ export interface RuntimePermissionState {
 }
 
 const NOTIFICATIONS_RATIONALE =
-  "Handshake uses notifications to keep call protection running in the background.";
+  "Handshake uses notifications to keep its call-status overlay running while another app is open.";
 const PHONE_STATE_RATIONALE =
-  "Handshake reads call state so it can check trusted people automatically when a call starts.";
+  "Handshake reads phone call state so it can show the call-status overlay when an operator call starts.";
 
 function isAndroid(): boolean {
   return Platform.OS === "android";
@@ -52,7 +52,7 @@ export async function requestRuntimePermissions(): Promise<RuntimePermissionStat
       const result = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
         {
-          title: "Call protection",
+          title: "Call alerts",
           message: NOTIFICATIONS_RATIONALE,
           buttonPositive: "Allow",
           buttonNegative: "Not now",
@@ -67,7 +67,7 @@ export async function requestRuntimePermissions(): Promise<RuntimePermissionStat
     const phoneResult = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,
       {
-        title: "Call protection",
+        title: "Call alerts",
         message: PHONE_STATE_RATIONALE,
         buttonPositive: "Allow",
         buttonNegative: "Not now",
