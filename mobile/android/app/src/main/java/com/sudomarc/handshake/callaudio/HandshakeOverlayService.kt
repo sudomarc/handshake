@@ -244,14 +244,17 @@ class HandshakeOverlayService : Service() {
         if (!callActive) {
             "Handshake is watching" to "Waiting for a call."
         } else if (callRinging) {
-            "Handshake · Phone call" to "Checking this call."
+            "Handshake · Call detected" to
+                "Live call audio is not available to Handshake for analysis."
         } else when (callState) {
             STATE_TRUSTED -> "Handshake · Trusted connection" to
                 "Both phones confirmed the same trusted relationship."
             STATE_RISK -> "Handshake · Risk detected" to
                 "Pressure tactics detected during this call."
             else -> "Handshake · Verify" to
-                (callStateDetail.ifEmpty { "Handshake cannot confirm this call." })
+                (callStateDetail.ifEmpty {
+                    "Caller identity is not confirmed. Live call audio is not being analyzed."
+                })
         }
 
     /**
@@ -264,7 +267,8 @@ class HandshakeOverlayService : Service() {
     private fun showCallState() {
         removeOverlay()
 
-        val state = if (callRinging) STATE_VERIFY else callState
+        // Ringing is call metadata, not evidence that audio analysis is running.
+        val state = callState
         val (labelText, dotColor, accent) = when (state) {
             STATE_TRUSTED ->
                 Triple("Handshake · Trusted connection", Color.rgb(74, 222, 128), Color.rgb(40, 60, 48))
@@ -298,10 +302,16 @@ class HandshakeOverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val detail = TextView(this).apply {
-            text = if (callActive && !callRinging && callStateDetail.isNotEmpty()) {
-                callStateDetail
-            } else {
-                ""
+            text = when {
+                callRinging -> listOf(
+                    callStateDetail.takeIf { it.isNotBlank() } ?: "Call detected.",
+                    "Live call audio is not available to analyze on Android.",
+                ).joinToString("\n")
+                callStateDetail.isNotBlank() -> listOf(
+                    callStateDetail,
+                    "Live call audio is not being analyzed by this overlay.",
+                ).joinToString("\n")
+                else -> "Caller identity is not confirmed. Live call audio is not being analyzed."
             }
             setTextColor(Color.rgb(170, 170, 170))
             textSize = 12f
