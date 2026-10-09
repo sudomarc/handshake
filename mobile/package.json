@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "postinstall": "node scripts/patch-expo-modules-core.js"
   },
   "dependencies": {
     "eslint-config-expo": "~7.1.2",
