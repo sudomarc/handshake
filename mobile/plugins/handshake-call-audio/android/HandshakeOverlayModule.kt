@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Looper
 import android.provider.Settings
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
@@ -62,9 +63,14 @@ class HandshakeOverlayModule(
             null
         }
 
+    @Suppress("DEPRECATION")
     private val legacyPhoneStateListener: PhoneStateListener? =
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            object : PhoneStateListener() {
+            // The no-arg PhoneStateListener constructor binds to
+            // Looper.myLooper(), which is null on the React-context creation
+            // thread. That crashed the whole process on API < 31 (Android 11).
+            // Bind explicitly to the main looper, the thread callbacks arrive on.
+            object : PhoneStateListener(Looper.getMainLooper()) {
                 override fun onCallStateChanged(state: Int, phoneNumber: String?) {
                     handleCallState(state)
                 }
