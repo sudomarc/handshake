@@ -204,3 +204,43 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-08
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build && npm run format:check`): PASS lint/build (0 errors), format:check flagged pre-existing unformatted files.
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS typecheck, LINT reported 4 warnings (`checkRuntimePermissions`, `needsPermissionBanner` unused in `_layout.tsx`, `View` and `pollFailures` unused in `PairingFlow.tsx`).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (64/64 passed across test suites).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things - Mobile ESLint warnings) & Priority 4 (Continuous Improvement Loop - Mobile quality & unit tests):**
+  - Resolved 4 ESLint warnings in `mobile/app/_layout.tsx` and `mobile/components/PairingFlow.tsx` by removing unused imports (`checkRuntimePermissions`, `needsPermissionBanner`, `View`) and adjusting state destructuring.
+  - Added unit test in `tests/pairing.test.ts` verifying canonical proof pre-image construction (`proofPreImage` from `lib/trustCrypto.ts`), confirming exact domain separator formatting, canonical field join, and suffix-keyed secret placement.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports from `lib/permissions`.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import from `react-native` and adjusted `pollFailures` state binding.
+- `tests/pairing.test.ts`: Added unit test verifying canonical device proof pre-image formatting.
+- `docs/NIGHTLY_LOG.md`: Recorded 2026-10-08 nightly run results and gate checks.
+
+### Gates & Results
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+- Plugin tests (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+- Root test suite (`npm test`): PASS (72/72 tests passed).
+
+### Known Risks & Open Findings
+- Samsung SM-A175F physical device re-verification outstanding for release APK build.
+- Two-device QR pairing verification on physical hardware.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Devpost public demo video recording.
+
+### Plan for Tomorrow
+1. Execute final pre-submission validation checklist in `ROADMAP.md`.
+2. Re-verify release APK build on device.
+3. Record final Devpost demo video following `DEMO_SCRIPT.md`.
