@@ -14,7 +14,6 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.IBinder
-import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
@@ -104,12 +103,14 @@ class HandshakeOverlayService : Service() {
             null
         }
 
-    @Suppress("DEPRECATION")
+    /**
+     * Legacy (API < 31) call-state listener. Safe to build here because a
+     * Service is always constructed on the main thread, where Looper.myLooper()
+     * (used by the no-arg constructor) is non-null.
+     */
     private val legacyPhoneStateListener: PhoneStateListener? =
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            // Bind to the main looper explicitly: the no-arg constructor needs a
-            // non-null Looper.myLooper() and would crash API < 31 off-main.
-            object : PhoneStateListener(Looper.getMainLooper()) {
+            object : PhoneStateListener() {
                 override fun onCallStateChanged(state: Int, phoneNumber: String?) {
                     handleCallState(state)
                 }

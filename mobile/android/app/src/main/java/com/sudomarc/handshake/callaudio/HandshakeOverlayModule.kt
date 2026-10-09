@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Looper
 import android.provider.Settings
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
@@ -63,20 +62,21 @@ class HandshakeOverlayModule(
             null
         }
 
-    @Suppress("DEPRECATION")
-    private val legacyPhoneStateListener: PhoneStateListener? =
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            // The no-arg PhoneStateListener constructor binds to
-            // Looper.myLooper(), which is null on the React-context creation
-            // thread. That crashed the whole process on API < 31 (Android 11).
-            // Bind explicitly to the main looper, the thread callbacks arrive on.
-            object : PhoneStateListener(Looper.getMainLooper()) {
-                override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-                    handleCallState(state)
-                }
+    /**
+     * Legacy (API < 31) call-state listener.
+     *
+     * Not constructed in the field initializer: the no-arg PhoneStateListener
+     * binds to Looper.myLooper(), which is null on the React-context creation
+     * thread and hard-crashed the process on Android 11 (API 30). It is built
+     * lazily on the main thread in [registerCallStateListener] instead.
+     */
+    private var legacyPhoneStateListener: PhoneStateListener? = null
+
+    private fun createLegacyPhoneStateListener(): PhoneStateListener =
+        object : PhoneStateListener() {
+            override fun onCallStateChanged(state: Int, phoneNumber: String?) {
+                handleCallState(state)
             }
-        } else {
-            null
         }
 
     override fun initialize() {
@@ -230,14 +230,31 @@ class HandshakeOverlayModule(
                 telephonyCallback?.let { callback ->
                     manager.registerTelephonyCallback(context.mainExecutor, callback)
                 }
+                callStateListenerActive = true
             } else {
-                @Suppress("DEPRECATION")
-                legacyPhoneStateListener?.let { listener ->
-                    @Suppress("DEPRECATION")
-                    manager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+                // PhoneStateListener must be built where a Looper exists. The
+                // React-context thread has none, so build and register on the
+                // main thread. Registration takes effect asynchronously;
+                // setCallState()/retry re-invokes until it does.
+                context.runOnUiQueueThread {
+                    if (callStateListenerActive) return@runOnUiQueueThread
+                    try {
+                        val listener = legacyPhoneStateListener
+                            ?: createLegacyPhoneStateListener().also {
+                                legacyPhoneStateListener = it
+                            }
+                        @Suppress("DEPRECATION")
+                        manager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
+                        callStateListenerActive = true
+                    } catch (_: SecurityException) {
+                        // READ_PHONE_STATE may not be granted yet.
+                        callStateListenerActive = false
+                    } catch (_: Exception) {
+                        // Some OEMs restrict call-state callbacks.
+                        callStateListenerActive = false
+                    }
                 }
             }
-            callStateListenerActive = true
         } catch (_: SecurityException) {
             // READ_PHONE_STATE may not have been granted. Leave the listener
             // inactive; setCallState() will retry once the user grants it.
