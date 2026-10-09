@@ -109,7 +109,7 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             "appel en cours", "appel vocal", "appel vidéo",
             "llamada en curso", "llamada de voz", "llamada de video",
         ).any { notificationText(notification).contains(it) }
-        return notification.flags and Notification.FLAG_ONGOING_EVENT != 0 && saysOngoingCall
+        return (notification.flags and Notification.FLAG_ONGOING_EVENT) != 0 && saysOngoingCall
     }
 
     private fun notificationText(notification: Notification): String =
