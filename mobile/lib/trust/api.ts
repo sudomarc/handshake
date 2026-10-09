@@ -7,11 +7,7 @@
  */
 
 import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "@/lib/config";
-import {
-  computeDeviceProof,
-  verifyAttestation,
-  TRUST_PROTOCOL,
-} from "@/lib/trust/proof";
+import { computeDeviceProof, verifyAttestation, TRUST_PROTOCOL } from "@/lib/trust/proof";
 import { getDeviceId, getDeviceSecret, newNonce } from "@/lib/trust/deviceIdentity";
 import { z } from "zod";
 
@@ -158,7 +154,11 @@ async function request<T>(
   }
   const result = schema.safeParse(raw);
   if (!result.success) {
-    throw new TrustApiError(response.status, "bad_response", "The server sent an unexpected answer.");
+    throw new TrustApiError(
+      response.status,
+      "bad_response",
+      "The server sent an unexpected answer.",
+    );
   }
   return result.data;
 }
@@ -314,15 +314,19 @@ export async function acceptInvite(input: {
 }): Promise<{ state: "accepted"; pairId: string }> {
   const deviceId = await getDeviceId();
   const deviceSecret = await getDeviceSecret();
-  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/accept`, acceptedResponseSchema, {
-    method: "POST",
-    body: {
-      displayName: input.displayName,
-      deviceId,
-      deviceSecret,
-      label: input.label,
+  const result = await request(
+    `/api/trust/invite/${encodeURIComponent(input.inviteId)}/accept`,
+    acceptedResponseSchema,
+    {
+      method: "POST",
+      body: {
+        displayName: input.displayName,
+        deviceId,
+        deviceSecret,
+        label: input.label,
+      },
     },
-  });
+  );
   return { state: result.state, pairId: result.pairId };
 }
 
@@ -334,15 +338,19 @@ export async function confirmInvite(input: {
 }): Promise<{ state: "confirmed"; pairId: string }> {
   const deviceId = await getDeviceId();
   const deviceSecret = await getDeviceSecret();
-  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/confirm`, confirmedResponseSchema, {
-    method: "POST",
-    body: {
-      pairId: input.pairId,
-      deviceId,
-      deviceSecret,
-      label: input.label,
+  const result = await request(
+    `/api/trust/invite/${encodeURIComponent(input.inviteId)}/confirm`,
+    confirmedResponseSchema,
+    {
+      method: "POST",
+      body: {
+        pairId: input.pairId,
+        deviceId,
+        deviceSecret,
+        label: input.label,
+      },
     },
-  });
+  );
   return { state: result.state, pairId: result.pairId };
 }
 
@@ -355,33 +363,7 @@ export function inviteQrUrl(inviteId: string): string | null {
   return `${API_BASE_URL}/api/trust/invite/${encodeURIComponent(inviteId)}/qr`;
 }
 
-/**
- * Extracts the invite id from a scanned/linked pairing URL.
- *
- * Accepts both forms the product renders or shares:
- *   handshake://pair?invite=<id>
- *   https://<host>/pair?invite=<id>
- *
- * The invite id is opaque to the client: there is deliberately no format check
- * beyond "non-empty", because the backend owns its id scheme.
- */
-export function parsePairInvite(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const candidate = String(url).trim();
-  if (!candidate) return null;
-  try {
-    const parsed = new URL(candidate);
-    const path = parsed.pathname.replace(/\/+$/, "");
-    if (path !== "/pair") return null;
-    const invite = parsed.searchParams.get("invite")?.trim();
-    return invite ? invite : null;
-  } catch {
-    // Not a parseable URL (e.g. a bare "pair?invite=..." in automation). Fall
-    // back to a tolerant scan so emulator/deep-link testing keeps working.
-    const match = candidate.match(/\/pair[?&#]+(?:[^&#]*&)*invite=([^&#\s]+)/i);
-    return match?.[1]?.trim() ? match[1].trim() : null;
-  }
-}
+export { parsePairInvite } from "@/lib/trust/parseInvite";
 
 /**
  * Lightweight reachability probe used by the home surface. Any HTTP response
