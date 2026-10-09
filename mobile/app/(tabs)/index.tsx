@@ -22,6 +22,7 @@ import {
 export default function ShieldHome() {
   const router = useRouter();
   const [overlayAllowed, setOverlayAllowed] = useState<boolean | null>(null);
+  const [whatsappAccessEnabled, setWhatsappAccessEnabled] = useState<boolean | null>(null);
   const [backendReachable, setBackendReachable] = useState(true);
   const [permissionState, setPermissionState] = useState<RuntimePermissionState | null>(
     null,
@@ -30,9 +31,20 @@ export default function ShieldHome() {
 
   const refresh = useCallback(async () => {
     try {
-      setOverlayAllowed(await callOverlayManager.canDrawOverlays());
+      const allowed = await callOverlayManager.canDrawOverlays();
+      setOverlayAllowed(allowed);
+      if (allowed) {
+        // Returning from Android's special-access settings should restore the
+        // foreground service immediately, not require a second manual tap.
+        await callOverlayManager.startProtection().catch(() => false);
+      }
     } catch {
       setOverlayAllowed(false);
+    }
+    try {
+      setWhatsappAccessEnabled(await callOverlayManager.isNotificationAccessEnabled());
+    } catch {
+      setWhatsappAccessEnabled(false);
     }
     setBackendReachable(await pingBackend());
     setPermissionState(await checkRuntimePermissions());
@@ -123,6 +135,28 @@ export default function ShieldHome() {
             variant="secondary"
             onPress={() => void grantPermissions()}
             busy={askingPermissions}
+          />
+        </Card>
+      ) : null}
+
+      {whatsappAccessEnabled === false ? (
+        <Card>
+          <H2>Enable WhatsApp call detection</H2>
+          <Body muted>
+            Android requires a separate notification-access setting for Handshake to notice
+            WhatsApp call notifications. Enable Handshake on the next screen, then return here.
+            This can detect call-state notifications only; it does not give Handshake access to
+            WhatsApp call audio.
+          </Body>
+          <Button
+            label="Open notification access settings"
+            variant="secondary"
+            onPress={() => void callOverlayManager.openNotificationAccessSettings().catch((error) =>
+              Alert.alert(
+                "Settings unavailable",
+                error instanceof Error ? error.message : "Android settings could not be opened.",
+              ),
+            )}
           />
         </Card>
       ) : null}
