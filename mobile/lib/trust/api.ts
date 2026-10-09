@@ -6,13 +6,13 @@
  * anywhere in this flow.
  */
 
-import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "@/lib/config";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 import {
   computeDeviceProof,
   verifyAttestation,
   TRUST_PROTOCOL,
-} from "@/lib/trust/proof";
-import { getDeviceId, getDeviceSecret, newNonce } from "@/lib/trust/deviceIdentity";
+} from "./proof";
+import { getDeviceId, getDeviceSecret, newNonce } from "./deviceIdentity";
 import { z } from "zod";
 
 export const trustStateSchema = z.enum(["unverified", "trusted"]);
@@ -372,7 +372,7 @@ export function parsePairInvite(url: string | null | undefined): string | null {
   try {
     const parsed = new URL(candidate);
     const path = parsed.pathname.replace(/\/+$/, "");
-    if (path !== "/pair") return null;
+    if (path !== "/pair" && parsed.host !== "pair") return null;
     const invite = parsed.searchParams.get("invite")?.trim();
     return invite ? invite : null;
   } catch {
