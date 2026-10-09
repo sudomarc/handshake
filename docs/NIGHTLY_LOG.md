@@ -204,3 +204,48 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-09
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors, build succeeded).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (0 errors, 4 ESLint warnings in `_layout.tsx` and `PairingFlow.tsx`).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (64/64 passed across 17 suites).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things - ESLint baseline warnings) & Priority 4 (Continuous Improvement - Test Coverage):**
+  - Removed unused imports (`checkRuntimePermissions` and `needsPermissionBanner`) in `mobile/app/_layout.tsx`.
+  - Removed unused import `View` and unused state variable binding `pollFailures` in `mobile/components/PairingFlow.tsx`.
+  - Added unit test suite `tests/permissions.test.ts` providing 100% test coverage for mobile runtime permission helpers (`needsPermissionBanner`, `checkRuntimePermissions`, `requestRuntimePermissions`) and overlay launch-intent consumption (`consumeOverlayAction`).
+  - Created lightweight Node import hook `tests/mocks/register-react-native.js` to enable executing React Native mobile utility unit tests under `tsx --test` without modifying global TypeScript `tsconfig.json` path mappings.
+  - Updated root `package.json` `npm test` script to include `tests/permissions.test.ts`.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and unused `pollFailures` binding.
+- `tests/permissions.test.ts`: Added unit tests for mobile runtime permissions and overlay action consumption.
+- `tests/mocks/register-react-native.js`: Added CJS `Module._load` hook to safely mock `react-native` for unit tests under Node environment.
+- `package.json`: Updated `npm test` script to `"npx tsx --import ./tests/mocks/register-react-native.js --test tests/lib.test.ts tests/api.test.ts tests/trust.test.ts tests/pairing.test.ts tests/permissions.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"`.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-09 nightly run details, gate checks, and learnings.
+
+### Gates & Results
+- `npm test`: PASS (80/80 tests passed across 22 test suites: 15 lib + 10 api + 40 trust/pairing + 9 permissions + 7 plugin).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+- Plugin tests (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+
+### Known Risks & Open Findings
+- Release APK build on Samsung SM-A175F requires physical device re-verification before final Devpost submission.
+- Device testing of third-party call overlay warnings above phone app.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Devpost video demo recording pass per `DEMO_SCRIPT.md`.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Re-verify release APK on device after CI build completes.
+3. Final rehearsal and recording of public Devpost demo video.
