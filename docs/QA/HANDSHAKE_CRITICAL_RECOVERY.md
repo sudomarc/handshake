@@ -284,3 +284,26 @@ The previous section covers the recovery work up to commit `b8b1bde`. This secti
 **Not verified:** end-to-end QR cycle between two physical devices; backend cross-instance persistence (trustStore is in-memory, documented limitation); overlay state machine on device. Physical-device tests: BLOCKED (no adb device available in this environment).
 
 **Not merged:** branch is not merged into `main`; PR #33 not touched.
+
+## 2026-10-09 — QR parser fix merged and installed on both devices (run `37991190005`)
+
+Follow-up to the section above: the QR parser fix is now on `main` and installed on both physical devices.
+
+| Item | Value |
+| --- | --- |
+| Merge | PR #34 merged to `main` at `04abeb8ec62e7f958b2dbdd453f1c754bbbc713d` (contains `5afd297` pairLink fix + `02ed3a0` sandbox verification) |
+| CI run | `37991190005` (workflow `android-apk`, conclusion success) |
+| Artifact | `handshake-apk` id `11644614694`, zip 36,778,751 bytes, SHA-256 `6638b121c381d2a09e2fae467dd55a53479602411eaa8b6f1f9bfb5700287743` (matches GitHub digest) |
+| APK | `app-release.apk`, 82,841,392 bytes, SHA-256 `08d78af95ad5c4e4d1f8f781c98554d0a83520ad717e5f1def1e7672d03effc1` |
+| Installed version | versionCode 2 / versionName 0.1.1 (same version, new build) |
+
+**Device results (2026-10-09):**
+
+| Device | Install | Launch | Focus | FATAL in logcat |
+| --- | --- | --- | --- | --- |
+| SM-A175F (`RFGL516YXCB`, USB) | `Success` | OK | `com.sudomarc.handshake/.MainActivity` | NONE |
+| SM-T295 (Wi-Fi ADB) | `Success` | OK | `com.sudomarc.handshake/.MainActivity` | NONE |
+
+Notes:
+- The T295 wireless-ADB session had expired (mDNS still advertised `192.168.100.71:37263` but the port refused connections); after the owner re-enabled wireless debugging on the tablet, the device reconnected and the install completed. No app-side change was involved.
+- This build includes the `pairLink.ts` QR parser fix (`handshake://pair?invite=…` no longer rejected), so the "isn't a Handshake QR code" failure from the previous section is expected to be resolved; the end-to-end two-device QR cycle was **not** re-exercised on-device in this session.
