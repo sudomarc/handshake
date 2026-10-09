@@ -52,6 +52,8 @@ export interface RunTrustOptions {
   pollIntervalMs?: number;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  /** Optional callback for progress updates during the trust cycle. */
+  onProgress?: (state: CallTrustResult) => void;
 }
 
 const DEFAULT_TIMEOUT_MS = 20_000;
@@ -70,6 +72,9 @@ function deadlineExceeded(start: number, timeoutMs: number, now: () => number): 
  *
  * A cycle is bounded by `timeoutMs` so the overlay never sits in a spinner
  * while a call is in progress; on timeout the result is `verify`.
+ *
+ * If `onProgress` is provided, it will be called with intermediate states
+ * representing each phase of the trust evaluation pipeline.
  */
 export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustResult> {
   const now = options.now ?? Date.now;
@@ -77,6 +82,10 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   const startedAt = now();
+
+  const reportProgress = (state: CallTrustResult) => {
+    if (options.onProgress) options.onProgress(state);
+  };
 
   const finish = (input: {
     backendReachable: boolean;
@@ -92,6 +101,8 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
       backendReachable: input.backendReachable,
       trust: input.trust,
       riskDetected: options.riskDetected,
+      audioAvailable: false, // No audio pipeline in current implementation
+      analysisInFlight: false,
     };
     return {
       ...deriveCallState(context),
@@ -105,19 +116,31 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
   // Without a pre-established relationship there is nothing to confirm, and
   // asking the server would be pointless. Report honestly instead.
   if (!options.hasTrustedCircle) {
-    return finish({
+    const result = finish({
       backendReachable: true,
       sessionAttempted: false,
       sessionId: null,
       peerDeviceId: null,
       trust: null,
     });
+    reportProgress(result);
+    return result;
   }
+
+  // Phase 1: Initializing - starting the trust handshake
+  reportProgress(finish({
+    backendReachable: true,
+    sessionAttempted: false,
+    sessionId: null,
+    peerDeviceId: null,
+    trust: null,
+  }));
 
   let backendReachable = true;
   let sessionId: string | null = null;
 
   try {
+    // Phase 2: Analyzing - contacting backend to open/find session
     const opened =
       options.role === "initiator"
         ? await openSession(options.pairId)
@@ -131,55 +154,76 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
 
     sessionId = opened.sessionId;
 
+    // Phase 3: Sending - session opened, now joining or waiting for peer
+    reportProgress(finish({
+      backendReachable: true,
+      sessionAttempted: true,
+      sessionId: opened.sessionId,
+      peerDeviceId: null,
+      trust: null,
+    }));
+
     const localDeviceId = await getDeviceId();
     if (options.role === "peer" && opened.openedByDeviceId !== localDeviceId) {
+      // Phase 4: Sending - joining the peer's session
       const joined = await joinSession({
         sessionId: opened.sessionId,
         pairId: options.pairId,
         peerDeviceId: opened.openedByDeviceId,
       });
+      // Phase 5: Verifying - verifying the attestation locally
       const trust = await verifySessionTrust({ pairId: options.pairId, status: joined });
-      return finish({
+      const result = finish({
         backendReachable: true,
         sessionAttempted: true,
         sessionId: joined.sessionId,
         peerDeviceId: joined.peerDeviceId,
         trust,
       });
+      reportProgress(result);
+      return result;
     }
 
-    // Poll until the peer joins or the budget runs out.
+    // Phase 3 (initiator): Analyzing - polling until peer joins
     while (!deadlineExceeded(startedAt, timeoutMs, now)) {
       const status = await pollSession(options.pairId, opened.sessionId);
       if (status.state === "trusted") {
+        // Phase 5: Verifying - verifying the attestation locally
         const trust = await verifySessionTrust({ pairId: options.pairId, status });
-        return finish({
+        const result = finish({
           backendReachable: true,
           sessionAttempted: true,
           sessionId: status.sessionId,
           peerDeviceId: status.peerDeviceId,
           trust,
         });
+        reportProgress(result);
+        return result;
       }
       if (deadlineExceeded(startedAt, timeoutMs, now)) break;
       await sleep(pollIntervalMs);
     }
 
-    return finish({
+    // Timeout - peer didn't join
+    const result = finish({
       backendReachable: true,
       sessionAttempted: true,
       sessionId: opened.sessionId,
       peerDeviceId: null,
       trust: null,
     });
+    reportProgress(result);
+    return result;
   } catch (error) {
     if (error instanceof TrustNetworkError) backendReachable = false;
-    return finish({
+    const result = finish({
       backendReachable,
       sessionAttempted: sessionId !== null,
       sessionId,
       peerDeviceId: null,
       trust: null,
     });
+    reportProgress(result);
+    return result;
   }
 }

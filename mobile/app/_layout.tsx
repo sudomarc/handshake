@@ -8,7 +8,7 @@ import { ShieldProvider } from "@/lib/shield/engine";
 import { callOverlayManager } from "@/lib/callOverlay";
 import { consumeOverlayAction } from "@/lib/overlayIntent";
 import { colors } from "@/lib/theme";
-import { subscribeCallState } from "@/lib/callBridge";
+import { subscribeCallState, retryCallStateRegistration } from "@/lib/callBridge";
 import { autoEvaluateCallTrust, clearCallState } from "@/lib/trust/orchestrator";
 import {
   checkRuntimePermissions,
@@ -32,6 +32,11 @@ function AutoArmProtection() {
       try {
         const state = await requestRuntimePermissions();
         void state; // state surfaces on the home banner; we don't block arming
+        // If READ_PHONE_STATE was just granted, retry native listener registration
+        // so call-state events flow to JS immediately for the first call.
+        if (state.readPhoneState === true) {
+          await retryCallStateRegistration();
+        }
         const allowed = await callOverlayManager.canDrawOverlays();
         if (!cancelled && allowed) await callOverlayManager.startProtection();
       } catch {

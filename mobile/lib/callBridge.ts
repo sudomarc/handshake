@@ -28,6 +28,8 @@ export interface HandshakeCallStatePayload {
 type HandshakeOverlayNativeModule = {
   /** Present on Android builds that include the overlay service. */
   startProtection?: () => Promise<boolean>;
+  /** Retry call-state listener registration after runtime permission grant. */
+  retryCallStateRegistration?: () => Promise<boolean>;
   [key: string]: unknown;
 };
 
@@ -84,4 +86,21 @@ function isValidPayload(payload: unknown): payload is { state: HandshakeCallStat
     candidate.state === "active" ||
     candidate.state === "idle"
   );
+}
+
+/**
+ * Retries native call-state listener registration after READ_PHONE_STATE grant.
+ * Returns true if the listener is now active, false if still unavailable.
+ */
+export async function retryCallStateRegistration(): Promise<boolean> {
+  if (Platform.OS !== "android") return false;
+  const module = NativeModules.HandshakeOverlay as
+    | HandshakeOverlayNativeModule
+    | undefined;
+  if (!module?.retryCallStateRegistration) return false;
+  try {
+    return await module.retryCallStateRegistration();
+  } catch {
+    return false;
+  }
 }

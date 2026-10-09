@@ -36,6 +36,8 @@ export interface CallTrustOptions {
  * into a new one.
  */
 export async function evaluateCallTrust(options: CallTrustOptions): Promise<CallTrustResult> {
+  let finalResult: CallTrustResult | null = null;
+
   const result = await runCallTrust({
     pairId: options.pairId,
     role: options.role,
@@ -43,6 +45,12 @@ export async function evaluateCallTrust(options: CallTrustOptions): Promise<Call
     deviceAuthorized: options.deviceAuthorized,
     riskDetected: false,
     ...(options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs }),
+    onProgress: (progress) => {
+      finalResult = progress;
+      // Publish each progress update to the overlay
+      const publish = options.publish ?? defaultPublish;
+      void publish(progress);
+    },
   });
 
   const publish = options.publish ?? defaultPublish;
@@ -69,6 +77,8 @@ export async function publishRisk(detail: string): Promise<void> {
     backendReachable: true,
     trust: null,
     riskDetected: true,
+    audioAvailable: false,
+    analysisInFlight: false,
   });
   try {
     await callOverlayManager.setCallState(decision.state, detail);
@@ -134,16 +144,18 @@ export async function autoEvaluateCallTrust(): Promise<CallTrustResult | null> {
         hasTrustedCircle: true,
         deviceAuthorized: true,
         riskDetected: false,
+        onProgress: (progress) => {
+          // Publish each progress update to the overlay
+          void defaultPublish(progress);
+        },
       });
       first = first ?? result;
       if (result.state === "trusted") {
-        await defaultPublish(result);
         return result;
       }
     }
 
     if (first) {
-      await defaultPublish(first);
       return first;
     }
 
@@ -154,6 +166,8 @@ export async function autoEvaluateCallTrust(): Promise<CallTrustResult | null> {
       backendReachable: true,
       trust: null,
       riskDetected: false,
+      audioAvailable: false,
+      analysisInFlight: false,
     });
     const result: CallTrustResult = {
       ...noRelations,

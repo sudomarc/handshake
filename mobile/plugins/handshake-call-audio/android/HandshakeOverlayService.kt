@@ -67,6 +67,14 @@ class HandshakeOverlayService : Service() {
         private const val STATE_TRUSTED = "trusted"
         private const val STATE_VERIFY = "verify"
         private const val STATE_RISK = "risk"
+        private const val STATE_INITIALIZING = "initializing"
+        private const val STATE_CAPTURE_UNAVAILABLE = "capture_unavailable"
+        private const val STATE_ANALYZING = "analyzing"
+        private const val STATE_SENDING = "sending"
+        private const val STATE_VERIFYING = "verifying"
+        private const val STATE_NEEDS_REVIEW = "needs_review"
+        private const val STATE_OFFLINE = "offline"
+        private const val STATE_ERROR = "error"
     }
 
     private var windowManager: WindowManager? = null
@@ -144,8 +152,8 @@ class HandshakeOverlayService : Service() {
         callState = intent.getStringExtra(EXTRA_STATE) ?: STATE_VERIFY
         callStateDetail = intent.getStringExtra(EXTRA_DETAIL).orEmpty()
         // Any state the JS layer pushes is a sign the backend was reachable at
-        // the moment it was produced.
-        backendReachable = callState != STATE_VERIFY || callStateDetail.isEmpty()
+        // the moment it was produced, except explicit offline/error states.
+        backendReachable = callState !in setOf(STATE_OFFLINE, STATE_ERROR)
         renderCallState()
     }
 
@@ -245,6 +253,22 @@ class HandshakeOverlayService : Service() {
                 "Both phones confirmed the same trusted relationship."
             STATE_RISK -> "Handshake · Risk detected" to
                 "Pressure tactics detected during this call."
+            STATE_INITIALIZING -> "Handshake · Initializing…" to
+                "Preparing to verify this call."
+            STATE_CAPTURE_UNAVAILABLE -> "Handshake · Unable to verify" to
+                "Call audio cannot be accessed for analysis."
+            STATE_ANALYZING -> "Handshake · Analyzing…" to
+                "Evaluating trust signals for this call."
+            STATE_SENDING -> "Handshake · Sending…" to
+                "Submitting analysis to server."
+            STATE_VERIFYING -> "Handshake · Verifying…" to
+                "Confirming both phones match this call."
+            STATE_NEEDS_REVIEW -> "Handshake · Needs review" to
+                "Evidence is insufficient for a reliable conclusion."
+            STATE_OFFLINE -> "Handshake · Offline" to
+                "Cannot reach server to confirm this call."
+            STATE_ERROR -> "Handshake · Error" to
+                (callStateDetail.ifEmpty { "A failure occurred during verification." })
             else -> "Handshake · Verify" to
                 (callStateDetail.ifEmpty { "Handshake cannot confirm this call." })
         }
@@ -265,17 +289,27 @@ class HandshakeOverlayService : Service() {
                 Triple("Handshake · Trusted connection", Color.rgb(74, 222, 128), Color.rgb(40, 60, 48))
             STATE_RISK ->
                 Triple("Handshake · Risk detected", Color.rgb(248, 113, 113), Color.rgb(60, 36, 38))
-            else -> {
+            STATE_INITIALIZING ->
+                Triple("Handshake · Initializing…", Color.rgb(163, 163, 163), Color.rgb(40, 44, 52))
+            STATE_CAPTURE_UNAVAILABLE ->
+                Triple("Handshake · Unable to verify", Color.rgb(251, 191, 36), Color.rgb(56, 48, 24))
+            STATE_ANALYZING ->
+                Triple("Handshake · Analyzing…", Color.rgb(96, 165, 250), Color.rgb(30, 58, 95))
+            STATE_SENDING ->
+                Triple("Handshake · Sending…", Color.rgb(96, 165, 250), Color.rgb(30, 58, 95))
+            STATE_VERIFYING ->
+                Triple("Handshake · Verifying…", Color.rgb(96, 165, 250), Color.rgb(30, 58, 95))
+            STATE_NEEDS_REVIEW ->
+                Triple("Handshake · Needs review", Color.rgb(251, 191, 36), Color.rgb(56, 48, 24))
+            STATE_OFFLINE -> {
                 // Offline is a distinct, honest case: not "protected", not an error.
-                if (callActive && !callRinging && !backendReachable) {
-                    Triple(
-                        "Handshake · Verify",
-                        Color.rgb(251, 191, 36),
-                        Color.rgb(56, 48, 24),
-                    )
-                } else {
-                    Triple("Handshake · Phone call", Color.rgb(163, 163, 163), Color.rgb(40, 44, 52))
-                }
+                Triple("Handshake · Offline", Color.rgb(251, 191, 36), Color.rgb(56, 48, 24))
+            }
+            STATE_ERROR ->
+                Triple("Handshake · Error", Color.rgb(248, 113, 113), Color.rgb(60, 36, 38))
+            else -> {
+                // Default verify state
+                Triple("Handshake · Verify", Color.rgb(163, 163, 163), Color.rgb(40, 44, 52))
             }
         }
 

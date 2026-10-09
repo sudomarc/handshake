@@ -2,24 +2,35 @@
  * The single product state model during a call.
  *
  *   Outside a call : ready | offline-setup
- *   During a call  : trusted | verify | risk
+ *   During a call  : trusted | verify | risk | initializing | capture_unavailable | analyzing | sending | needs_review | offline | error
  *
- * Nothing here mentions VAD, STT, nonces, session ids, device ids or risk
- * models. Those live in the callers; this module only decides which of the three
- * call states the user is allowed to be shown, and under which conditions.
+ * The full state machine ensures the overlay NEVER shows a permanent "Verify"
+ * label as if verification were occurring. Each state represents a distinct,
+ * honest phase of the trust evaluation pipeline.
  *
  * The central rule: **call activity alone can never produce a trusted state.**
  * A trusted state requires a *server-confirmed mutual session* that this device
  * also verified locally against its own circle secret. Anything else — no
  * session, expired session, rejected proof, unreachable backend, unconfirmed
- * audio analysis — is `verify`.
+ * audio analysis — is `verify` or a more specific diagnostic state.
  *
- * Precedence is enforced here and relied on by the automatic call-start loop
- * (`lib/trust/orchestrator.ts`): risk outranks trust, trust outranks verify,
- * and "protected" is not a state this module can produce.
+ * Precedence: risk > trusted > verifying states > verify/offline/error
+ * "protected" is not a state this module can produce.
  */
 
-export type CallState = "trusted" | "verify" | "risk";
+export type CallState =
+  | "trusted"
+  | "verify"
+  | "risk"
+  | "initializing"
+  | "capture_unavailable"
+  | "analyzing"
+  | "sending"
+  | "verifying"
+  | "needs_review"
+  | "offline"
+  | "error";
+
 export type OutsideCallState = "ready" | "offline";
 
 export interface TrustEvidence {
@@ -41,6 +52,10 @@ export interface CallContext {
   trust: TrustEvidence | null;
   /** Real-time risk analysis reported a threshold crossing. */
   riskDetected: boolean;
+  /** Audio capture is available and working. */
+  audioAvailable: boolean;
+  /** Analysis request is in flight. */
+  analysisInFlight: boolean;
 }
 
 export interface CallDecision {
@@ -56,8 +71,11 @@ export interface CallDecision {
  *
  * Precedence is deliberate — a risk signal outranks a trust confirmation,
  * because a trusted counterpart can still be under pressure.
+ * Audio/analysis states outrank verify/offline because they represent
+ * active progress toward a verdict.
  */
 export function deriveCallState(ctx: CallContext): CallDecision {
+  // Risk always wins — a trusted person can still be under duress
   if (ctx.riskDetected) {
     return {
       state: "risk",
@@ -66,18 +84,7 @@ export function deriveCallState(ctx: CallContext): CallDecision {
     };
   }
 
-  const trusted =
-    ctx.trust !== null && ctx.trust.serverConfirmed && ctx.trust.attestationVerified;
-
-  if (trusted && ctx.callActive) {
-    return {
-      state: "trusted",
-      label: "Handshake · Trusted connection",
-      detail: "Both phones confirmed the same trusted relationship.",
-    };
-  }
-
-  // Everything else is `verify`, with the reason stated honestly.
+  // Not in a call — outside-call states
   if (!ctx.callActive) {
     return {
       state: "verify",
@@ -85,13 +92,63 @@ export function deriveCallState(ctx: CallContext): CallDecision {
       detail: "Handshake is watching for calls.",
     };
   }
-  if (!ctx.backendReachable) {
+
+  // In a call — evaluate trust evidence
+  const trusted =
+    ctx.trust !== null && ctx.trust.serverConfirmed && ctx.trust.attestationVerified;
+
+  if (trusted) {
     return {
-      state: "verify",
-      label: "Handshake · Verify",
-      detail: "Handshake cannot reach the server, so this call is not confirmed.",
+      state: "trusted",
+      label: "Handshake · Trusted connection",
+      detail: "Both phones confirmed the same trusted relationship.",
     };
   }
+
+  // If we have a trusted circle but analysis is in progress, show progress states
+  if (ctx.hasTrustedCircle && ctx.deviceAuthorized) {
+    if (!ctx.backendReachable) {
+      return {
+        state: "offline",
+        label: "Handshake · Offline",
+        detail: "Cannot reach server to confirm this call.",
+      };
+    }
+
+    if (!ctx.audioAvailable) {
+      return {
+        state: "capture_unavailable",
+        label: "Handshake · Unable to verify",
+        detail: "Call audio cannot be accessed for analysis.",
+      };
+    }
+
+    if (ctx.analysisInFlight) {
+      // Determine which analysis phase we're in
+      if (ctx.trust !== null && ctx.trust.serverConfirmed) {
+        // Server confirmed but attestation not yet verified locally
+        return {
+          state: "verifying",
+          label: "Handshake · Verifying…",
+          detail: "Confirming both phones match this call.",
+        };
+      }
+      return {
+        state: "analyzing",
+        label: "Handshake · Analyzing…",
+        detail: "Evaluating trust signals for this call.",
+      };
+    }
+
+    // Has trusted circle, backend reachable, audio available, but no analysis started yet
+    return {
+      state: "initializing",
+      label: "Handshake · Initializing…",
+      detail: "Preparing to verify this call.",
+    };
+  }
+
+  // No trusted circle or device not authorized
   if (!ctx.hasTrustedCircle) {
     return {
       state: "verify",
@@ -106,6 +163,8 @@ export function deriveCallState(ctx: CallContext): CallDecision {
       detail: "This phone's trust for this person was revoked.",
     };
   }
+
+  // Fallback — should not reach here with valid inputs
   return {
     state: "verify",
     label: "Handshake · Verify",
