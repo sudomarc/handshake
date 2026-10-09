@@ -102,7 +102,7 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             .joinToString(" ")
             .lowercase()
         return listOf("answer", "accept", "decline", "reject", "répondre", "accepter", "refuser")
-            .any(labels::contains)
+            .any { labels.contains(it) }
     }
 
     private fun isIncoming(notification: Notification): Boolean {
@@ -111,9 +111,9 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             .joinToString(" ")
             .lowercase()
         val hasAnswer = listOf("answer", "accept", "répondre", "accepter", "atender")
-            .any(labels::contains)
+            .any { labels.contains(it) }
         val hasDecline = listOf("decline", "reject", "refuser", "rechazar")
-            .any(labels::contains)
+            .any { labels.contains(it) }
         if (hasAnswer && hasDecline) return true
 
         val extras = notification.extras
@@ -127,6 +127,6 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             "incoming call", "incoming voice call", "incoming video call",
             "appel entrant", "appel vocal entrant", "appel vidéo entrant",
             "llamada entrante", "llamada de voz entrante",
-        ).any(visibleText::contains)
+        ).any { visibleText.contains(it) }
     }
 }
