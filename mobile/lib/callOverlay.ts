@@ -46,7 +46,7 @@ class CallOverlayManager {
 
   async startProtection(): Promise<boolean> {
     if (!this.available || !nativeOverlay) {
-      throw new Error("Cross-app protection is only available in the Android build.");
+      throw new Error("The cross-app call overlay is only available in the Android build.");
     }
     return nativeOverlay.startProtection();
   }
@@ -65,7 +65,7 @@ class CallOverlayManager {
 
   async showRisk(title: string, message: string): Promise<boolean> {
     if (!this.available || !nativeOverlay) {
-      throw new Error("Cross-app protection is only available in the Android build.");
+      throw new Error("The cross-app call overlay is only available in the Android build.");
     }
     return nativeOverlay.showRisk(title, message);
   }
