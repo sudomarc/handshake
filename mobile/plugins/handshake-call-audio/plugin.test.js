@@ -226,11 +226,31 @@ test("WhatsApp call notification access is declared and wired to the overlay", (
     "utf8",
   );
 
+  const packagedListener = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "sudomarc",
+      "handshake",
+      "callaudio",
+      "WhatsAppCallNotificationListener.kt",
+    ),
+    "utf8",
+  );
+
   assert.ok(plugin.includes('"WhatsAppCallNotificationListener.kt"'));
   assert.ok(plugin.includes("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"));
   assert.ok(listener.includes("NotificationListenerService"));
   assert.ok(listener.includes("Notification.CATEGORY_CALL"));
   assert.ok(listener.includes("ACTION_WHATSAPP_CALL_STATE"));
+  assert.strictEqual(packagedListener, listener, "packaged listener must match plugin source");
   assert.ok(overlaySource.includes("WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE"));
   assert.ok(overlaySource.includes("whatsappCallActive"));
   assert.ok(moduleSource.includes("isNotificationAccessEnabled"));
