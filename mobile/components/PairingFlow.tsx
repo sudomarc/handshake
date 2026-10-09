@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { Body, Button, Card, ErrorBox, H2 } from "@/components/ui";
 import { usePairs } from "@/hooks/usePairs";
@@ -54,7 +54,7 @@ export function PairingAcceptFlow({ inviteId, onCancel }: PairingAcceptFlowProps
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [yourName, setYourName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pollFailures, setPollFailures] = useState(0);
+  const [, setPollFailures] = useState(0);
 
   const finish = useCallback(
     async (pairId: string, displayName: string) => {
