@@ -64,6 +64,7 @@ function copyNativeFiles() {
     "HandshakeOverlayModule.kt",
     "HandshakeOverlayService.kt",
     "MainActivityIntentBridge.kt",
+    "WhatsAppCallNotificationListener.kt",
   ];
 
   for (const file of files) {
@@ -215,6 +216,29 @@ function withCallAudioPlugin(config) {
     );
     if (!existingOverlay) {
       manifest.manifest.application[0].service.push(overlayService);
+    }
+
+    const notificationListenerName =
+      `${PACKAGE_NAME}.callaudio.WhatsAppCallNotificationListener`;
+    const existingNotificationListener = manifest.manifest.application[0].service.find(
+      (s) => s.$ && s.$["android:name"] === notificationListenerName,
+    );
+    if (!existingNotificationListener) {
+      manifest.manifest.application[0].service.push({
+        $: {
+          "android:name": notificationListenerName,
+          "android:label": "Handshake WhatsApp call detection",
+          "android:permission": "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
+          "android:exported": "true",
+        },
+        "intent-filter": [
+          {
+            action: [
+              { $: { "android:name": "android.service.notification.NotificationListenerService" } },
+            ],
+          },
+        ],
+      });
     }
 
     return config;
