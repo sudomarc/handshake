@@ -267,3 +267,20 @@ The previous section covers the recovery work up to commit `b8b1bde`. This secti
 - `mobile/android/app/src/main/java/com/sudomarc/handshake/callaudio/HandshakeOverlayService.kt` — reverted to no-arg listener (main-thread construction).
 - `mobile/plugins/handshake-call-audio/android/HandshakeOverlayModule.kt` / `HandshakeOverlayService.kt` — plugin-source twins kept in sync.
 - `mobile/android/app/build.gradle`, `mobile/app.json` — versionCode 2 / 0.1.1.
+## 2026-10-09 — QR pairing parser fix (branch `fix/qr-pair-parser`, commit `5afd297`)
+
+**Root cause (verified):** `new URL("handshake://pair?invite=…")` yields `host="pair"` and `pathname=""` for the non-special scheme. The parser required `pathname === "/pair"`, so every QR the app generated was rejected ("That QR code isn't a Handshake pairing code.").
+
+**Change:** parser moved to `mobile/lib/trust/pairLink.ts` (pure module, re-exported by `mobile/lib/trust/api.ts`). Route read from host+pathname for `handshake:`, `/pair` path for `https:`, invite id must match the server's 32-hex shape, unanchored regex fallback removed. Tests: `tests/pairLink.test.ts` (9 cases), wired into `npm test`.
+
+**Results (commands run in sandbox):**
+- `npx tsx --test tests/pairLink.test.ts` — 9/9 PASS.
+- `npm test` (root) — 73/73 PASS for tests/lib, api, trust, pairing, pairLink. The plugin test `mobile/plugins/handshake-call-audio/plugin.test.js` FAILS from the root only because `@expo/config-plugins` is not installed at root (environment/structure, not a code defect); run from `mobile/` it PASSES 7/7.
+- `mobile`: `npm run typecheck` PASS; `npm run lint` 0 errors, 5 pre-existing warnings.
+- Root `npm run lint` PASS. Root `npm run build` BLOCKED: sandbox cannot reach fonts.googleapis.com (next/font). Not a code result.
+- `git diff --check` clean.
+- Workflow `android-apk` via workflow_dispatch on the branch: run 37989985356, conclusion success, head SHA 5afd297. Artifact `handshake-apk` id 11644298270, 36,778,765 bytes. Download BLOCKED from sandbox (blob storage host not in egress allowlist); SHA-256 NOT computed here.
+
+**Not verified:** end-to-end QR cycle between two physical devices; backend cross-instance persistence (trustStore is in-memory, documented limitation); overlay state machine on device. Physical-device tests: BLOCKED (no adb device available in this environment).
+
+**Not merged:** branch is not merged into `main`; PR #33 not touched.
