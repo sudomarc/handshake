@@ -204,3 +204,44 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-09
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS with 4 warnings (`checkRuntimePermissions`, `needsPermissionBanner` unused in `_layout.tsx`, `View` and `pollFailures` unused in `PairingFlow.tsx`).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (71/71 passed).
+
+### Work Completed & Priority
+- **Priority 1 & Priority 4 (Lint Cleanup & Continuous Improvement - Tests):**
+  - Cleaned up ESLint warnings in `mobile/app/_layout.tsx` (removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports) and `mobile/components/PairingFlow.tsx` (removed unused `View` import and unused `pollFailures` variable binding) so `cd mobile && npm run lint` is 100% clean with 0 warnings.
+  - Added unit test suite in `tests/lib.test.ts` testing `storePendingInvite`, `peekPendingInvite`, and `consumePendingInvite` functions in `mobile/lib/pairing.ts` to expand test coverage for deep-link QR pairing state management.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and unused `pollFailures` variable binding.
+- `tests/lib.test.ts`: Added unit tests for `mobile/lib/pairing.ts` lifecycle functions (`storePendingInvite`, `peekPendingInvite`, `consumePendingInvite`).
+- `docs/NIGHTLY_LOG.md`: Updated nightly log with today's run details.
+
+### Gates & Results
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+- Plugin tests (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): 7/7 passed.
+- Full test suite (`npm test`): PASS (72/72 tests passed across test suites: 16 lib + 10 api + 39 trust/pairing + 7 plugin).
+
+### Known Risks & Open Findings
+- Release APK build on physical Samsung SM-A175F requires end-to-end QR pairing re-verification prior to submission.
+- Demo video recording rehearsal on two devices.
+
+### Needs Human
+- Re-verify release APK build on Samsung SM-A175F.
+- Record final 2-4 minute Devpost demo video per `DEMO_SCRIPT.md`.
+- Submit Devpost entry before 12:00 PM EDT on Oct 10, 2026.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Final device verification of release APK and overlay states.
+3. Devpost submission before Oct 10, 2026 deadline.

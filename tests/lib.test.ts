@@ -31,6 +31,11 @@ import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
+import {
+  storePendingInvite,
+  consumePendingInvite,
+  peekPendingInvite,
+} from "../mobile/lib/pairing";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
 const VALID_PAIR_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
@@ -297,5 +302,26 @@ describe("lib/callSchemas & lib/callStore", () => {
     // End session
     const ended = await callSessionStore.endSession(session.sessionId);
     assert.equal(ended?.status, "ended");
+  });
+});
+
+describe("mobile/lib/pairing", () => {
+  test("pending invite storage lifecycle (store, peek, consume)", () => {
+    // Starts empty
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
+
+    // Store invite
+    const testInviteId = "1234567890abcdef1234567890abcdef";
+    storePendingInvite(testInviteId);
+
+    // Peek does not clear
+    assert.equal(peekPendingInvite(), testInviteId);
+    assert.equal(peekPendingInvite(), testInviteId);
+
+    // Consume returns and clears
+    assert.equal(consumePendingInvite(), testInviteId);
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
   });
 });
