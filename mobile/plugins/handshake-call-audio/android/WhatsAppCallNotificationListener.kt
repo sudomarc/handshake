@@ -101,9 +101,24 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             .mapNotNull { it.title?.toString() }
             .joinToString(" ")
             .lowercase()
-        return listOf("answer", "accept", "decline", "reject", "répondre", "accepter", "refuser")
-            .any { labels.contains(it) }
+        if (listOf("answer", "accept", "decline", "reject", "répondre", "accepter", "refuser")
+                .any { labels.contains(it) }) return true
+
+        val saysOngoingCall = listOf(
+            "call in progress", "ongoing call", "voice call", "video call",
+            "appel en cours", "appel vocal", "appel vidéo",
+            "llamada en curso", "llamada de voz", "llamada de video",
+        ).any { notificationText(notification).contains(it) }
+        return notification.flags and Notification.FLAG_ONGOING_EVENT != 0 && saysOngoingCall
     }
+
+    private fun notificationText(notification: Notification): String =
+        listOf(
+            Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
+            Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT,
+        ).mapNotNull { notification.extras.getCharSequence(it)?.toString() }
+            .joinToString(" ")
+            .lowercase()
 
     private fun isIncoming(notification: Notification): Boolean {
         val labels = notification.actions.orEmpty()
@@ -116,13 +131,7 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
             .any { labels.contains(it) }
         if (hasAnswer && hasDecline) return true
 
-        val extras = notification.extras
-        val visibleText = listOf(
-            Notification.EXTRA_TITLE, Notification.EXTRA_TEXT,
-            Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT,
-        ).mapNotNull { extras.getCharSequence(it)?.toString() }
-            .joinToString(" ")
-            .lowercase()
+        val visibleText = notificationText(notification)
         return listOf(
             "incoming call", "incoming voice call", "incoming video call",
             "appel entrant", "appel vocal entrant", "appel vidéo entrant",
