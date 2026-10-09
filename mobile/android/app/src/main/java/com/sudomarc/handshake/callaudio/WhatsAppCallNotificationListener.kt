@@ -11,6 +11,7 @@ import android.service.notification.StatusBarNotification
 class WhatsAppCallNotificationListener : NotificationListenerService() {
     companion object {
         const val ACTION_WHATSAPP_CALL_STATE = "com.sudomarc.handshake.overlay.WHATSAPP_CALL_STATE"
+        const val ACTION_REFRESH_WHATSAPP_CALL_STATE = "com.sudomarc.handshake.overlay.REFRESH_WHATSAPP_CALL_STATE"
         const val EXTRA_CALL_STATE = "whatsappCallState"
         private const val STATE_RINGING = "ringing"
         private const val STATE_ACTIVE = "active"
@@ -22,6 +23,22 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
     private val handler = Handler(Looper.getMainLooper())
     private var lastPublishedState: String? = null
     private val refreshRunnable = Runnable { publishCurrentState() }
+    private val refreshReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == ACTION_REFRESH_WHATSAPP_CALL_STATE) scheduleRefresh(0L)
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val filter = android.content.IntentFilter(ACTION_REFRESH_WHATSAPP_CALL_STATE)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(refreshReceiver, filter, android.content.Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(refreshReceiver, filter)
+        }
+    }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -38,6 +55,10 @@ class WhatsAppCallNotificationListener : NotificationListenerService() {
 
     override fun onDestroy() {
         handler.removeCallbacks(refreshRunnable)
+        try {
+            unregisterReceiver(refreshReceiver)
+        } catch (_: Exception) {
+        }
         super.onDestroy()
     }
 
