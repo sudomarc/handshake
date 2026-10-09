@@ -204,3 +204,50 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-09
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): LINT WARNINGS (4 unused variable warnings in `app/_layout.tsx` and `components/PairingFlow.tsx`).
+  - Test suite (`npm test`): PASS (71/71 passed).
+  - Native Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things / Lint Warnings):**
+  - Resolved 4 ESLint warnings in `mobile/app/_layout.tsx` (removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports) and `mobile/components/PairingFlow.tsx` (removed unused `View` import and fixed unused `pollFailures` state declaration).
+- **Priority 4 (Continuous Improvement Loop - Mobile Test Coverage & Edge Cases):**
+  - Fixed custom protocol host parsing bug in `mobile/lib/trust/api.ts` (`parsePairInvite`), ensuring `handshake://pair?invite=...` URLs with host `"pair"` and empty pathname are properly recognized without falling back to regex.
+  - Converted `@/` imports in `mobile/lib/trust/api.ts` to relative imports to prevent monorepo root Next.js `tsc` resolution mismatches during `next build`.
+  - Added unit test suite `tests/mobileHelpers.test.ts` testing permissions banner conditions, deep link invitation URL parsing, trust relation state calculation, and pending invite store methods.
+  - Added `tests/mocks/register-react-native.js` hook for Node test environment to mock React Native dependencies cleanly.
+  - Updated root `package.json` test runner script to execute all 5 test suites (`lib.test.ts`, `api.test.ts`, `trust.test.ts`, `pairing.test.ts`, `mobileHelpers.test.ts`, and `plugin.test.js`).
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import; destructured `[, setPollFailures]`.
+- `mobile/lib/trust/api.ts`: Fixed custom protocol deep-link host check in `parsePairInvite`; switched `@/` imports to relative imports.
+- `tests/mobileHelpers.test.ts`: Added unit tests for mobile permissions, QR invite parsing, relation states, and pending invite store.
+- `tests/mocks/register-react-native.js`: Added React Native and Expo module resolution mock for Node test runner.
+- `package.json`: Updated `npm test` script to include `register-react-native.js` import and `tests/mobileHelpers.test.ts`.
+- `docs/NIGHTLY_LOG.md`: Recorded 2026-10-09 nightly run log and verification gate outcomes.
+
+### Gates & Results
+- `npm test`: PASS (85/85 tests passed across 6 test suites: 15 lib + 10 api + 32 trust + 12 pairing + 14 mobileHelpers + 7 plugin).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, build succeeded).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+
+### Known Risks & Open Findings
+- Final APK release build needs physical device verification on Samsung SM-A175F before submission deadline.
+- Call overlay warning banner on physical device needs final manual verification above calling apps.
+
+### Needs Human
+- Final APK installation and end-to-end device testing on Samsung SM-A175F.
+- Record final public 2-4 minute Devpost demo video.
+
+### Plan for Tomorrow
+1. Perform final submission validation checklist in `ROADMAP.md`.
+2. Re-verify release APK on device after CI build completes.
+3. Submit project on Devpost before Oct 10, 2026, 12:00 PM EDT.
