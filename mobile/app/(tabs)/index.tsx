@@ -139,6 +139,16 @@ export default function ShieldHome() {
         </Card>
       ) : null}
 
+      {whatsappAccessEnabled === true ? (
+        <Card>
+          <H2>WhatsApp call detection enabled</H2>
+          <Body muted>
+            Handshake can monitor WhatsApp call notifications. Detection still depends on
+            WhatsApp publishing a recognizable call notification; call audio is not accessible.
+          </Body>
+        </Card>
+      ) : null}
+
       {whatsappAccessEnabled === false ? (
         <Card>
           <H2>Enable WhatsApp call detection</H2>
