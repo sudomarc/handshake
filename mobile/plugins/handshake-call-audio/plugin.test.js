@@ -205,3 +205,36 @@ test("call overlay always explains status and never implies live audio analysis"
     "overlay must never hard-code a protection claim",
   );
 });
+
+
+test("WhatsApp call notification access is declared and wired to the overlay", () => {
+  const plugin = fs.readFileSync(path.join(__dirname, "plugin.js"), "utf8");
+  const listener = fs.readFileSync(
+    path.join(__dirname, "android", "WhatsAppCallNotificationListener.kt"),
+    "utf8",
+  );
+  const overlaySource = fs.readFileSync(
+    path.join(__dirname, "android", "HandshakeOverlayService.kt"),
+    "utf8",
+  );
+  const manifest = fs.readFileSync(
+    path.join(__dirname, "..", "..", "android", "app", "src", "main", "AndroidManifest.xml"),
+    "utf8",
+  );
+  const moduleSource = fs.readFileSync(
+    path.join(__dirname, "android", "HandshakeOverlayModule.kt"),
+    "utf8",
+  );
+
+  assert.ok(plugin.includes('"WhatsAppCallNotificationListener.kt"'));
+  assert.ok(plugin.includes("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"));
+  assert.ok(listener.includes("NotificationListenerService"));
+  assert.ok(listener.includes("Notification.CATEGORY_CALL"));
+  assert.ok(listener.includes("ACTION_WHATSAPP_CALL_STATE"));
+  assert.ok(overlaySource.includes("WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE"));
+  assert.ok(overlaySource.includes("whatsappCallActive"));
+  assert.ok(moduleSource.includes("isNotificationAccessEnabled"));
+  assert.ok(moduleSource.includes("ACTION_NOTIFICATION_LISTENER_SETTINGS"));
+  assert.ok(manifest.includes("com.sudomarc.handshake.callaudio.WhatsAppCallNotificationListener"));
+  assert.ok(manifest.includes("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"));
+});
