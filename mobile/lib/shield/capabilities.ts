@@ -1,5 +1,5 @@
-import { api } from "@/lib/api";
-import type { PressureCheckResponse } from "@/lib/apiTypes";
+import { api } from "../api";
+import type { PressureCheckResponse } from "../apiTypes";
 
 /**
  * Risk-analysis capabilities.
