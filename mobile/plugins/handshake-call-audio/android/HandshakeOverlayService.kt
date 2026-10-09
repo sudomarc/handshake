@@ -337,11 +337,20 @@ class HandshakeOverlayService : Service() {
         }
         val detail = TextView(this).apply {
             text = when {
-                callStateDetail.isNotBlank() -> callStateDetail
-                callRinging -> "Call detected. Live call audio is not available to analyze on Android."
-                callState == STATE_CAPTURE_UNAVAILABLE ->
-                    "Handshake cannot access this call audio. Verify the caller independently."
-                else -> "Caller identity is not confirmed. Live call audio is not being analyzed."
+                callRinging -> listOf(
+                    callStateDetail.takeIf { it.isNotBlank() } ?: "Call detected.",
+                    "Live call audio is not available to analyze on Android.",
+                ).joinToString("\n")
+                callState == STATE_CAPTURE_UNAVAILABLE -> listOf(
+                    callStateDetail.takeIf { it.isNotBlank() }
+                        ?: "Handshake cannot access this call audio.",
+                    "Verify the caller independently; speech analysis is not running.",
+                ).joinToString("\n")
+                else -> listOf(
+                    callStateDetail.takeIf { it.isNotBlank() }
+                        ?: "Caller identity is not confirmed.",
+                    "Live call audio is not being analyzed by this overlay.",
+                ).joinToString("\n")
             }
             setTextColor(Color.rgb(170, 170, 170))
             textSize = 12f
