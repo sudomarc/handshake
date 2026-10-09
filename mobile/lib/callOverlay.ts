@@ -4,6 +4,8 @@ import type { CallState } from "@/lib/trust/callState";
 type OverlayModule = {
   canDrawOverlays: () => Promise<boolean>;
   openOverlaySettings: () => Promise<boolean>;
+  isNotificationAccessEnabled: () => Promise<boolean>;
+  openNotificationAccessSettings: () => Promise<boolean>;
   startProtection: () => Promise<boolean>;
   setCallState: (state: CallState, detail: string) => Promise<boolean>;
   showRisk: (title: string, message: string) => Promise<boolean>;
@@ -20,6 +22,18 @@ class CallOverlayManager {
   async canDrawOverlays(): Promise<boolean> {
     if (!this.available || !nativeOverlay) return false;
     return nativeOverlay.canDrawOverlays();
+  }
+
+  async isNotificationAccessEnabled(): Promise<boolean> {
+    if (!this.available || !nativeOverlay) return false;
+    return nativeOverlay.isNotificationAccessEnabled();
+  }
+
+  async openNotificationAccessSettings(): Promise<void> {
+    if (!this.available || !nativeOverlay) {
+      throw new Error("WhatsApp call detection is only available in the Android build.");
+    }
+    await nativeOverlay.openNotificationAccessSettings();
   }
 
   async openSettings(): Promise<void> {
