@@ -173,12 +173,12 @@ export default function ShieldHome() {
 
       {overlayAllowed === false ? (
         <Card>
-          <H2>Protection off</H2>
+          <H2>Call overlay off</H2>
           <Body muted>
             Handshake stays honest only when it can sit over the calling screen. Turn on
             protection to see trusted / verify / risk during calls.
           </Body>
-          <Button label="Turn on protection" variant="secondary" onPress={() => void enableProtection()} />
+          <Button label="Enable call overlay" variant="secondary" onPress={() => void enableProtection()} />
         </Card>
       ) : null}
     </PageShell>
