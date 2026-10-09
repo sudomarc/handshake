@@ -36,8 +36,6 @@ export interface CallTrustOptions {
  * into a new one.
  */
 export async function evaluateCallTrust(options: CallTrustOptions): Promise<CallTrustResult> {
-  let finalResult: CallTrustResult | null = null;
-
   const result = await runCallTrust({
     pairId: options.pairId,
     role: options.role,
@@ -46,7 +44,6 @@ export async function evaluateCallTrust(options: CallTrustOptions): Promise<Call
     riskDetected: false,
     ...(options.pollIntervalMs === undefined ? {} : { pollIntervalMs: options.pollIntervalMs }),
     onProgress: (progress) => {
-      finalResult = progress;
       // Publish each progress update to the overlay
       const publish = options.publish ?? defaultPublish;
       void publish(progress);

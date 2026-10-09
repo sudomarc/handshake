@@ -204,3 +204,44 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-09
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (0 errors, 5 ESLint warnings in layout, pairing, and orchestrator).
+  - Plugin (`node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+  - Test suite (`npm test`): PASS (80/80 passed: 73 node unit/trust/pairing tests + 7 plugin tests).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things - Mobile ESLint warnings cleanup & code health):**
+  - Cleared all 5 ESLint warnings in `mobile/`:
+    - Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports in `mobile/app/_layout.tsx`.
+    - Removed unused `View` import and converted `pollFailures` to a `useRef` counter in `mobile/components/PairingFlow.tsx` to maintain poll failure tolerance up to `MAX_POLL_FAILURES` without triggering re-render warnings.
+    - Removed unused `finalResult` variable assignment in `mobile/lib/trust/orchestrator.ts`.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused permission helper imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and converted `pollFailures` to `useRef`.
+- `mobile/lib/trust/orchestrator.ts`: Removed unused `finalResult` variable.
+- `docs/NIGHTLY_LOG.md`: Documented 2026-10-09 nightly run results and gate checks.
+
+### Gates & Results
+- `npm test`: PASS (80/80 tests passed: 73 node tests + 7 plugin tests).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+
+### Known Risks & Open Findings
+- Release APK build on Samsung SM-A175F needs physical device re-verification before submission.
+- Device testing of call overlay warnings above phone app.
+
+### Needs Human
+- Re-test release APK build on Samsung SM-A175F.
+- Devpost video submission pass before Oct 10, 2026 12:00 PM EDT.
+
+### Plan for Tomorrow
+1. Perform final Devpost submission checklist validation in `ROADMAP.md`.
+2. Confirm GitHub repo visibility and mobile source packaging for submission.
+3. Submit Handshake on Devpost before deadline.
