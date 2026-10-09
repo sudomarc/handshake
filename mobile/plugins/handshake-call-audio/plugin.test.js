@@ -250,6 +250,8 @@ test("WhatsApp call notification access is declared and wired to the overlay", (
   assert.ok(listener.includes("NotificationListenerService"));
   assert.ok(listener.includes("Notification.CATEGORY_CALL"));
   assert.ok(listener.includes("ACTION_WHATSAPP_CALL_STATE"));
+  assert.ok(listener.includes("ACTION_REFRESH_WHATSAPP_CALL_STATE"));
+  assert.ok(overlaySource.includes("ACTION_REFRESH_WHATSAPP_CALL_STATE"));
   assert.strictEqual(packagedListener, listener, "packaged listener must match plugin source");
   assert.ok(overlaySource.includes("WhatsAppCallNotificationListener.ACTION_WHATSAPP_CALL_STATE"));
   assert.ok(overlaySource.includes("whatsappCallActive"));
