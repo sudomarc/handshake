@@ -252,7 +252,8 @@ class HandshakeOverlayService : Service() {
         if (!callActive) {
             "Handshake is watching" to "Waiting for a call."
         } else if (callRinging) {
-            "Handshake · Phone call" to "Checking this call."
+            "Handshake · Call detected" to
+                "Live call audio is not available to Handshake for analysis."
         } else when (callState) {
             STATE_TRUSTED -> "Handshake · Trusted connection" to
                 "Both phones confirmed the same trusted relationship."
@@ -260,7 +261,7 @@ class HandshakeOverlayService : Service() {
                 "Pressure tactics detected during this call."
             STATE_INITIALIZING -> "Handshake · Initializing…" to
                 "Preparing to verify this call."
-            STATE_CAPTURE_UNAVAILABLE -> "Handshake · Unable to verify" to
+            STATE_CAPTURE_UNAVAILABLE -> "Handshake · Audio unavailable" to
                 "Call audio cannot be accessed for analysis."
             STATE_ANALYZING -> "Handshake · Analyzing…" to
                 "Evaluating trust signals for this call."
@@ -275,7 +276,9 @@ class HandshakeOverlayService : Service() {
             STATE_ERROR -> "Handshake · Error" to
                 (callStateDetail.ifEmpty { "A failure occurred during verification." })
             else -> "Handshake · Verify" to
-                (callStateDetail.ifEmpty { "Handshake cannot confirm this call." })
+                (callStateDetail.ifEmpty {
+                    "Caller identity is not confirmed. Live call audio is not being analyzed."
+                })
         }
 
     /**
@@ -288,7 +291,8 @@ class HandshakeOverlayService : Service() {
     private fun showCallState() {
         removeOverlay()
 
-        val state = if (callRinging) STATE_VERIFY else callState
+        // Ringing is call metadata, not evidence that audio analysis is running.
+        val state = callState
         val (labelText, dotColor, accent) = when (state) {
             STATE_TRUSTED ->
                 Triple("Handshake · Trusted connection", Color.rgb(74, 222, 128), Color.rgb(40, 60, 48))
@@ -297,7 +301,7 @@ class HandshakeOverlayService : Service() {
             STATE_INITIALIZING ->
                 Triple("Handshake · Initializing…", Color.rgb(163, 163, 163), Color.rgb(40, 44, 52))
             STATE_CAPTURE_UNAVAILABLE ->
-                Triple("Handshake · Unable to verify", Color.rgb(251, 191, 36), Color.rgb(56, 48, 24))
+                Triple("Handshake · Audio unavailable", Color.rgb(251, 191, 36), Color.rgb(56, 48, 24))
             STATE_ANALYZING ->
                 Triple("Handshake · Analyzing…", Color.rgb(96, 165, 250), Color.rgb(30, 58, 95))
             STATE_SENDING ->
@@ -332,10 +336,12 @@ class HandshakeOverlayService : Service() {
             typeface = Typeface.DEFAULT_BOLD
         }
         val detail = TextView(this).apply {
-            text = if (callActive && !callRinging && callStateDetail.isNotEmpty()) {
-                callStateDetail
-            } else {
-                ""
+            text = when {
+                callStateDetail.isNotBlank() -> callStateDetail
+                callRinging -> "Call detected. Live call audio is not available to analyze on Android."
+                callState == STATE_CAPTURE_UNAVAILABLE ->
+                    "Handshake cannot access this call audio. Verify the caller independently."
+                else -> "Caller identity is not confirmed. Live call audio is not being analyzed."
             }
             setTextColor(Color.rgb(170, 170, 170))
             textSize = 12f
