@@ -3,6 +3,7 @@ import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { ActiveShield } from "@/components/ActiveShield";
 import { ShieldProvider } from "@/lib/shield/engine";
 import { callOverlayManager } from "@/lib/callOverlay";
@@ -44,8 +45,27 @@ function AutoArmProtection() {
       }
     };
     void arm();
+
+    // Android returns to the app after special-access settings. Re-check on
+    // resume and re-arm the foreground service instead of assuming the first
+    // permission check is still current.
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active" || cancelled) return;
+      void (async () => {
+        try {
+          const permissions = await checkRuntimePermissions();
+          if (permissions.readPhoneState === true) await retryCallStateRegistration();
+          const allowed = await callOverlayManager.canDrawOverlays();
+          if (allowed && !cancelled) await callOverlayManager.startProtection();
+        } catch {
+          // The home screen reports unavailable permissions and offers retry.
+        }
+      })();
+    });
+
     return () => {
       cancelled = true;
+      subscription.remove();
     };
   }, []);
   return null;
