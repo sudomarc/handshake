@@ -9,7 +9,7 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npx tsx --test tests/lib.test.ts tests/api.test.ts tests/trust.test.ts tests/pairing.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"
+    "test": "npx tsx --test tests/lib.test.ts tests/api.test.ts tests/trust.test.ts tests/pairing.test.ts tests/pairLink.test.ts && node --test mobile/plugins/handshake-call-audio/plugin.test.js"
   },
   "dependencies": {
     "next": "16.3.8",
