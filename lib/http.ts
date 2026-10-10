@@ -60,17 +60,8 @@ export function handleApiError(error: unknown) {
     return jsonError(status, { code: error.code, message });
   }
   console.error("Unhandled API error:", error);
-  // TEMPORARY DIAGNOSTIC: echo the whitelisted provider failure branch so it can be
-  // observed from the client (no secrets, no free-form server text). Revert after capture.
-  const known =
-    error instanceof Error &&
-    /^(Featherless API error \(\d{3}\)|Empty response from Featherless|Featherless returned invalid JSON|This operation was aborted|The operation was aborted|fetch failed|.*network request failed)/i.test(
-      error.message,
-    );
   return jsonError(500, {
     code: "internal_error",
-    message: known
-      ? `Temporary diagnostic: ${error.message}`
-      : "Something went wrong on our side. Please try again.",
+    message: "Something went wrong on our side. Please try again.",
   });
 }
