@@ -104,8 +104,8 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/circle" className="cta cta-primary text-sm">
-            Explore pairing
+          <Link href="/download" className="cta cta-primary text-sm">
+            Get the Android app
           </Link>
         </div>
 
@@ -136,11 +136,11 @@ export function Header() {
               </a>
             ))}
             <Link
-              href="/circle"
+              href="/download"
               className="cta cta-primary mt-3 text-base"
               onClick={() => setOpen(false)}
             >
-              Explore pairing
+              Get the Android app
             </Link>
           </nav>
         </div>

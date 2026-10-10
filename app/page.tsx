@@ -69,8 +69,8 @@ export default function Home() {
                 evidence available for a session, and pause whenever it cannot be confirmed.
               </p>
               <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
-                <Link href="/circle" className="cta cta-accent w-full min-[420px]:w-auto">
-                  Explore trusted pairing
+                <Link href="/download" className="cta cta-accent w-full min-[420px]:w-auto">
+                  Get the Android app
                   <ArrowIcon />
                 </Link>
                 <a href="#how-it-works" className="cta cta-ghost w-full min-[420px]:w-auto">
@@ -100,6 +100,23 @@ export default function Home() {
             <div className="relative min-w-0 lg:pl-2">
               <HeroSceneSlot />
             </div>
+          </div>
+        </section>
+
+        <section id="download" aria-labelledby="download-heading" className="border-y border-white/[0.06] bg-white/[0.015]">
+          <div className="site-shell flex flex-col gap-6 py-10 sm:flex-row sm:items-center sm:justify-between sm:py-12">
+            <div className="max-w-2xl">
+              <p className="eyebrow">Android prototype</p>
+              <h2 id="download-heading" className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Try Handshake on your phone.
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-neutral-400 sm:text-base">
+                See how to get the latest test APK, install it on Android, and understand what this prototype currently supports.
+              </p>
+            </div>
+            <Link href="/download" className="cta cta-accent w-full shrink-0 sm:w-auto">
+              Download the Android app <ArrowIcon />
+            </Link>
           </div>
         </section>
 
@@ -311,8 +328,8 @@ export default function Home() {
                   prototype&rsquo;s limits before relying on it.
                 </p>
                 <div className="mt-7 flex flex-col items-stretch justify-center gap-3 min-[420px]:flex-row min-[420px]:items-center">
-                  <Link href="/circle" className="cta cta-accent w-full min-[420px]:w-auto">
-                    Explore pairing <ArrowIcon />
+                  <Link href="/download" className="cta cta-accent w-full min-[420px]:w-auto">
+                    Download for Android <ArrowIcon />
                   </Link>
                   <Link href="/demo" className="cta cta-ghost w-full min-[420px]:w-auto">
                     Walk through the demo
@@ -341,6 +358,9 @@ export default function Home() {
             <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
               Product
             </h2>
+            <Link href="/download" className="text-neutral-400 transition hover:text-white">
+              Download Android app
+            </Link>
             <Link href="/circle" className="text-neutral-400 transition hover:text-white">
               Trusted pairing
             </Link>
