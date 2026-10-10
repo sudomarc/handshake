@@ -48,3 +48,9 @@ opencode.json
 next-env.d.ts
 
 .vercel
+
+# One-off local device QA captures belong in qa/out/, not the repository root.
+/*.png
+/*.xml
+/*.txt
+/handshake-installed.apk
