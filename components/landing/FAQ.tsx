@@ -27,6 +27,26 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     ),
   },
   {
+    q: "Where can I download the Android build?",
+    a: (
+      <>
+        The repository currently publishes a time-limited GitHub Actions artifact rather than a
+        permanent APK release. Open the{" "}
+        <a
+          href="https://github.com/sudomarc/handshake/actions/workflows/android-apk.yml"
+          className="text-sky-300 underline decoration-sky-300/40 underline-offset-4 hover:decoration-sky-300"
+        >
+          Android APK workflow
+        </a>
+        , choose the latest successful run, and download the `handshake-apk` artifact. The ZIP
+        expires after 30 days. See the{" "}
+        <a href="/download" className="text-sky-300 underline decoration-sky-300/40 underline-offset-4 hover:decoration-sky-300">
+          download instructions
+        </a>.
+      </>
+    ),
+  },
+  {
     q: "What does “Trusted connection” mean?",
     a: (
       <>
@@ -50,10 +70,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
     q: "Does Handshake automatically detect every cloned voice?",
     a: (
       <>
-        No. Handshake does not try to classify voices at all. It checks whether the call is coming
-        from a phone you paired and confirmed with the person — something a cloned voice can never
-        have. A perfect clone on an unpaired phone still shows “Verify”. Real-time audio analysis
-        and cloned-voice detection are future feasibility work, not current capabilities.
+        No. Handshake does not try to classify voices at all. Its trust flow can verify a session between paired devices when the supported flow is available. The current Android prototype does not automatically check every carrier or third-party call, and it does not analyse remote call audio. If trust is not confirmed, use a separate, known communication channel. Real-time audio analysis and cloned-voice detection are not current capabilities.
       </>
     ),
   },
