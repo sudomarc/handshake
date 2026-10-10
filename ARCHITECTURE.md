@@ -153,8 +153,8 @@ short-lived invite.
 
 **Fallback if the trust store's statelessness misbehaves:** move trust state to
 a shared durable store (e.g. Postgres/Redis) — required for serverless hosting
-with more than one instance (see Blockers in
-TRUSTED_CALL_ARCHITECTURE.md).
+with more than one instance (see the production limitations in this document and in
+SECURITY.md).
 
 **Production version would need:** a real database; real accounts with login +
 device registration (2FA); secrets encrypted at rest with key management;
