@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,8 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +54,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -127,6 +116,43 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("evicts expired buckets when capacity limit MAX_BUCKETS is reached", () => {
+    const max = 5;
+    const windowMs = 10000;
+    const now = 100000;
+
+    // Fill capacity with MAX_BUCKETS (10,000) active keys that are expired
+    for (let i = 0; i < 10000; i++) {
+      consume(`key_${i}`, max, windowMs, now);
+    }
+
+    // Fast-forward time past the windowMs reset point
+    const futureTime = now + windowMs + 1000;
+
+    // Attempting a new consume call should sweep expired buckets and succeed
+    const res = consume("brand_new_key", max, windowMs, futureTime);
+    assert.equal(res.allowed, true);
+  });
+
+  test("refuses requests when MAX_BUCKETS is reached and all buckets are unexpired", () => {
+    const max = 5;
+    const windowMs = 60000;
+    const now = 100000;
+
+    // Fill capacity with MAX_BUCKETS (10,000) active keys within current window
+    for (let i = 0; i < 10000; i++) {
+      consume(`unexpired_key_${i}`, max, windowMs, now);
+    }
+
+    // 10,001st key at same timestamp should be refused due to capacity exhaustion
+    const res = consume("overflow_key", max, windowMs, now);
+    assert.equal(res.allowed, false);
+    if (!res.allowed) {
+      assert.equal(typeof res.retryAfterSeconds, "number");
+      assert.equal(res.retryAfterSeconds > 0, true);
+    }
+  });
 });
 
 describe("lib/schemas", () => {
@@ -152,10 +178,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +199,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
