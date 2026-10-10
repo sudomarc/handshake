@@ -66,8 +66,10 @@ Pairing is physical, mutual, and happens once:
    the new circle immediately.
 3. **Both confirm** — Phone A confirms on its own screen, which completes the
    pairing (`confirmed`) and enrolls Phone A too.
-4. **Recognized during calls** — from then on, the two phones authenticate each
-   other through a server-confirmed, locally-verified call session.
+4. **Intended call-time behavior** — after pairing, the app attempts to validate
+   a call session against the backend when a supported call-state event is
+   observed. This automatic path still needs end-to-end validation on the final
+   APK; pairing alone is not proof that a later call will be recognized.
 
 The server-issued relation id is an **internal** identifier: it is never shown
 to users and never needs to be typed or read. The QR invitation is the only
@@ -143,15 +145,21 @@ committed).
 
 ## The demo
 
-Handshake is being built as a **working hackathon prototype**, not a simulated
-click-through. The pairing and recognition flow is expected to work for real:
+Handshake is a hackathon prototype with automated tests and prior device QA.
+The following is the intended flow, not a substitute for checking the exact APK
+being demonstrated:
 
 1. pair two phones by QR (one shows, one scans);
 2. both people confirm on their own phones;
-3. a call from the paired device is recognized automatically and shows
-   **Trusted connection**;
-4. an unpaired or offline peer shows **Verify** — never a false "Protected";
-5. a real local risk signal shows **Risk detected**.
+3. when a supported call-state event is observed, the app attempts a backend
+   trust session and should show **Trusted connection** only if validation
+   succeeds;
+4. if the peer cannot be validated, the UI should show **Verify**, not claim
+   "Protected";
+5. **Risk detected** requires an actual risk signal. The overlay alone is not
+   proof that call audio was captured or analyzed.
+
+The full QR-to-call flow still needs end-to-end verification on the final APK.
 
 The AI features should also call the configured Featherless endpoint when they are
 presented as working features. A screenshot, prerecorded clip, or visual mockup
@@ -208,11 +216,12 @@ carrier calls or third-party calling apps such as WhatsApp. Audio analysis there
 cannot be presented as live call analysis until a supported platform surface is
 independently verified.
 
-For any interaction, the current reliable path is device-level trust: a paired
-phone is recognized through the trust backend, and user-provided text can
-additionally feed pressure analysis. The rotating-code routes remain available
-server-side for backward compatibility but are no longer part of the mobile
-user flow.
+The intended identity path is device-level trust: a paired device and backend
+session must be validated before Handshake reports a trusted connection. That
+end-to-end behavior must be rechecked on the APK used for the demonstration.
+User-provided text can additionally feed advisory pressure analysis. The
+rotating-code routes remain available server-side for backward compatibility
+but are no longer part of the mobile user flow.
 
 ### Real-time call analysis direction
 
