@@ -204,3 +204,43 @@
 1. Perform final pre-submission checklist verification in `ROADMAP.md`.
 2. Re-verify release APK on device after CI build completes.
 3. Final rehearsal and recording of public Devpost demo video.
+
+## 2026-10-10
+
+### Phase & Baseline
+- **Phase:** Freeze Mode (ForgeHacks submission deadline Oct 10, 2026).
+- **Baseline status before changes:**
+  - Root (`npm ci && npm run lint && npm run build`): PASS (0 errors).
+  - Mobile (`cd mobile && npm ci && npm run typecheck && npm run lint`): PASS (5 ESLint warnings in `_layout.tsx`, `PairingFlow.tsx`, `orchestrator.ts`).
+  - Test suite (`npm test`): FAIL due to missing `@expo/config-plugins` module resolution when executing native plugin tests from repo root without `NODE_PATH`.
+  - Plugin (`NODE_PATH=mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js`): PASS (7/7 passed).
+
+### Work Completed & Priority
+- **Priority 1 (Broken things - Mobile ESLint warnings & plugin test resolution):**
+  - Cleaned up unused exports/variables in `mobile/app/_layout.tsx` (`checkRuntimePermissions`, `needsPermissionBanner`), `mobile/components/PairingFlow.tsx` (`View`), and `mobile/lib/trust/orchestrator.ts` (`finalResult`).
+  - Refactored `pollFailures` in `mobile/components/PairingFlow.tsx` using `useRef` (`pollFailuresRef`) so consecutive polling failure counts persist across interval executions without causing unnecessary component re-renders.
+  - Updated root `package.json` `test` script to set `NODE_PATH=mobile/node_modules` so `npm test` cleanly resolves `@expo/config-plugins` and runs all 80 tests (73 JS lib/API + 7 native plugin) in a single command from root.
+
+### Changes
+- `mobile/app/_layout.tsx`: Removed unused `checkRuntimePermissions` and `needsPermissionBanner` imports.
+- `mobile/components/PairingFlow.tsx`: Removed unused `View` import and converted `pollFailures` state/local logic to `pollFailuresRef` (`useRef`).
+- `mobile/lib/trust/orchestrator.ts`: Removed unused `finalResult` variable.
+- `package.json`: Updated `npm test` script to `npx tsx --test tests/lib.test.ts tests/api.test.ts tests/trust.test.ts tests/pairing.test.ts tests/pairLink.test.ts && NODE_PATH=mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js`.
+- `docs/NIGHTLY_LOG.md`: Added 2026-10-10 nightly log entry.
+
+### Gates & Results
+- `npm test`: PASS (80/80 tests passed across 6 test files).
+- Root build & lint (`npm run lint && npm run build`): PASS (0 errors, 0 warnings).
+- Mobile typecheck & lint (`cd mobile && npm run typecheck && npm run lint`): PASS (0 errors, 0 warnings).
+
+### Known Risks & Open Findings
+- Final pre-submission checklist verification and release APK installation on Samsung SM-A175F remaining for final submission.
+
+### Needs Human
+- Final verification of release APK on physical Samsung A17 device.
+- Devpost submission video recording and upload before 12:00 PM EDT on Oct 10, 2026.
+
+### Plan for Tomorrow
+1. Perform final pre-submission checklist verification in `ROADMAP.md`.
+2. Final device validation of released Android APK.
+3. Devpost submission finalization.

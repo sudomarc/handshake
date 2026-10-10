@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { StyleSheet, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { Body, Button, Card, ErrorBox, H2 } from "@/components/ui";
 import { usePairs } from "@/hooks/usePairs";
@@ -54,7 +54,6 @@ export function PairingAcceptFlow({ inviteId, onCancel }: PairingAcceptFlowProps
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [yourName, setYourName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pollFailures, setPollFailures] = useState(0);
 
   const finish = useCallback(
     async (pairId: string, displayName: string) => {
@@ -69,9 +68,11 @@ export function PairingAcceptFlow({ inviteId, onCancel }: PairingAcceptFlowProps
     [addPair, router],
   );
 
+  const pollFailuresRef = useRef(0);
+
   const load = useCallback(async () => {
     setPhase({ name: "loading" });
-    setPollFailures(0);
+    pollFailuresRef.current = 0;
     try {
       const status = await getInvite(inviteId);
       if (status.state === "pending") {
@@ -91,7 +92,7 @@ export function PairingAcceptFlow({ inviteId, onCancel }: PairingAcceptFlowProps
   const poll = useCallback(async () => {
     try {
       const status = await getInvite(inviteId);
-      setPollFailures(0);
+      pollFailuresRef.current = 0;
       if (status.state === "confirmed" && status.pairId) {
         await finish(status.pairId, status.displayName);
       } else if (status.state === "accepted" || status.state === "pending") {
@@ -101,16 +102,13 @@ export function PairingAcceptFlow({ inviteId, onCancel }: PairingAcceptFlowProps
         setPhase({ name: "error", message: inviteGoneMessage(status.state) });
       }
     } catch {
-      setPollFailures((count) => {
-        const next = count + 1;
-        if (next >= MAX_POLL_FAILURES) {
-          setPhase({
-            name: "error",
-            message: "Handshake can't reach the server. Check your connection.",
-          });
-        }
-        return next;
-      });
+      pollFailuresRef.current += 1;
+      if (pollFailuresRef.current >= MAX_POLL_FAILURES) {
+        setPhase({
+          name: "error",
+          message: "Handshake can't reach the server. Check your connection.",
+        });
+      }
     }
   }, [inviteId, finish]);
 
