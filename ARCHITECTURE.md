@@ -161,76 +161,14 @@ device registration (2FA); secrets encrypted at rest with key management;
 per-user rate limiting and abuse monitoring; audit logging; a review of the LLM
 provider's data-retention and no-training policies (see SECURITY.md).
 
-## Mobile hackathon boundary
+## Mobile boundary
 
-The mobile client should consume the existing API instead of duplicating server
-security logic. During the hackathon:
+The mobile client consumes the existing API instead of duplicating server
+security logic. Trust-store state, proofs, validation and rate limiting stay
+server-side.
 
-- create the mobile app in an isolated `mobile/` project;
-- keep the root Next.js app intact unless a minimal API/compatibility/correctness
-  fix is required;
-- keep trust-store state, proofs, validation and rate limiting server-side;
-- use the existing `lib/trustSchemas.ts` / `lib/schemas.ts` contracts as the
-  starting point;
-- treat the current web application as a reference implementation for the
-  mobile client.
-
-The Personal mobile UX should be simpler than the current web prototype and
-should not expose the existing AI/security routes as a technical toolbox.
-
-## Future call-aware orchestration (design only)
-
-This section describes the intended post-hackathon behavior. It is **not
-implemented by the current web prototype**.
-
-### Session model
-
-```
-Call / supported communication starts
-                │
-                ▼
-      Handshake session context
-   trusted person + device + consent
-                │
-                ▼
-       Orchestration / policy
-        ┌───────┼────────┐
-        ▼       ▼        ▼
-   device    optional  pressure
-   trust    challenge  analysis
-  session     │        │
-        └───────┼────────┘
-                ▼
-        one clear outcome
-   Trusted / Verify / Risk
-```
-
-The orchestrator should choose the smallest useful set of checks from the signals
-actually available. It should not require the user to open individual technical
-tools, and it should not claim access to data that the operating system has not
-granted.
-
-### Platform boundary
-
-Call-state awareness, background execution, carrier-call audio and transcription
-access vary by platform and call type. Implementation must therefore begin with
-a feasibility spike against real OS capabilities and an explicit permission
-model. The product must never simulate unrestricted call interception or hidden
-recording.
-
-### Privacy boundary
-
-The default product should be user-controlled and privacy-preserving: explicit
-consent for sensitive checks, a clear indication when warnings are enabled,
-minimal data collection, no hidden recording, and short-lived handling of
-transcripts or call-derived data unless the user explicitly chooses persistence.
-
-### API boundary
-
-The mobile client should continue consuming shared server-side trust and
-verification capabilities. Call-aware orchestration belongs above the existing
-trust primitives; it should not duplicate proof/attestation or security logic
-inside the mobile UI.
+The Personal mobile UX is simpler than the current web prototype and does not
+expose the existing AI/security routes as a technical toolbox.
 
 ## Key decisions (with one-line rationale)
 

@@ -9,7 +9,7 @@ Base under test: `main` @ `ca538b13e402951198830e5a9ee51240d692084d`
 
 This document is the persistent QA handoff for testing Handshake Personal against simulated phone calls.
 
-Every future mobile QA or bug-fixing agent must read this report together with `AGENTS.md`, `ROADMAP.md`, and the latest device report before changing call/overlay behavior.
+Read this report together with `AGENTS.md` before changing call/overlay behavior.
 
 The objective is to test the **currently shipped Personal mobile product**, not the retired Handshake-to-Handshake WebRTC prototype.
 
@@ -210,16 +210,14 @@ After device execution, update this same file in the same PR/commit series with 
 Then:
 
 - keep all unresolved bugs documented here;
-- update `ROADMAP.md` only to reflect evidence-backed status;
+- update this report only to reflect evidence-backed status;
 - create follow-up bug-fix work from the concrete findings;
 - require the next mobile agent to read this report before modifying related code;
 - never delete a failed test merely because the implementation was later changed; preserve the historical result and add a new dated result.
 
 ## Historical context
 
-The archived `docs/DEVICE_TEST_REPORT_2026-10-06.md` contains real failures from the retired WebRTC/audio prototype, including the old `RTCView` and React Native bridge crashes. Those components were removed from the current mobile product and must not be reported as current shipped behavior.
-
-The newer `docs/CALL_PROTECTION_IMPLEMENTATION_GAP_REPORT.md` documents the remaining overlay gaps on the then-audited branch: misleading "Protected" wording, non-clickable pill, incomplete Verify routing, and lack of backend-reachability awareness. Treat those findings as hypotheses to re-check against the exact APK under test.
+The retired WebRTC/audio prototype (including the old `RTCView` and React Native bridge crashes) has been removed from the current mobile product and must not be reported as current shipped behavior.
 
 ## Final QA conclusion for this audit
 

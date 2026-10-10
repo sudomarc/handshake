@@ -6,7 +6,10 @@ on:
       - "mobile/**"
       - ".github/workflows/android-qa-apk.yml"
       - "AGENTS.md"
-      - "ROADMAP.md"
+      - "README.md"
+      - "ARCHITECTURE.md"
+      - "SECURITY.md"
+      - "DEMO_SCRIPT.md"
       - "docs/ANDROID_FAKE_CALL_QA_2026-10-07.md"
   workflow_dispatch:
 
