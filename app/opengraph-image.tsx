@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Handshake — device-level trust for phone calls. The voice can be cloned. The person can still prove who they are.";
+  "Handshake — verify the relationship, not the voice. An illustrative trust-state experience for an Android-first prototype.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -130,7 +130,7 @@ export default function OgImage() {
               color: "#7dd3fc",
             }}
           >
-            Device-level trust for phone calls
+            A prototype for trusted relationships
           </div>
         </div>
         <div
@@ -144,11 +144,9 @@ export default function OgImage() {
             color: "#fafafa",
           }}
         >
-          The voice can be cloned.
+          A familiar voice isn’t proof.
           <br />
-          The person can still prove
-          <br />
-          who they are.
+          Verify the relationship.
         </div>
       </div>
 
@@ -185,7 +183,7 @@ export default function OgImage() {
             Risk detected
           </div>
         </div>
-        <div style={{ fontSize: 17, color: "#71717a" }}>handshake · hackathon prototype</div>
+        <div style={{ fontSize: 17, color: "#71717a" }}>ANDROID-FIRST PROTOTYPE · HANDSHAKE</div>
       </div>
     </div>,
     { ...size },
