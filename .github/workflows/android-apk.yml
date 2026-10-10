@@ -20,11 +20,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install root dependencies
         run: npm install --no-audit --no-fund
-      - name: Run test suite (TS modules + native-copy sync guard)
-        run: npm test
       - name: Install JS dependencies
         run: npm install --no-audit --no-fund
         working-directory: mobile
+      - name: Run test suite (TS modules + native-copy sync guard)
+        run: npm test
       - name: Build release APK (arm64)
         run: |
           chmod +x gradlew

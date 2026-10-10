@@ -27,6 +27,10 @@ jobs:
       - name: Install root dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: mobile
+
       - name: Run test suite (TS modules + native-copy sync guard)
         run: npm test
 
