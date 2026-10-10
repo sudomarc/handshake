@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/landing/Header";
+import { Footer } from "@/components/landing/Footer";
 import { HeroSceneSlot } from "@/components/landing/HeroSceneSlot";
 import { SectionHeading } from "@/components/landing/SectionHeading";
 import { PairingDiagram } from "@/components/landing/PairingDiagram";
 import { TrustStatesExplorer } from "@/components/landing/TrustStatesExplorer";
 import { FAQ } from "@/components/landing/FAQ";
-import { Logo } from "@/components/landing/Logo";
 
 export const metadata: Metadata = {
   title: "Handshake — Verify the relationship, not the voice",
@@ -341,95 +341,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-white/[0.08] bg-[#07080a]">
-        <div className="site-shell grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:grid-cols-2 sm:gap-x-10 sm:py-14 lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))] lg:gap-12">
-          <div className="col-span-2 max-w-sm lg:col-span-1">
-            <Logo />
-            <p className="mt-4 max-w-xs text-sm leading-7 text-neutral-400">
-              A small, Android-first prototype exploring trusted-device pairing and clearer
-              decisions under pressure.
-            </p>
-            <p className="mt-4 text-xs leading-5 text-neutral-500">
-              Built for experimentation. Not a certified security product.
-            </p>
-          </div>
-
-          <nav aria-label="Footer: product" className="flex flex-col items-start gap-3 text-sm">
-            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
-              Product
-            </h2>
-            <Link href="/download" className="text-neutral-400 transition hover:text-white">
-              Download Android app
-            </Link>
-            <Link href="/circle" className="text-neutral-400 transition hover:text-white">
-              Trusted pairing
-            </Link>
-            <a href="#trust-states" className="text-neutral-400 transition hover:text-white">
-              Trust states
-            </a>
-            <Link href="/analyze" className="text-neutral-400 transition hover:text-white">
-              Pressure Check
-            </Link>
-            <Link href="/first-hour" className="text-neutral-400 transition hover:text-white">
-              The first hour
-            </Link>
-          </nav>
-
-          <nav aria-label="Footer: learn" className="flex flex-col items-start gap-3 text-sm">
-            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
-              Learn
-            </h2>
-            <a href="#how-it-works" className="text-neutral-400 transition hover:text-white">
-              How it works
-            </a>
-            <a href="#faq" className="text-neutral-400 transition hover:text-white">
-              FAQs
-            </a>
-            <Link href="/demo" className="text-neutral-400 transition hover:text-white">
-              Demo flow
-            </Link>
-          </nav>
-
-          <nav aria-label="Footer: project" className="flex flex-col items-start gap-3 text-sm">
-            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
-              Project
-            </h2>
-            <a
-              href="https://github.com/sudomarc/handshake"
-              className="text-neutral-400 transition hover:text-white"
-            >
-              Source code
-            </a>
-            <a
-              href="https://github.com/sudomarc/handshake/blob/main/ARCHITECTURE.md"
-              className="text-neutral-400 transition hover:text-white"
-            >
-              Architecture
-            </a>
-            <a
-              href="https://github.com/sudomarc/handshake/blob/main/SECURITY.md"
-              className="text-neutral-400 transition hover:text-white"
-            >
-              Security notes
-            </a>
-            <a
-              href="https://github.com/sudomarc/handshake/issues/new"
-              className="text-neutral-400 transition hover:text-white"
-            >
-              Report an issue
-            </a>
-          </nav>
-        </div>
-
-        <div className="border-t border-white/[0.06]">
-          <div className="site-shell flex flex-col gap-3 py-5 text-xs leading-5 text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
-            <p>© 2026 Handshake · Independent Android-first prototype</p>
-            <p className="max-w-2xl sm:text-right">
-              No cloned-voice detection or remote call-audio analysis in this release.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
