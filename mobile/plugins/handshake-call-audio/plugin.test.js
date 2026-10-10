@@ -218,3 +218,9 @@ test("packaged Kotlin copies stay in sync with the plugin sources", () => {
     "packaged Kotlin files with no plugin counterpart (prebuild would drop them)",
   );
 });
+
+test("uses the documented Android AudioManager recording-configurations API", () => {
+  const probe = fs.readFileSync(path.join(__dirname, "android", "AudioSourceProbe.kt"), "utf8");
+  assert.ok(probe.includes("audioManager.activeRecordingConfigurations"));
+  assert.strictEqual(probe.includes("audioManager.activeRecordingConfigs"), false);
+});

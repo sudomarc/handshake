@@ -185,7 +185,7 @@ object AudioSourceProbe {
     private fun isClientSilenced(audioManager: AudioManager, audioSource: Int): Boolean {
         if (Build.VERSION.SDK_INT < 24) return false
         return try {
-            val configs: List<AudioRecordingConfiguration> = audioManager.activeRecordingConfigs
+            val configs: List<AudioRecordingConfiguration> = audioManager.activeRecordingConfigurations
             configs.any { config ->
                 config.clientAudioSource == audioSource && config.isClientSilenced
             }
