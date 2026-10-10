@@ -6,23 +6,23 @@ import { SectionHeading } from "@/components/landing/SectionHeading";
 import { PairingDiagram } from "@/components/landing/PairingDiagram";
 import { TrustStatesExplorer } from "@/components/landing/TrustStatesExplorer";
 import { FAQ } from "@/components/landing/FAQ";
-import { Logo, Mark } from "@/components/landing/Logo";
+import { Logo } from "@/components/landing/Logo";
 
 export const metadata: Metadata = {
-  title: "Handshake — Know who's really on the line",
+  title: "Handshake — Verify the relationship, not the voice",
   description:
-    "Voice cloning can make a fake sound real. Handshake pairs the phones of the people you trust — once, in person, with a QR scan — then recognizes the paired device during calls and shows one honest state: Trusted, Verify, or Risk.",
+    "Handshake is an Android-first prototype for trusted-device pairing and clearer decisions during high-pressure calls. It does not detect cloned voices or analyze remote call audio.",
   openGraph: {
-    title: "Handshake — Know who's really on the line",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "Set up trusted relationships in advance. When a session cannot be confirmed, pause and verify through a channel you already trust.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Handshake — Know who's really on the line",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "Set up trusted relationships in advance. When a session cannot be confirmed, pause and verify through a channel you already trust.",
   },
 };
 
@@ -51,485 +51,361 @@ export default function Home() {
       </a>
       <Header />
       <main id="main" className="flex-1">
-        {/* ------------------------------------------------------------------ */}
-        {/* HERO                                                              */}
-        {/* ------------------------------------------------------------------ */}
         <section className="relative overflow-hidden">
           <div className="hero-halo pointer-events-none absolute inset-0" aria-hidden="true" />
-          <div className="site-shell relative grid gap-12 pb-16 pt-14 sm:pt-20 lg:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] lg:items-center lg:gap-6 lg:pb-28 lg:pt-16">
+          <div className="site-shell relative grid gap-8 pb-16 pt-12 sm:gap-12 sm:pb-20 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.94fr)] lg:items-center lg:gap-10 lg:pb-24 lg:pt-16">
             <div className="animate-rise">
-              <p className="eyebrow">Device-level trust for phone calls</p>
-              <h1 className="mt-6 text-balance text-[2.75rem] font-semibold leading-[1.04] tracking-tight text-white sm:text-6xl lg:text-[4.15rem]">
-                The voice can be cloned.
-                <span className="block">
-                  <em className="accent-italic text-sky-200">The person</em> can still prove who
-                  they are.
+              <p className="eyebrow">Trust for high-pressure calls</p>
+              <h1 className="mt-6 max-w-3xl text-balance text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-6xl lg:text-[4.35rem]">
+                A familiar voice
+                <span className="block">isn&rsquo;t proof.</span>
+                <span className="accent-italic mt-1 block text-sky-200">
+                  Verify the relationship.
                 </span>
               </h1>
-              <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-400">
-                Handshake pairs the phones of the people you trust — once, in person, with a single
-                QR scan — then recognizes the paired device during calls. No codes to read, nothing
-                to type.
+              <p className="mt-6 max-w-xl text-base leading-8 text-neutral-300 sm:mt-7 sm:text-lg">
+                Handshake is an Android-first prototype for checking trusted relationships before
+                pressure turns into a rushed decision. Pair people in advance, review the trust
+                evidence available for a session, and pause whenever it cannot be confirmed.
               </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link href="/circle" className="cta cta-accent">
-                  See how pairing works
+              <div className="mt-8 flex flex-col gap-3 min-[420px]:flex-row">
+                <Link href="/circle" className="cta cta-accent w-full min-[420px]:w-auto">
+                  Explore trusted pairing
                   <ArrowIcon />
                 </Link>
-                <a href="#approach" className="cta cta-ghost">
-                  The approach
+                <a href="#how-it-works" className="cta cta-ghost w-full min-[420px]:w-auto">
+                  How it works
                 </a>
               </div>
-              <p className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-neutral-400">
-                <span className="text-neutral-300">Pair once</span>
-                <span aria-hidden="true">·</span>
-                <span>In person</span>
-                <span aria-hidden="true">·</span>
-                <span>Recognize automatically</span>
-                <span aria-hidden="true">·</span>
-                <span className="text-sky-300">Trusted / Verify / Risk</span>
+              <div className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-400">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-300" aria-hidden="true" />
+                  Pair in advance
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-300" aria-hidden="true" />
+                  Confirm together
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-300" aria-hidden="true" />
+                  Pause when unverified
+                </span>
+              </div>
+              <p className="mt-5 max-w-xl text-xs leading-5 text-neutral-500">
+                Prototype limits: Handshake does not detect cloned voices or access two-way remote
+                audio from ordinary phone calls or third-party calling apps.
               </p>
             </div>
 
-            <div className="relative h-[330px] w-full sm:h-[420px] lg:h-[560px]">
+            <div className="relative min-w-0 lg:pl-2">
               <HeroSceneSlot />
             </div>
           </div>
         </section>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* THE PROBLEM                                                       */}
-        {/* ------------------------------------------------------------------ */}
-        <section id="problem" aria-labelledby="problem-heading" className="rule-top scroll-mt-24">
-          <div className="site-shell grid gap-12 py-20 sm:py-28 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:gap-20">
+        <section
+          id="why-it-matters"
+          aria-labelledby="why-heading"
+          className="rule-top scroll-mt-24"
+        >
+          <div className="site-shell grid gap-8 py-16 sm:gap-12 sm:py-24 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:gap-20">
             <SectionHeading
-              eyebrow="The problem"
-              title={<span id="problem-heading">A voice you recognize isn&rsquo;t proof.</span>}
-              lead="A modern voice clone needs only seconds of audio — a voicemail, a social-media post — to sound almost indistinguishable from someone you love. Then the call arrives with urgency attached."
+              eyebrow="Why it matters"
+              title={<span id="why-heading">Scams create urgency. Verification creates a pause.</span>}
+              lead="A familiar voice and a familiar caller ID can both be misleading. The safest response to a high-pressure request is to stop and confirm it independently."
             />
-            <div className="flex flex-col justify-center">
-              <ul className="space-y-7">
-                <li className="flex gap-5">
-                  <span
-                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-neutral-600"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <h3 className="font-medium text-white">
-                      A crisis you haven&rsquo;t heard about.
-                    </h3>
-                    <p className="mt-1.5 leading-7 text-neutral-400">
-                      &ldquo;Mom, it&rsquo;s me — I&rsquo;m in trouble. I need money right
-                      now.&rdquo;
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-5">
-                  <span
-                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-neutral-600"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <h3 className="font-medium text-white">An instruction to keep it secret.</h3>
-                    <p className="mt-1.5 leading-7 text-neutral-400">
-                      &ldquo;Please don&rsquo;t tell anyone. Not yet.&rdquo;
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-5">
-                  <span
-                    className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-neutral-600"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <h3 className="font-medium text-white">A demand for speed.</h3>
-                    <p className="mt-1.5 leading-7 text-neutral-400">
-                      &ldquo;The account closes today — it has to be now.&rdquo;
-                    </p>
-                  </div>
-                </li>
-              </ul>
-              <p className="mt-9 border-l-2 border-sky-400/60 pl-5 text-lg leading-8 text-neutral-300">
-                Under that pressure, most of us stop checking what we&rsquo;re hearing. The most
-                reliable signal isn&rsquo;t in the voice at all — it&rsquo;s in the device
-                that&rsquo;s calling.
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              <article className="panel flex gap-4 p-5 sm:p-6">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] font-mono text-sm text-sky-200">
+                  01
+                </span>
+                <div>
+                  <h3 className="font-semibold text-white">Notice the pressure</h3>
+                  <p className="mt-2 text-sm leading-7 text-neutral-400">
+                    Urgency, secrecy, and demands for immediate payment are reasons to slow down,
+                    not reasons to skip a check.
+                  </p>
+                </div>
+              </article>
+              <article className="panel flex gap-4 p-5 sm:p-6">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] font-mono text-sm text-sky-200">
+                  02
+                </span>
+                <div>
+                  <h3 className="font-semibold text-white">Verify out of band</h3>
+                  <p className="mt-2 text-sm leading-7 text-neutral-400">
+                    If a session is not confirmed, contact the person using a number or channel you
+                    already know. Do not rely on the incoming call alone.
+                  </p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="how-it-works"
+          aria-labelledby="how-heading"
+          className="border-y border-white/[0.06] bg-white/[0.015] scroll-mt-24"
+        >
+          <div className="site-shell py-16 sm:py-24">
+            <SectionHeading
+              eyebrow="How it works"
+              title={<span id="how-heading">Set up trust before you need it.</span>}
+              lead="Pairing happens in advance. Both people confirm the relationship, so a later check has a known starting point."
+            />
+            <div className="mt-10 sm:mt-14">
+              <PairingDiagram />
+            </div>
+            <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-7 text-neutral-400">
+              A pairing is not a guarantee that every conversation is safe. A status is useful only
+              when the current session is actually confirmed by the available trust evidence.
+            </p>
+          </div>
+        </section>
+
+        <section
+          id="trust-states"
+          aria-labelledby="states-heading"
+          className="scroll-mt-24"
+        >
+          <div className="site-shell py-16 sm:py-24">
+            <SectionHeading
+              eyebrow="Trust states"
+              title={<span id="states-heading">One clear state. No false certainty.</span>}
+              lead="The prototype separates a confirmed relationship from a session that still needs checking and from a risk signal. Each state is named and explained; color never carries the message by itself."
+            />
+            <div className="mt-10 sm:mt-14">
+              <TrustStatesExplorer />
+            </div>
+            <p className="mt-8 text-sm leading-7 text-neutral-400">
+              These states describe the evidence Handshake has available—not whether a voice is
+              genuine or whether the conversation itself is safe. When confirmation is missing,
+              pause and verify independently.
+            </p>
+          </div>
+        </section>
+
+        <section
+          id="tools"
+          aria-labelledby="tools-heading"
+          className="border-y border-white/[0.06] bg-white/[0.015] scroll-mt-24"
+        >
+          <div className="site-shell py-16 sm:py-24">
+            <SectionHeading
+              eyebrow="In the prototype"
+              title={<span id="tools-heading">A few useful tools. One clear purpose.</span>}
+              lead="Start with the trusted relationship. Use the supporting tools when a message feels wrong or something has already happened."
+            />
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              <article className="panel flex min-w-0 flex-col p-6">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-sky-300">
+                  Start here
+                </p>
+                <h3 className="mt-4 text-xl font-semibold text-white">Trusted pairing</h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-neutral-400">
+                  Establish a relationship between two devices in advance, with confirmation from
+                  both people.
+                </p>
+                <Link
+                  href="/circle"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-sky-300 transition hover:text-sky-200"
+                >
+                  Explore pairing <ArrowIcon />
+                </Link>
+              </article>
+              <article className="panel flex min-w-0 flex-col p-6">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-neutral-400">
+                  Advisory
+                </p>
+                <h3 className="mt-4 text-xl font-semibold text-white">Pressure Check</h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-neutral-400">
+                  Submit text you choose to share and review possible signs of urgency, secrecy, or
+                  payment pressure. It is not proof of fraud or identity.
+                </p>
+                <Link
+                  href="/analyze"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-sky-300 transition hover:text-sky-200"
+                >
+                  Check a message <ArrowIcon />
+                </Link>
+              </article>
+              <article className="panel flex min-w-0 flex-col p-6">
+                <p className="font-mono text-xs uppercase tracking-[0.16em] text-neutral-400">
+                  After an incident
+                </p>
+                <h3 className="mt-4 text-xl font-semibold text-white">The first hour</h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-neutral-400">
+                  Follow a practical checklist if money or personal information may already have
+                  been shared.
+                </p>
+                <Link
+                  href="/first-hour"
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-sky-300 transition hover:text-sky-200"
+                >
+                  Open the checklist <ArrowIcon />
+                </Link>
+              </article>
+            </div>
+            <div className="mt-6 rounded-2xl border border-amber-300/15 bg-amber-200/[0.04] p-5 sm:p-6">
+              <h3 className="font-semibold text-white">Know the limits</h3>
+              <p className="mt-2 text-sm leading-7 text-neutral-400">
+                This release does not detect voice clones or analyze remote two-way audio from
+                carrier calls, WhatsApp, or Google Meet. Call-state and overlay behavior varies by
+                device, permission, and app. Text analysis can be wrong and must not be the only
+                basis for a safety-critical decision.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* THE APPROACH                                                      */}
-        {/* ------------------------------------------------------------------ */}
-        <section
-          id="approach"
-          aria-labelledby="approach-heading"
-          className="border-y border-white/[0.06] bg-white/[0.015] scroll-mt-24"
-        >
-          <div className="site-shell py-20 sm:py-28">
-            <SectionHeading
-              eyebrow="The approach"
-              title={
-                <span id="approach-heading">
-                  Stop trying to hear the fake.
-                  <br />
-                  Verify the device.
-                </span>
-              }
-            />
-
-            <div className="mt-12 grid gap-5 lg:grid-cols-2">
-              <div className="panel p-7 sm:p-8">
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-neutral-400">
-                  Voice detection
-                </p>
-                <p className="mt-4 text-[1.05rem] leading-8 text-neutral-300">
-                  Listens for what a clone got wrong. Genuinely useful — and an arms race: every
-                  detector is eventually outpaced by a better generator.
-                </p>
-                <p className="mt-4 text-sm leading-7 text-neutral-400">
-                  A good clone can fool a good listener, and &ldquo;probably&rdquo; isn&rsquo;t
-                  enough when money is on the line.
-                </p>
-              </div>
-              <div className="panel-hi relative overflow-hidden p-7 sm:p-8">
-                <div
-                  className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-400/10 blur-3xl"
-                  aria-hidden="true"
-                />
-                <p className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-sky-300">
-                  Handshake
-                </p>
-                <p className="mt-4 text-[1.05rem] leading-8 text-neutral-200">
-                  Checks something a clone can never have: a phone you paired and confirmed with a
-                  real person — physically, once, before the call.
-                </p>
-                <p className="mt-4 text-sm leading-7 text-neutral-400">
-                  The real person&rsquo;s paired phone is recognized automatically, no matter how
-                  perfect the fake sounds.
-                </p>
-              </div>
-            </div>
-
-            <p className="mx-auto mt-10 max-w-2xl text-center text-sm leading-7 text-neutral-400">
-              Handshake is not a promise that no call can ever go wrong. A &ldquo;Trusted
-              connection&rdquo; means the required trust evidence was confirmed. When evidence is
-              missing, Handshake says so.
-            </p>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* HOW IT WORKS                                                      */}
-        {/* ------------------------------------------------------------------ */}
-        <section id="how-it-works" aria-labelledby="how-heading" className="scroll-mt-24">
-          <div className="site-shell py-20 sm:py-28">
-            <SectionHeading
-              eyebrow="How it works"
-              title={
-                <span id="how-heading">Trust is built once, then recognized automatically.</span>
-              }
-              lead="No 32-character codes, nothing to read aloud. The whole setup is two phones, side by side."
-            />
-            <div className="mt-14">
-              <PairingDiagram />
-            </div>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* TRUST STATES                                                      */}
-        {/* ------------------------------------------------------------------ */}
-        <section
-          id="trust-states"
-          aria-labelledby="states-heading"
-          className="border-y border-white/[0.06] bg-white/[0.015] scroll-mt-24"
-        >
-          <div className="site-shell py-20 sm:py-28">
-            <SectionHeading
-              eyebrow="Trust states"
-              title={<span id="states-heading">One honest state, at a time.</span>}
-              lead="During a call, Handshake shows exactly one state, based on the evidence available. Color is used consistently — and every state is also named and explained, so it never relies on color alone."
-            />
-            <div className="mt-14">
-              <TrustStatesExplorer />
-            </div>
-            <p className="mt-10 text-sm leading-7 text-neutral-400">
-              Handshake never shows &ldquo;Protected&rdquo; without evidence. A trusted connection
-              is only reported after both phones confirmed the relationship and the backend verified
-              the session. &ldquo;Risk detected&rdquo; requires a real local risk signal.
-            </p>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* CORE CAPABILITIES                                                 */}
-        {/* ------------------------------------------------------------------ */}
-        <section id="capabilities" aria-labelledby="caps-heading" className="scroll-mt-24">
-          <div className="site-shell py-20 sm:py-28">
-            <SectionHeading
-              eyebrow="Core capabilities"
-              title={<span id="caps-heading">What Handshake does today</span>}
-              lead="One primary capability — pairing — carries the story. Two complementary features sit beside it, with their limits stated."
-            />
-
-            <div className="mt-12 grid gap-5 lg:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
-              {/* Primary */}
-              <div className="panel-hi relative flex flex-col justify-between overflow-hidden p-7 sm:p-9">
-                <div
-                  className="pointer-events-none absolute -left-20 -bottom-24 h-64 w-64 rounded-full bg-sky-400/[0.07] blur-3xl"
-                  aria-hidden="true"
-                />
-                <div>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-sky-300">
-                    Automatic device recognition
-                  </span>
-                  <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">
-                    QR pairing &amp; trusted-device recognition
-                  </h3>
-                  <p className="mt-4 max-w-xl leading-8 text-neutral-300">
-                    Add a trusted person, put two phones together, scan once, confirm twice. From
-                    then on the paired device is recognized during calls through the trust backend,
-                    and every interaction resolves to one honest state.
-                  </p>
-                </div>
-                <ul className="mt-8 flex flex-wrap gap-2" aria-label="Pairing fundamentals">
-                  {[
-                    "Short-lived, single-use invite",
-                    "Mutual confirmation",
-                    "Nothing to type",
-                    "Revocable",
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-neutral-400"
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Complementary */}
-              <div className="flex flex-col gap-5">
-                <div className="panel flex flex-1 flex-col p-6 sm:p-7">
-                  <h3 className="text-lg font-semibold tracking-tight text-white">
-                    Pressure check{" "}
-                    <span className="font-mono text-xs font-normal text-neutral-400">
-                      · advisory
-                    </span>
-                  </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-neutral-400">
-                    Paste a transcript or message and Handshake grades the manipulation tactics
-                    inside it — urgency, secrecy, immediate payment. A signal, not a verdict: it
-                    does not detect cloned voices and does not prove identity.
-                  </p>
-                  <Link
-                    href="/analyze"
-                    className="mt-5 inline-flex items-center gap-2 py-1.5 text-sm font-medium text-sky-300 transition hover:text-sky-200"
-                  >
-                    Open pressure check <ArrowIcon />
-                  </Link>
-                </div>
-                <div className="panel flex flex-1 flex-col p-6 sm:p-7">
-                  <h3 className="text-lg font-semibold tracking-tight text-white">
-                    The first hour
-                  </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-neutral-400">
-                    A calm, static checklist for the 60 minutes after money has already moved. No
-                    AI, no decisions under stress — just the right steps, in order.
-                  </p>
-                  <Link
-                    href="/first-hour"
-                    className="mt-5 inline-flex items-center gap-2 py-1.5 text-sm font-medium text-sky-300 transition hover:text-sky-200"
-                  >
-                    Open the checklist <ArrowIcon />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* PRIVACY & TRANSPARENCY                                            */}
-        {/* ------------------------------------------------------------------ */}
-        <section
-          id="privacy"
-          aria-labelledby="privacy-heading"
-          className="border-y border-white/[0.06] bg-white/[0.015] scroll-mt-24"
-        >
-          <div className="site-shell grid gap-12 py-20 sm:py-28 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
-            <SectionHeading
-              eyebrow="Privacy &amp; transparency"
-              title={<span id="privacy-heading">What we can honestly say</span>}
-              lead="These statements come from code and documentation — not from an imagined feature list."
-            />
-            <ol className="flex flex-col gap-7">
-              {[
-                {
-                  title: "Trust is established by people, in person.",
-                  text: "Pairing requires both phones physically together. The QR invitation dies after one use or on expiry — there is nothing to screenshot and reuse later.",
-                },
-                {
-                  title: "States depend on available evidence.",
-                  text: "When the peer is offline, unpaired, or the backend can’t confirm the session, the state is “Verify” — never a false “Protected”.",
-                },
-                {
-                  title: "Transcript analysis is advisory.",
-                  text: "The pressure check grades manipulation tactics in text you provide. It does not establish identity and it does not prove fraud.",
-                },
-                {
-                  title: "No hidden listening.",
-                  text: "Handshake does not automatically receive two-way audio from carrier calls or third-party calling apps such as WhatsApp. Call recognition reports only what the trust backend confirmed. Real-time call-audio analysis is a feasibility study, not a shipped feature.",
-                },
-                {
-                  title: "Prototype honesty.",
-                  text: "The demo trust store is in-memory per server instance, and a paired phone is a device credential — revoke it if the device is lost.",
-                },
-              ].map((item, index) => (
-                <li key={item.title} className="flex gap-5">
-                  <span className="font-mono text-sm text-neutral-400">0{index + 1}</span>
-                  <div>
-                    <h3 className="font-medium leading-6 text-white">{item.title}</h3>
-                    <p className="mt-2 leading-7 text-neutral-400">{item.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* FAQ                                                               */}
-        {/* ------------------------------------------------------------------ */}
         <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-24">
-          <div className="site-shell py-20 sm:py-28">
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+          <div className="site-shell py-16 sm:py-24">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
               <SectionHeading
                 eyebrow="FAQ"
-                title={<span id="faq-heading">Questions, answered honestly.</span>}
-                lead="Plain answers about pairing, trust states, and exactly what Handshake can and cannot do."
+                title={<span id="faq-heading">The important questions.</span>}
+                lead="What the prototype can help with, what it cannot confirm, and what to do next."
               />
               <div>
                 <FAQ />
                 <p className="mt-6 text-sm leading-7 text-neutral-400">
-                  Something else on your mind? The project is public —{" "}
+                  Want to inspect the implementation? Read the{" "}
                   <a
                     href="https://github.com/sudomarc/handshake"
                     className="text-sky-300 underline decoration-sky-300/40 underline-offset-4 hover:decoration-sky-300"
                   >
-                    read the source
+                    public source
                   </a>{" "}
-                  or open an issue on GitHub.
+                  or{" "}
+                  <a
+                    href="https://github.com/sudomarc/handshake/issues/new"
+                    className="text-sky-300 underline decoration-sky-300/40 underline-offset-4 hover:decoration-sky-300"
+                  >
+                    report an issue
+                  </a>
+                  .
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* FINAL CTA                                                         */}
-        {/* ------------------------------------------------------------------ */}
         <section id="get-started" aria-labelledby="cta-heading" className="scroll-mt-24">
-          <div className="site-shell pb-20 sm:pb-28">
-            <div className="panel-hi relative overflow-hidden px-6 py-14 sm:px-12 sm:py-16">
+          <div className="site-shell pb-16 sm:pb-24">
+            <div className="panel-hi relative overflow-hidden px-5 py-10 sm:px-10 sm:py-14">
               <div className="pointer-events-none absolute inset-0" aria-hidden="true">
                 <div className="hero-halo absolute inset-0" />
                 <div className="scene-grid absolute inset-0 opacity-40" />
               </div>
               <div className="relative mx-auto max-w-2xl text-center">
-                <p className="eyebrow justify-center">Next step</p>
+                <p className="eyebrow justify-center">Start with a trusted person</p>
                 <h2
                   id="cta-heading"
-                  className="mt-5 text-balance text-3xl font-semibold tracking-tight text-white sm:text-[2.6rem] sm:leading-[1.1]"
+                  className="mt-5 text-balance text-3xl font-semibold tracking-tight text-white sm:text-[2.7rem] sm:leading-[1.1]"
                 >
-                  Two phones. One scan.
-                  <span className="block accent-italic text-sky-200">A calmer call.</span>
+                  Make room for a second check.
                 </h2>
-                <p className="mx-auto mt-5 max-w-xl text-neutral-400">
-                  Handshake Personal is a working hackathon prototype for Android. Pair two phones,
-                  and watch trust resolve to one of three honest states.
+                <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-neutral-400 sm:text-base">
+                  Explore the pairing flow, see how the states are presented, and review the
+                  prototype&rsquo;s limits before relying on it.
                 </p>
-                <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link href="/circle" className="cta cta-accent">
-                    See how pairing works
-                    <ArrowIcon />
+                <div className="mt-7 flex flex-col items-stretch justify-center gap-3 min-[420px]:flex-row min-[420px]:items-center">
+                  <Link href="/circle" className="cta cta-accent w-full min-[420px]:w-auto">
+                    Explore pairing <ArrowIcon />
                   </Link>
-                  <Link href="/demo" className="cta cta-ghost">
-                    Walk the demo flow
+                  <Link href="/demo" className="cta cta-ghost w-full min-[420px]:w-auto">
+                    Walk through the demo
                   </Link>
-                  <a href="https://github.com/sudomarc/handshake" className="cta cta-ghost">
-                    Read the source
-                  </a>
                 </div>
-                <p className="mt-8 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-400">
-                  Prototype · Android · Trusted / Verify / Risk
-                </p>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* FOOTER                                                             */}
-      {/* ------------------------------------------------------------------ */}
-      <footer className="border-t border-white/[0.07]">
-        <div className="site-shell flex flex-col gap-8 py-12 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-xs">
-            <div className="flex items-center gap-2.5">
-              <span className="text-sky-400">
-                <Mark className="h-6 w-6" />
-              </span>
-              <span className="text-lg font-semibold tracking-tight text-white">Handshake</span>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-neutral-400">
-              Device-level trust for phone calls. Pair once, in person — recognize the difference
-              during every call.
+      <footer className="border-t border-white/[0.08] bg-[#07080a]">
+        <div className="site-shell grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:grid-cols-2 sm:gap-x-10 sm:py-14 lg:grid-cols-[minmax(0,1.3fr)_repeat(3,minmax(0,1fr))] lg:gap-12">
+          <div className="col-span-2 max-w-sm lg:col-span-1">
+            <Logo />
+            <p className="mt-4 max-w-xs text-sm leading-7 text-neutral-400">
+              A small, Android-first prototype exploring trusted-device pairing and clearer
+              decisions under pressure.
+            </p>
+            <p className="mt-4 text-xs leading-5 text-neutral-500">
+              Built for experimentation. Not a certified security product.
             </p>
           </div>
-          <nav
-            aria-label="Footer"
-            className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 sm:gap-x-12"
-          >
-            <Link
-              href="/circle"
-              className="inline-block py-1 text-neutral-400 transition hover:text-white"
-            >
-              How pairing works
+
+          <nav aria-label="Footer: product" className="flex flex-col items-start gap-3 text-sm">
+            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
+              Product
+            </h2>
+            <Link href="/circle" className="text-neutral-400 transition hover:text-white">
+              Trusted pairing
             </Link>
-            <Link
-              href="/demo"
-              className="inline-block py-1 text-neutral-400 transition hover:text-white"
-            >
-              Pairing demo
+            <a href="#trust-states" className="text-neutral-400 transition hover:text-white">
+              Trust states
+            </a>
+            <Link href="/analyze" className="text-neutral-400 transition hover:text-white">
+              Pressure Check
             </Link>
-            <Link
-              href="/analyze"
-              className="inline-block py-1 text-neutral-400 transition hover:text-white"
-            >
-              Pressure check
-            </Link>
-            <Link
-              href="/first-hour"
-              className="inline-block py-1 text-neutral-400 transition hover:text-white"
-            >
+            <Link href="/first-hour" className="text-neutral-400 transition hover:text-white">
               The first hour
             </Link>
+          </nav>
+
+          <nav aria-label="Footer: learn" className="flex flex-col items-start gap-3 text-sm">
+            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
+              Learn
+            </h2>
+            <a href="#how-it-works" className="text-neutral-400 transition hover:text-white">
+              How it works
+            </a>
+            <a href="#faq" className="text-neutral-400 transition hover:text-white">
+              FAQs
+            </a>
+            <Link href="/demo" className="text-neutral-400 transition hover:text-white">
+              Demo flow
+            </Link>
+          </nav>
+
+          <nav aria-label="Footer: project" className="flex flex-col items-start gap-3 text-sm">
+            <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
+              Project
+            </h2>
             <a
               href="https://github.com/sudomarc/handshake"
-              className="inline-block py-1 text-neutral-400 transition hover:text-white"
+              className="text-neutral-400 transition hover:text-white"
             >
-              Source on GitHub
+              Source code
+            </a>
+            <a
+              href="https://github.com/sudomarc/handshake/blob/main/ARCHITECTURE.md"
+              className="text-neutral-400 transition hover:text-white"
+            >
+              Architecture
+            </a>
+            <a
+              href="https://github.com/sudomarc/handshake/blob/main/SECURITY.md"
+              className="text-neutral-400 transition hover:text-white"
+            >
+              Security notes
+            </a>
+            <a
+              href="https://github.com/sudomarc/handshake/issues/new"
+              className="text-neutral-400 transition hover:text-white"
+            >
+              Report an issue
             </a>
           </nav>
         </div>
-        <div className="border-t border-white/[0.05]">
-          <div className="site-shell flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <Logo />
-            <p className="font-mono text-[0.68rem] uppercase tracking-[0.16em] text-neutral-400">
-              Trusted connection · Verify · Risk detected
+
+        <div className="border-t border-white/[0.06]">
+          <div className="site-shell flex flex-col gap-3 py-5 text-xs leading-5 text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+            <p>© 2026 Handshake · Independent Android-first prototype</p>
+            <p className="max-w-2xl sm:text-right">
+              No cloned-voice detection or remote call-audio analysis in this release.
             </p>
           </div>
         </div>
