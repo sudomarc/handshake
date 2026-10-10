@@ -2,11 +2,13 @@
 
 > **The voice can be cloned. The person can still prove who they are.**
 
-Handshake helps you verify _who is actually on the other end_ of a phone call or
-message — even when the voice sounds exactly like someone you love. Instead of
-trying to detect the fake (an arms race that voice detectors keep losing),
-Handshake checks something a clone can never have: a phone that you paired and
-confirmed, in person, before the call.
+Handshake is a hackathon prototype for establishing device-level trust around
+phone calls and messages. Its intended approach checks trust evidence from
+phones paired in person instead of trying to classify whether a voice is real.
+The current Android integration can observe some call-state events and display
+a trust overlay; it does **not** receive or analyse the remote audio of ordinary
+carrier or third-party calls. See the [final release status](./docs/FINAL_STATUS_2026-10-10.md)
+for what has and has not been verified.
 
 Built solo for the **AI + Cybersecurity** track at
 [ForgeHacks 2026](https://www.forgehacks.dev/) (Oct 3–10, 2026).
@@ -27,8 +29,11 @@ better generator. Handshake changes the question. We stop asking
 _"is this voice real?"_ and ask _"is this call coming from a phone I paired and
 confirmed with a real person I trust?"_
 
-The real person&rsquo;s paired phone is recognized automatically — no matter how
-perfect the fake is.
+When both devices are enrolled and the backend confirms their session,
+Handshake can report a trusted connection. This is device/session trust, not
+voice-authenticity detection or proof derived from call audio. End-to-end
+recognition must be validated on the final APK before it is presented as a
+verified live-call capability.
 
 ## Features (in build priority)
 
@@ -36,11 +41,11 @@ perfect the fake is.
    putting two phones together: tap **"Show my QR"** on one and **"Scan a QR"**
    on the other. The invitation is short-lived and single-use; both people
    confirm on their own phones, and the relationship is mutual. No code to type
-   or read out loud. During a call, Handshake recognizes a previously paired
-   device and shows one of three honest states: **Trusted connection** (both
-   phones confirmed and the backend verified the session), **Verify** (peer
-   offline / not paired / backend unreachable), or **Risk detected** (a real
-   local risk signal). It never shows "Protected" without evidence.
+   or read out loud. The Android overlay is designed to show **Trusted
+   connection** only when the backend confirms the session, **Verify** when
+   trust cannot be established, or **Risk detected** when a risk signal exists.
+   The complete flow must be retested on the final APK; overlay visibility alone
+   does not prove that a caller or call audio has been verified.
 2. **Pressure check (AI).** Paste what the caller said (a transcript or message).
    An LLM flags manipulation tactics — artificial urgency, secrecy, immediate
    payment, authority pressure — and returns a risk level plus reasons, as
@@ -94,10 +99,11 @@ Next.js backend
         `/api/circle`) kept for backward compatibility
 
 The mobile client does not replace the system Phone app and does not create a Handshake-only
-call. For WhatsApp and other third-party calling apps, Handshake is a companion layer:
-the overlay stays visible with overlay permission, and call recognition only ever reports
-what the trust backend actually confirmed. Handshake does not claim automatic access to
-private two-way audio from those apps.
+call. The Android overlay can display call/trust state while its service is running and
+supported events are recognized. Detection of third-party calling-app events is not
+guaranteed in the current `main` release, and Handshake does not access private two-way
+audio from WhatsApp or other third-party calling apps. The overlay is not evidence that
+live speech analysis is running.
 
 ## Stack
 
