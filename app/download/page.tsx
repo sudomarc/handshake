@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "@/components/landing/Header";
-import { Logo } from "@/components/landing/Logo";
+import { Footer } from "@/components/landing/Footer";
 
 const ANDROID_WORKFLOW_URL =
   "https://github.com/sudomarc/handshake/actions/workflows/android-apk.yml";
@@ -201,17 +201,7 @@ export default function DownloadPage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/[0.07]">
-        <div className="site-shell flex flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <Logo />
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-            <Link href="/" className="text-neutral-400 transition hover:text-white">Home</Link>
-            <Link href="/demo" className="text-neutral-400 transition hover:text-white">Demo</Link>
-            <Link href="/first-hour" className="text-neutral-400 transition hover:text-white">After a suspected scam</Link>
-            <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className="text-neutral-400 transition hover:text-white">GitHub</a>
-          </nav>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
