@@ -1,6 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
 .pnp.*
@@ -10,47 +8,80 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Tests and generated output
 /coverage
-
-# next.js
 /.next/
 /out/
-
-# production
 /build
 
-# misc
+# Local files and secrets
 .DS_Store
 *.pem
+.env*
+!.env.example
+opencode.json
 
-# debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-!.env.example
-
-# demo storage (server-side local data, demo-grade)
+# Local demo data
 /data/
-
-# local agent config
-opencode.json
-
-# vercel
-.vercel
-
-# typescript
+.vercel/
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-
-# One-off local device QA captures belong in qa/out/, not the repository root.
-/*.png
-/*.xml
-/*.txt
+# One-off Android QA exports accidentally created at the repository root.
+# Keep these exact names ignored without hiding future legitimate root assets.
+/after_call.png
+/after_tap.png
+/after_tap_ui.xml
+/aftercall.xml
+/call.xml
+/call1.png
+/call_screen.png
+/call_ui.xml
+/callscreen.png
+/callscreen.xml
+/current.xml
+/current_hs.xml
+/dump.txt
+/dump2.txt
+/dump_full.txt
+/fakeCall_dump.txt
+/fakecall_ui.xml
+/h.xml
 /handshake-installed.apk
+/handshake_initial.png
+/handshake_phony.png
+/home2.xml
+/home3.xml
+/hs_home.png
+/hs_pkg.txt
+/lc.txt
+/lc2.txt
+/logcat_out.txt
+/now.xml
+/p.xml
+/phony_now.xml
+/phony_screenshot.png
+/phony_ui.png
+/schedule_ui.xml
+/screen_launch.png
+/screenshot.png
+/start_log.txt
+/t2.xml
+/trust.xml
+/u.xml
+/ui.xml
+/ui_dump.xml
+/verify.xml
+/version_info.txt
+
+# Rebuildable QA artifacts; selected PNG screenshots remain committed as evidence.
+/qa/out/*.apk
+/qa/out/*.xml
+/qa/out/*.log
+/qa/out/*.txt

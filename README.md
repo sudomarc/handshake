@@ -1,322 +1,129 @@
 # Handshake
 
-> **The voice can be cloned. The person can still prove who they are.**
+**Verify the relationship, not the voice.**
 
-Handshake is a hackathon prototype for establishing device-level trust around
-phone calls and messages. Its intended approach checks trust evidence from
-phones paired in person instead of trying to classify whether a voice is real.
-The current Android integration can observe some call-state events and display
-a trust overlay; it does **not** receive or analyse the remote audio of ordinary
-carrier or third-party calls. See the [final release status](./docs/FINAL_STATUS_2026-10-10.md)
-for what has and has not been verified.
+Handshake is an Android-first prototype exploring ways to confirm a previously established trusted relationship and recognize manipulative language during high-pressure conversations. It was developed for the AI + Cybersecurity track at ForgeHacks 2026.
 
-Built solo for the **AI + Cybersecurity** track at
-[ForgeHacks 2026](https://www.forgehacks.dev/) (Oct 3–10, 2026).
+Handshake is **not** a voice-cloning detector. The current Android app does not receive or analyze remote audio from ordinary carrier calls or WhatsApp. A visible call overlay is not proof that a caller has been authenticated or that live speech analysis is running.
 
 ## The problem
 
-> "Mom, it's me — I'm in trouble, I need money right now."
+A convincing voice clone can make an urgent request sound as though it came from a family member. Under pressure, a listener may have little time to question the request. Handshake explores a different signal: whether a device belongs to a trusted relationship established in advance, and whether text supplied by the user contains common pressure tactics.
 
-Modern voice cloning needs only seconds of audio — a voicemail, a social-media
-post — to sound nearly indistinguishable from the real person. Even trained
-listeners and commercial detectors struggle with good clones. And the victim is
-usually alone, on the phone, under time pressure.
+## What is in the prototype
 
-## Why this approach
+- **Trusted people and device pairing.** The mobile source includes a QR invitation, acceptance and confirmation flow, plus server-side device-trust and call-session routes. Verify the complete flow against the current build and deployed backend before describing it as working in a live demo.
+- **Android call companion.** A native Android service can observe supported call-state events and display an optional overlay when the required permissions and service state allow it. Coverage is not guaranteed for every carrier or third-party calling app.
+- **Pressure Check.** User-provided text can be submitted to an LLM-backed analysis endpoint. The result may highlight urgency, secrecy, payment pressure or impersonation. It is advisory and does not establish who is speaking.
+- **Additional guidance.** The mobile project includes supporting verification and post-incident guidance flows. Check the build being demonstrated for availability.
 
-Deepfake detection is an arms race: every detector is eventually outpaced by a
-better generator. Handshake changes the question. We stop asking
-_"is this voice real?"_ and ask _"is this call coming from a phone I paired and
-confirmed with a real person I trust?"_
+## Important limitations
 
-When both devices are enrolled and the backend confirms their session,
-Handshake can report a trusted connection. This is device/session trust, not
-voice-authenticity detection or proof derived from call audio. End-to-end
-recognition must be validated on the final APK before it is presented as a
-verified live-call capability.
+- Remote audio from ordinary carrier calls is not available through the current third-party Android capture approach.
+- WhatsApp and other third-party calling apps do not expose their private two-way audio to Handshake.
+- Live call transcription, real-time speech-risk analysis and cloned-voice detection are not available capabilities in this release.
+- A call-state event or overlay is not identity proof. A trusted state must only be shown when the trust flow actually confirms it.
+- Trust data is held in an in-memory store in the current prototype. It is not suitable for production-scale, multi-instance use or durable recovery.
+- LLM-based text analysis can be wrong. Do not use it as the sole basis for sending money, sharing secrets or making a safety-critical decision.
 
-## Features (in build priority)
+See [implementation and verification status](./docs/FINAL_STATUS_2026-10-10.md) for historical test evidence and the validation steps required before a demo.
 
-1. **Automatic trusted-call recognition (QR pairing).** Add a trusted person by
-   putting two phones together: tap **"Show my QR"** on one and **"Scan a QR"**
-   on the other. The invitation is short-lived and single-use; both people
-   confirm on their own phones, and the relationship is mutual. No code to type
-   or read out loud. The Android overlay is designed to show **Trusted
-   connection** only when the backend confirms the session, **Verify** when
-   trust cannot be established, or **Risk detected** when a risk signal exists.
-   The complete flow must be retested on the final APK; overlay visibility alone
-   does not prove that a caller or call audio has been verified.
-2. **Pressure check (AI).** Paste what the caller said (a transcript or message).
-   An LLM flags manipulation tactics — artificial urgency, secrecy, immediate
-   payment, authority pressure — and returns a risk level plus reasons, as
-   validated structured data. Advisory, not a verdict.
-3. **Personal question (AI).** After a meaningful pressure signal, Handshake can generate a private verification question for the trusted person. An internal capability; users don't have to choose it as a separate tool.
-4. **The first hour.** A calm, static checklist for the 60 minutes after money
-   has already moved. No AI, no decisions made under stress — just the right
-   steps, in order.
+## How the product is intended to work
 
-## Pairing model
-
-Pairing is physical, mutual, and happens once:
-
-1. **Create an invitation** — Phone A: "Add a trusted person" → "Show my QR".
-   Handshake creates a short-lived, single-use QR invitation (see
-   `POST /api/trust/invite` in ARCHITECTURE.md).
-2. **Scan and accept** — Phone B: "Scan a QR". Accepting enrolls Phone B into
-   the new circle immediately.
-3. **Both confirm** — Phone A confirms on its own screen, which completes the
-   pairing (`confirmed`) and enrolls Phone A too.
-4. **Recognized during calls** — from then on, the two phones authenticate each
-   other through a server-confirmed, locally-verified call session.
-
-The server-issued relation id is an **internal** identifier: it is never shown
-to users and never needs to be typed or read. The QR invitation is the only
-thing that leaves the phone, and it dies after first use or on expiry.
+1. People establish a trusted relationship before a high-pressure interaction, using the available pairing flow.
+2. During a supported call-state event, the companion layer can surface only the trust state the backend has actually confirmed.
+3. When a suspicious request is received, the user can submit the text for an advisory pressure check.
+4. If trust cannot be confirmed, the user should pause and verify through a separate, known communication channel.
 
 ## Architecture
 
-Handshake Personal (Android)
-    ↓
-Protection-ready home
-    ├── Trusted people (QR pairing: invite → accept → confirm)
-    ├── Automatic device recognition during calls
-    └── Honest overlay: Trusted / Verify / Risk detected
-          ↓
-    Trust backend
-    ├── QR invitations (`/api/trust/invite*`)
-    ├── Device enrollment (`/api/trust/enroll`)
-    ├── Call sessions + attestation (`/api/trust/session*`)
-    └── Revocation (`/api/trust/revoke`)
+Handshake has two main parts:
 
-Android companion layer
-    ├── Operator call-state awareness
-    └── Optional warning overlay above phone and calling apps
+- **Web/API application:** Next.js App Router, TypeScript and server-side API routes.
+- **Handshake Personal:** Expo / React Native with a native Android integration for supported call-state events and an optional overlay.
 
-Next.js backend
-    ├── Trust protocol (device proof + session attestation)
-    ├── Pressure analysis (`/api/analyze`)
-    └── Legacy code-verification routes (`/api/code/*`,
-        `/api/circle`) kept for backward compatibility
+The backend provides device-trust and call-session endpoints, a text-analysis endpoint, and legacy rotating-code routes retained for compatibility. The rotating-code routes are not the primary mobile identity flow.
 
-The mobile client does not replace the system Phone app and does not create a Handshake-only
-call. The Android overlay can display call/trust state while its service is running and
-supported events are recognized. Detection of third-party calling-app events is not
-guaranteed in the current `main` release, and Handshake does not access private two-way
-audio from WhatsApp or other third-party calling apps. The overlay is not evidence that
-live speech analysis is running.
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for the component map and [SECURITY.md](./SECURITY.md) for the prototype threat model.
 
-## Stack
+## Run the web/API application
 
-- **Next.js 16** (App Router) + **TypeScript** (strict) + **Tailwind CSS**
-- **Trust protocol** (`lib/trustCrypto.ts`, `lib/trustStore.ts`,
-  `lib/trustSchemas.ts`) — device enrollment, single-use proofs, call-session
-  attestation. Production direction is asymmetric device keys (Ed25519)
-- **`otplib`** for the legacy rotating-code routes (`/api/code/*`), kept for
-  backward compatibility — no longer the primary identity mechanism
-- **`zod`** validates every API input and output, including LLM output
-- **Featherless AI** (OpenAI-compatible API) for the two AI features; the key
-  exists only in server environment variables
-- **Stateless HMAC derivation** for the legacy TOTP pair secrets (see
-  ARCHITECTURE.md) · hosted on **Vercel**
+Requirements: Node.js 20 or later and npm.
 
-## Quick start
+Install dependencies:
 
-```bash
-git clone https://github.com/sudomarc/handshake
-cd handshake
-npm install
-cp .env.example .env.local   # then fill in FEATHERLESS_API_KEY
-npm run dev                  # http://localhost:3000
-```
+    npm ci
 
-## Environment variables
+Copy .env.example to .env.local. On macOS/Linux:
 
-Defined in [`.env.example`](./.env.example). Copy to `.env.local` (never
-committed).
+    cp .env.example .env.local
 
-| Variable               | Required         | Purpose                                                                     |
-| ---------------------- | ---------------- | --------------------------------------------------------------------------- |
-| `FEATHERLESS_API_KEY`  | for AI features  | API key, server-side only                                                   |
-| `FEATHERLESS_BASE_URL` | no (default set) | `https://api.featherless.ai/v1`                                             |
-| `FEATHERLESS_MODEL`    | no (default set) | e.g. `Qwen/Qwen3.8-27B`                                                     |
-| `PAIR_DERIVATION_KEY`  | for legacy codes | server secret used to derive pair secrets (legacy `/api/code/*` compat routes) |
+On Windows PowerShell:
 
-## The demo
+    Copy-Item .env.example .env.local
 
-Handshake is being built as a **working hackathon prototype**, not a simulated
-click-through. The pairing and recognition flow is expected to work for real:
+Set the variables required for the features you intend to use, then start the server:
 
-1. pair two phones by QR (one shows, one scans);
-2. both people confirm on their own phones;
-3. a call from the paired device is recognized automatically and shows
-   **Trusted connection**;
-4. an unpaired or offline peer shows **Verify** — never a false "Protected";
-5. a real local risk signal shows **Risk detected**.
+    npm run dev
 
-The AI features should also call the configured Featherless endpoint when they are
-presented as working features. A screenshot, prerecorded clip, or visual mockup
-may be used as a **fallback or presentation aid**, but it must never be described
-as a live feature when it is not actually connected and working.
+The web application is available at http://localhost:3000.
 
-The voice-clone contrast is also evidence-driven: only claim a detector result
-that was actually observed and recorded. If the detector does not produce the
-expected result, change the demo story rather than scripting a fictional result.
+### Environment variables
 
-Full step-by-step script, roles, preflight checks and fallbacks:
-[DEMO_SCRIPT.md](./DEMO_SCRIPT.md).
+| Variable | Purpose |
+| --- | --- |
+| FEATHERLESS_API_KEY | Server-side key for LLM-backed text analysis. Required for AI features. |
+| FEATHERLESS_BASE_URL | Optional provider API base URL; the example defaults to Featherless. |
+| FEATHERLESS_MODEL | Optional model identifier used by the provider client. |
+| PAIR_DERIVATION_KEY | Server-side secret for legacy rotating-code compatibility routes. |
 
-## Product direction
+Never embed secrets in source code or commit .env.local. The configured provider receives the text submitted for analysis; do not submit confidential material.
 
-Handshake is currently a working Next.js web prototype plus a **Handshake
-Personal** mobile client. The hackathon deliverable is the Personal mobile
-product for families and individuals; the existing web app is preserved as the
-working web prototype/API client and reference implementation.
+## Tests and builds
 
-The intended product split is:
+Install dependencies in both the repository root and mobile directory. The root test command also exercises native config-plugin tests that require the mobile dependencies.
 
-- **Handshake Personal** — mobile protection for individuals and trusted circles.
-- **Handshake Business** — the post-hackathon web product for organizations.
-- **Handshake Core** — shared server-side trust and verification capabilities.
+    npm ci
+    cd mobile
+    npm ci
+    cd ..
+    npm test
+    npm run lint
+    npm run build
 
-### Personal UX direction
+Mobile static checks:
 
-The Personal experience is **automation rather than a toolbox**.
+    cd mobile
+    npm run typecheck
+    npm run lint
 
-When there is no active interaction, Handshake should be a calm trust center showing
-protection readiness and trusted people.
+A successful CI build validates only the checks included in that run. It does not prove that the latest APK works on a physical phone, that every calling app is detected, or that remote call audio is accessible.
 
-When the user is dealing with a phone call or a third-party calling app such as
-WhatsApp, Handshake should act as a small companion layer: optional warnings can
-stay visible above other apps, and recognition states appear automatically based
-on what the trust backend actually confirmed.
+## Android release builds
 
-The user-facing states are **Trusted connection**, **Verify** and **Risk
-detected** — never "Protected" without evidence. Pressure Check and Personal
-Question remain internal capabilities; the product chooses whether to use them.
+The Android release APK is produced by GitHub Actions. Check the [Android build workflow](https://github.com/sudomarc/handshake/actions/workflows/android-apk.yml) and download the artifact from a successful run. Pull-request verification is defined in the [Android QA workflow](https://github.com/sudomarc/handshake/actions/workflows/android-qa-apk.yml).
 
-### Current call integration boundary
+Before a demo, install the artifact produced from the commit being presented and run the relevant physical-device checks. Do not use an APK from an older commit as evidence for the latest source.
 
-Handshake is designed to accompany ordinary operator phone calls and third-party
-calling apps rather than replacing them with a Handshake-only call screen.
+## Repository guide
 
-On Android, the native integration currently provides carrier call-state awareness
-and an optional overlay. The overlay can remain visible above apps after the user
-has granted overlay permission.
+| Path | Purpose |
+| --- | --- |
+| app/, components/, lib/ | Web application, API-facing UI and shared server logic |
+| mobile/ | Handshake Personal mobile client and Android integration |
+| tests/ | Web/API and shared-module tests |
+| ARCHITECTURE.md | Architecture and principal data flows |
+| SECURITY.md | Threat model and security limitations |
+| ROADMAP.md | Product direction and remaining milestones |
+| DEMO_SCRIPT.md | Evidence-based demo guide |
+| HACKATHON.md | Judge-facing project context |
+| docs/ANDROID_AUDIO_RESEARCH.md | Android platform research and audio-access boundaries |
+| docs/CALL_AUDIO_FEASIBILITY.md | Technical feasibility prototype report |
+| docs/ANDROID_FAKE_CALL_QA_2026-10-07.md | Historical Android call-overlay test evidence |
+| docs/DEVICE_TEST_REPORT_2026-10-06.md | Historical device test report |
 
-Handshake does **not** automatically receive private two-way audio from ordinary
-carrier calls or third-party calling apps such as WhatsApp. Audio analysis therefore
-cannot be presented as live call analysis until a supported platform surface is
-independently verified.
+## Demo and evaluation
 
-For any interaction, the current reliable path is device-level trust: a paired
-phone is recognized through the trust backend, and user-provided text can
-additionally feed pressure analysis. The rotating-code routes remain available
-server-side for backward compatibility but are no longer part of the mobile
-user flow.
+Use [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) to prepare a short, evidence-based demonstration. It distinguishes live behavior from fallback material and requires the presenter to disclose failures or unavailable functionality rather than stage a fictional result.
 
-### Real-time call analysis direction
-
-For a call type where the platform legitimately exposes an analyzable audio stream,
-the intended pipeline is:
-
-**audio → voice-activity detection → short rolling buffer → speech-to-text →
-incremental risk analysis → risk engine → Protected / Verify / Risk → contextual
-action.**
-
-The LLM should analyze transcript chunks and derived context, not receive the raw
-audio stream continuously. Target latency is roughly 1–2 seconds for a meaningful
-risk update, but this is a future design target, not a measured performance claim.
-Pressure analysis remains advisory: it is not a voice-clone detector and cannot
-prove that a caller is genuine or fake.
-
-### Android platform boundary
-
-Android's CallScreeningService can support call screening/caller-ID integration,
-while deeper in-call or controlled VoIP architectures may be needed when an app
-must own the audio streams. A microphone foreground service can continue microphone
-capture under Android's permission and background-execution rules, but
-RECORD_AUDIO alone does not establish access to both sides of a carrier call.
-
-The first technical step after the hackathon is a **native Android audio-feasibility
-prototype** on the target Samsung A17. It should test incoming/outgoing carrier
-calls, microphone, remote-audio availability, speakerphone, earpiece, Bluetooth,
-foreground/background execution and the stream actually exposed to the chosen
-native audio API.
-
-Until this feasibility gate is passed, Handshake must not claim automatic
-interception of every phone call, two-way carrier-call audio access, live
-real-time phone-call analysis, cloned-voice detection or invisible background
-listening.
-
-See [ROADMAP.md](./ROADMAP.md) for the complete call-protection UX,
-real-time-analysis pipeline, Android integration layers and phased plan.
-## Honest limitations
-- **In-memory trust store.** The trust backend keeps devices, invitations and
-  sessions in memory per server instance. On serverless hosting with multiple
-  instances, an enrollment or invitation created on instance A is invisible to
-  instance B. Production requires a shared, durable store.
-- **Legacy stateless pair secrets.** The `/api/code/*` compatibility routes still
-  derive TOTP secrets with `HMAC-SHA256(PAIR_DERIVATION_KEY, pairId)`. They are
-  kept only for backward compatibility, not as the primary identity mechanism.
-- **The AI features are advisory.** The pressure check and challenge are LLM
-  outputs: helpful signals, not guarantees. We do not claim detection accuracy
-  numbers because we have not measured them and would not report unprovable
-  ones.
-- **Invitation misuse window.** A QR invitation is short-lived and single-use,
-  but if a stranger scans it before the intended person does, they could accept
-  and become a confirmed peer. Pairing should happen with both phones physically
-  together.
-- **Compromised device trust model.** Trust is bound to the devices you paired.
-  If a paired phone is stolen, the stolen device can still take part in trusted
-  sessions until it is revoked. Same model as any device-based credential.
-- **No accounts in the demo.** The server-issued relation id is never shown to
-  users, and enrollment uses per-device secrets rather than accounts; full
-  accounts with auth and device-recovery flows are production work.
-
-## Ethics & consent
-
-- The voice clone used in the demo is of the **developer's own voice**, with
-  consent. The clone has already been generated; any detector result must still be
-  observed and recorded before being claimed.
-- "Mom" is a role-played scenario for the demo; no real person is targeted, and
-  no real scam is attempted.
-- Transcripts are analyzed in memory by the LLM provider and are not stored by
-  the app. Before any production use, the provider's data-retention and
-  no-training policies must be reviewed (not yet done for this demo).
-
-## Hackathon submission standard
-
-ForgeHacks requires a **working AI-powered project** addressing a real-world
-problem. The submission must include a project description, track selection, a
-**public 2–4 minute demo video** showing the problem and how the project works,
-a GitHub repository with source code and a clear README, a written description
-covering the problem/target users, technical approach and real-world impact, and
-supporting evidence such as screenshots, an architecture diagram, or a testing
-deployment link.
-
-The judging criteria explicitly include **Execution & Completeness**, which
-looks at working demo, polish, usability, and how much was actually shipped.
-Incomplete submissions missing the required video or code are not eligible for
-judging.
-
-Source: https://forgehacks-2026.devpost.com/ and
-https://forgehacks-2026.devpost.com/rules
-
-For Handshake, this means:
-
-- the core verification flow must work for real;
-- any AI feature presented as live must actually call the configured backend;
-- screenshots/prerecorded footage are acceptable as clearly identified fallbacks
-  or presentation aids, not as substitutes for a claimed live feature;
-- external results such as a deepfake-detector classification must be observed
-  before they are claimed;
-- future mobile, Business, production, and other unshipped features should be
-  labeled as future direction rather than represented as completed functionality.
-
-## Documentation
-
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — components, data flows, trust boundaries
-- [SECURITY.md](./SECURITY.md) — plain-language threat model, mitigations and gaps
-- [ROADMAP.md](./ROADMAP.md) — day-by-day plan, demo standard, and product direction
-- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) — exact demo flow with evidence-based fallbacks
-- [HACKATHON.md](./HACKATHON.md) — verified ForgeHacks submission requirements
+Handshake is a prototype, not a certified security product. Feature status must be based on the current source, successful build and observed behavior on the device used for the demonstration.
