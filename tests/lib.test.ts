@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,10 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { safeEqualHex } from "../lib/trustCrypto";
+import { TrustError } from "../lib/trustStore";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +56,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -127,6 +118,37 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("MAX_BUCKETS memory cap prevents unbounded map growth", () => {
+    const max = 5;
+    const windowMs = 60000;
+    const now = 100000;
+
+    // Fill up to 10,000 buckets
+    for (let i = 0; i < 10000; i++) {
+      consume(`bucket_${i}`, max, windowMs, now);
+    }
+
+    // Adding 10001st bucket when full and nothing expired should be denied safely
+    const overflow = consume("bucket_overflow", max, windowMs, now);
+    assert.equal(overflow.allowed, false);
+
+    // After time advances past windowMs, sweep clears old buckets and new requests succeed
+    const afterExpiry = consume("bucket_overflow", max, windowMs, now + windowMs + 1000);
+    assert.equal(afterExpiry.allowed, true);
+  });
+});
+
+describe("lib/trustCrypto safeEqualHex", () => {
+  test("safeEqualHex handles invalid types, mismatched lengths, and non-hex gracefully", () => {
+    assert.equal(safeEqualHex("abcd", "abcd"), true);
+    assert.equal(safeEqualHex("abcd", "abce"), false);
+    assert.equal(safeEqualHex("abcd", "abcde"), false); // length mismatch
+    // @ts-expect-error test non-string type safety
+    assert.equal(safeEqualHex(null, "abcd"), false);
+    // @ts-expect-error test non-string type safety
+    assert.equal(safeEqualHex("abcd", 123), false);
+  });
 });
 
 describe("lib/schemas", () => {
@@ -152,10 +174,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +195,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
@@ -223,6 +243,28 @@ describe("lib/http", () => {
 
       const r5 = handleApiError(new PairNotFoundError());
       assert.equal(r5.status, 404);
+
+      // TrustError status mapping & message sanitizing
+      const rRevoked = handleApiError(new TrustError("device_revoked", "Device was revoked"));
+      assert.equal(rRevoked.status, 403);
+
+      const rNotEnrolled = handleApiError(new TrustError("device_not_enrolled", "Not enrolled"));
+      assert.equal(rNotEnrolled.status, 403);
+
+      const rNotFound = handleApiError(new TrustError("inviting_not_found", "Invite not found"));
+      assert.equal(rNotFound.status, 404);
+
+      const rInvalidProof = handleApiError(new TrustError("invalid_proof", "Internal proof trace"));
+      assert.equal(rInvalidProof.status, 409);
+      const invalidProofJson = await rInvalidProof.json();
+      assert.equal(invalidProofJson.error.message, "Handshake could not confirm this device.");
+
+      const rNonceReplayed = handleApiError(
+        new TrustError("nonce_replayed", "Internal replay trace"),
+      );
+      assert.equal(rNonceReplayed.status, 409);
+      const nonceReplayedJson = await rNonceReplayed.json();
+      assert.equal(nonceReplayedJson.error.message, "Handshake could not confirm this device.");
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
