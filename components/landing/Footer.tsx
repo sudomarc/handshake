@@ -64,15 +64,15 @@ export function Footer() {
           <h2 className="mb-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-neutral-300">
             Explore
           </h2>
-          <a href="/#how-it-works" className={linkClass}>
+          <Link href="/#how-it-works" className={linkClass}>
             How it works
-          </a>
-          <a href="/#trust-states" className={linkClass}>
+          </Link>
+          <Link href="/#trust-states" className={linkClass}>
             Trust states
-          </a>
-          <a href="/#faq" className={linkClass}>
+          </Link>
+          <Link href="/#faq" className={linkClass}>
             FAQs
-          </a>
+          </Link>
           <Link href="/demo" className={linkClass}>
             Demo flow
           </Link>
