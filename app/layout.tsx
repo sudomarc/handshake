@@ -24,27 +24,27 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "Handshake — Device-level trust for phone calls",
+    default: "Handshake — Verify the relationship, not the voice",
     template: "%s",
   },
   description:
-    "Voice cloning can make a fake sound real. Handshake pairs the phones of the people you trust — once, in person, with a QR scan — then recognizes the paired device during calls and shows one honest state: Trusted, Verify, or Risk.",
+    "Handshake is an Android-first prototype for trusted-device pairing and clearer decisions during high-pressure calls. It does not detect cloned voices or analyze remote call audio.",
   applicationName: "Handshake",
   authors: [{ name: "Handshake", url: "https://github.com/sudomarc/handshake" }],
   creator: "Handshake",
   openGraph: {
-    title: "Handshake — Device-level trust for phone calls",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "Set up trusted relationships in advance. When a session cannot be confirmed, pause and verify through a channel you already trust.",
     type: "website",
     locale: "en_US",
     siteName: "Handshake",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Handshake — Device-level trust for phone calls",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "Set up trusted relationships in advance. When a session cannot be confirmed, pause and verify through a channel you already trust.",
   },
 };
 
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={geistSans.variable + " " + geistMono.variable + " " + instrumentSerif.variable + " h-full antialiased"}
     >
       <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-50">{children}</body>
     </html>
