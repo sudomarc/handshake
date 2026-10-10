@@ -224,8 +224,17 @@ describe("lib/http", () => {
       const r5 = handleApiError(new PairNotFoundError());
       assert.equal(r5.status, 404);
 
-      const r6 = handleApiError(new Error("unexpected"));
+      const r6 = handleApiError(new Error("unexpected internal error message"));
       assert.equal(r6.status, 500);
+      const json6 = await r6.json();
+      assert.equal(json6.error.code, "internal_error");
+      assert.equal(json6.error.message, "Something went wrong on our side. Please try again.");
+
+      const r7 = handleApiError(new Error("Featherless API error (500)"));
+      assert.equal(r7.status, 500);
+      const json7 = await r7.json();
+      assert.equal(json7.error.code, "internal_error");
+      assert.equal(json7.error.message, "Something went wrong on our side. Please try again.");
     } finally {
       console.error = origConsoleError;
     }
