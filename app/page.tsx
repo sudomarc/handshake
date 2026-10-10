@@ -11,18 +11,18 @@ import { Logo, Mark } from "@/components/landing/Logo";
 export const metadata: Metadata = {
   title: "Handshake — Know who's really on the line",
   description:
-    "Voice cloning can make a fake sound real. Handshake pairs the phones of the people you trust — once, in person, with a QR scan — then recognizes the paired device during calls and shows one honest state: Trusted, Verify, or Risk.",
+    "Handshake is an Android prototype for establishing device trust with a short-lived QR invitation and checking the evidence a supported flow can confirm. It does not detect cloned voices or automatically analyze every call.",
   openGraph: {
     title: "Handshake — Know who's really on the line",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "A cloned voice is not identity proof. Handshake explores a second signal: a trust relationship established between devices in person, with clear limits when evidence is missing.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "Handshake — Know who's really on the line",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "A cloned voice is not identity proof. Handshake explores a second signal: a trust relationship established between devices in person, with clear limits when evidence is missing.",
   },
 };
 
@@ -67,13 +67,11 @@ export default function Home() {
                 </span>
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-8 text-neutral-400">
-                Handshake pairs the phones of the people you trust — once, in person, with a single
-                QR scan — then recognizes the paired device during calls. No codes to read, nothing
-                to type.
+                Handshake lets two people establish a device-trust relationship in person with a short-lived QR invitation. When a supported flow can confirm both devices, it reports that evidence. It does not identify voices or analyze every call.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link href="/circle" className="cta cta-accent">
-                  See how pairing works
+                <Link href="/download" className="cta cta-accent">
+                  Get the Android app
                   <ArrowIcon />
                 </Link>
                 <a href="#approach" className="cta cta-ghost">
@@ -85,7 +83,7 @@ export default function Home() {
                 <span aria-hidden="true">·</span>
                 <span>In person</span>
                 <span aria-hidden="true">·</span>
-                <span>Recognize automatically</span>
+                <span>Check available evidence</span>
                 <span aria-hidden="true">·</span>
                 <span className="text-sky-300">Trusted / Verify / Risk</span>
               </p>
@@ -150,9 +148,7 @@ export default function Home() {
                 </li>
               </ul>
               <p className="mt-9 border-l-2 border-sky-400/60 pl-5 text-lg leading-8 text-neutral-300">
-                Under that pressure, most of us stop checking what we&rsquo;re hearing. The most
-                reliable signal isn&rsquo;t in the voice at all — it&rsquo;s in the device
-                that&rsquo;s calling.
+                Under pressure, it helps to pause and check a separate signal. A device relationship can add context — but only when the app can actually verify it.
               </p>
             </div>
           </div>
@@ -201,12 +197,10 @@ export default function Home() {
                   Handshake
                 </p>
                 <p className="mt-4 text-[1.05rem] leading-8 text-neutral-200">
-                  Checks something a clone can never have: a phone you paired and confirmed with a
-                  real person — physically, once, before the call.
+                  Checks a different signal: a trust relationship established between two devices in person. Copying a voice alone does not establish that relationship, but pairing is not a guarantee against fraud.
                 </p>
                 <p className="mt-4 text-sm leading-7 text-neutral-400">
-                  The real person&rsquo;s paired phone is recognized automatically, no matter how
-                  perfect the fake sounds.
+                  When the supported trust flow confirms both devices, Handshake can report that evidence instead of trying to classify a voice. A visible overlay alone is not proof.
                 </p>
               </div>
             </div>
@@ -282,15 +276,13 @@ export default function Home() {
                 />
                 <div>
                   <span className="inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-400/10 px-3 py-1 font-mono text-[0.68rem] uppercase tracking-[0.18em] text-sky-300">
-                    Automatic device recognition
+                    Device trust protocol
                   </span>
                   <h3 className="mt-5 text-2xl font-semibold tracking-tight text-white">
                     QR pairing &amp; trusted-device recognition
                   </h3>
                   <p className="mt-4 max-w-xl leading-8 text-neutral-300">
-                    Add a trusted person, put two phones together, scan once, confirm twice. From
-                    then on the paired device is recognized during calls through the trust backend,
-                    and every interaction resolves to one honest state.
+                    Add a trusted person, scan a short-lived QR invitation, and confirm on both phones. When the supported flow verifies both devices, Handshake can report that relationship. If evidence is missing, the right state is “Verify” — not a promise of protection.
                   </p>
                 </div>
                 <ul className="mt-8 flex flex-wrap gap-2" aria-label="Pairing fundamentals">
@@ -448,12 +440,11 @@ export default function Home() {
                   <span className="block accent-italic text-sky-200">A calmer call.</span>
                 </h2>
                 <p className="mx-auto mt-5 max-w-xl text-neutral-400">
-                  Handshake Personal is a working hackathon prototype for Android. Pair two phones,
-                  and watch trust resolve to one of three honest states.
+                  Handshake Personal is an Android prototype exploring QR pairing and evidence-based trust states. It does not access remote audio from ordinary carrier calls or apps such as WhatsApp and Google Meet.
                 </p>
                 <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link href="/circle" className="cta cta-accent">
-                    See how pairing works
+                  <Link href="/download" className="cta cta-accent">
+                    Get the Android app
                     <ArrowIcon />
                   </Link>
                   <Link href="/demo" className="cta cta-ghost">
@@ -485,8 +476,7 @@ export default function Home() {
               <span className="text-lg font-semibold tracking-tight text-white">Handshake</span>
             </div>
             <p className="mt-3 text-sm leading-6 text-neutral-400">
-              Device-level trust for phone calls. Pair once, in person — recognize the difference
-              during every call.
+              An Android prototype exploring device-to-device trust. It does not detect cloned voices or automatically analyze every call.
             </p>
           </div>
           <nav
