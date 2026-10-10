@@ -119,6 +119,32 @@ describe("selectAudioSource", () => {
     }
   });
 
+  test("a microphone is NEVER SELECTED even if a malformed report claims stage 4 ok", () => {
+    // Enforcement-point test: the honesty rule must not depend solely on the
+    // adapter. A mic candidate carrying `containsRemoteVoice: ok` (which no
+    // well-formed adapter produces) still must not become remote-attributable.
+    const decision = selectAudioSource(
+      report([downlink(), mic("ordinary_mic", { containsRemoteVoice: OK })]),
+    );
+    assert.notEqual(decision.outcome, "SELECTED");
+    // It can still be reported as a usable-but-mixed microphone.
+    assert.equal(decision.outcome, "REMOTE_SPEECH_NOT_ISOLATED");
+    if (decision.outcome === "REMOTE_SPEECH_NOT_ISOLATED") {
+      assert.equal(decision.bestMicrophone, "ordinary_mic");
+    }
+  });
+
+  test("a microphone that opened but produced only digital silence (rms=0) is unusable", () => {
+    // `opened: ok` with zero measured energy is not \"audio being captured\".
+    const decision = selectAudioSource(
+      report([downlink(), mic("ordinary_mic", { measuredRms: 0 })]),
+    );
+    assert.equal(decision.outcome, "AUDIO_UNAVAILABLE");
+    if (decision.outcome === "AUDIO_UNAVAILABLE") {
+      assert.ok(decision.attempts.includes("ordinary_mic"));
+    }
+  });
+
   test("accessibility mic is preferred over ordinary mic when both open", () => {
     const decision = selectAudioSource(
       report([

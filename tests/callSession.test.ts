@@ -70,6 +70,28 @@ describe("CallSessionManager", () => {
     assert.equal(m.isExpired(s, 70_000), true);
   });
 
+  test("begin expires a phantom call (missed idle) instead of blocking forever", () => {
+    // A missed `idle` leaves `current` non-null. Without the expiry check in
+    // `begin`, this abandoned session would block every future call forever.
+    const m = new CallSessionManager({ sessionTimeoutMs: 60_000, dedupeWindowMs: 0 });
+    const phantom = m.begin("sim", 1000)!;
+    assert.equal(m.isActive, true);
+    // Long after the timeout, a genuinely new call arrives with no idle seen.
+    const next = m.begin("whatsapp", 200_000);
+    assert.ok(next, "a new call must be accepted once the phantom expired");
+    assert.notEqual(next!.id, phantom.id, "the phantom is replaced by the new session");
+    assert.equal(m.session!.id, next!.id);
+  });
+
+  test("transition to 'ended' routes through finish (no half-ended session)", () => {
+    const m = new CallSessionManager();
+    const s = m.begin("sim", 1000)!;
+    assert.equal(m.transition(s.id, "ended", 2000), true);
+    // It must not leave `current` set with phase "ended": `finish` clears it.
+    assert.equal(m.isActive, false, "current must be cleared, not just marked ended");
+    assert.equal(m.session, null);
+  });
+
   test("tick expires a quiet phantom call so it cannot run forever", () => {
     const m = new CallSessionManager({ sessionTimeoutMs: 60_000 });
     m.begin("sim", 1000);

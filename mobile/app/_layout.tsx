@@ -12,6 +12,7 @@ import { subscribeCallState, retryCallStateRegistration } from "@/lib/callBridge
 import { autoEvaluateCallTrust, clearCallState } from "@/lib/trust/orchestrator";
 import { evaluateCallAudio, isAudioLimitationState } from "@/lib/audio/callAudioDirector";
 import { runAudioProbe } from "@/lib/audio/nativeProbe";
+import { CallSessionManager } from "@/lib/call/callSession";
 import {
   checkRuntimePermissions,
   needsPermissionBanner,
@@ -77,6 +78,13 @@ function OverlayActionRouter() {
 }
 
 /**
+ * Owns call-session lifecycle for the JS side: exactly one session (and thus
+ * one trust cycle + one audio probe) per real call, and a stale probe result is
+ * never pushed after the call it belonged to has ended.
+ */
+const callSessions = new CallSessionManager();
+
+/**
  * Automatic call-start trust. Native call-state events drive one trust cycle
  * per call; no user action is involved. `clearCallState` runs on idle so the
  * overlay returns to its outside-call state.
@@ -84,10 +92,34 @@ function OverlayActionRouter() {
 function CallStateAutomation() {
   useEffect(() => {
     const unsubscribe = subscribeCallState((payload) => {
+      const now = Date.now();
+
       if (payload.state === "idle") {
+        const sid = callSessions.session?.id;
+        if (sid) callSessions.finish(sid, now);
         void clearCallState().catch(() => {});
         return;
       }
+
+      // Dedupe to one cycle per call. `begin` returns null on a duplicate
+      // ringing/active start for the same call (or inside the dedupe window),
+      // so a re-emitted event cannot launch a second overlapping trust cycle.
+      let session = callSessions.session;
+      if (payload.state === "ringing") {
+        session = callSessions.begin("unknown", now);
+        if (!session) return; // duplicate start of the current call
+      } else {
+        // "active": advance phase, but only run the cycle if we never saw a
+        // ringing (so the session was just created here).
+        if (session) {
+          callSessions.transition(session.id, "active", now);
+          return; // ringing already drove the one cycle for this call
+        }
+        session = callSessions.begin("unknown", now);
+        if (!session) return;
+      }
+
+      const sessionId = session.id;
       void (async () => {
         // The trust cycle owns the verdict (trusted / risk / verify) and runs first.
         const result = await autoEvaluateCallTrust().catch(() => null);
@@ -95,7 +127,7 @@ function CallStateAutomation() {
         // the audio probe may add an honest limitation (capture_unavailable or
         // needs_review), but it can never override a verdict or invent trust.
         if (result && result.state !== "trusted" && result.state !== "risk") {
-          await refineCallAudioState();
+          await refineCallAudioState(sessionId);
         }
       })().catch(() => {});
     });
@@ -109,10 +141,16 @@ function CallStateAutomation() {
  * outcome is an audio limitation, pushes that state to the overlay. A healthy
  * microphone that only captures a local+remote mixture surfaces as
  * `needs_review` — never as an analysis that is not actually happening.
+ *
+ * The push is guarded by `sessionId`: if the call ended (or a new one began)
+ * while the ~0.5–1s probe was running, the stale result is dropped rather than
+ * re-arming the foreground service after the JS side already stopped it.
  */
-async function refineCallAudioState(): Promise<void> {
+async function refineCallAudioState(sessionId: string): Promise<void> {
   const evaluation = await evaluateCallAudio(runAudioProbe).catch(() => null);
   if (!evaluation || !isAudioLimitationState(evaluation.state)) return;
+  const current = callSessions.session;
+  if (!current || current.id !== sessionId) return; // call changed under us
   await callOverlayManager.setCallState(evaluation.state, evaluation.detail).catch(() => {});
 }
 

@@ -160,7 +160,7 @@ export function resolveAnalysisPlan(input: AnalysisPlanInput): AnalysisPlan {
   if (!source) {
     return {
       action: "SURFACE_AUDIO_UNAVAILABLE",
-      detail: "Call audio cannot be accessed for analysis on this phone.",
+      detail: "Handshake cannot access this call's audio for analysis.",
     };
   }
 
@@ -181,7 +181,7 @@ export function resolveAnalysisPlan(input: AnalysisPlanInput): AnalysisPlan {
     case "AUDIO_UNAVAILABLE":
       return {
         action: "SURFACE_AUDIO_UNAVAILABLE",
-        detail: "Call audio cannot be accessed for analysis on this phone.",
+        detail: "Handshake cannot access this call's audio for analysis.",
       };
   }
 }

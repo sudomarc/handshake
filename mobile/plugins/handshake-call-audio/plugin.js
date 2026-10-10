@@ -59,8 +59,9 @@ function copyNativeFiles() {
   }
 
   const files = [
-    "CallScreeningServiceImpl.kt",
+    "AudioSourceProbe.kt",
     "CallAudioPackage.kt",
+    "HandshakeAudioProbeModule.kt",
     "HandshakeOverlayModule.kt",
     "HandshakeOverlayService.kt",
     "MainActivityIntentBridge.kt",

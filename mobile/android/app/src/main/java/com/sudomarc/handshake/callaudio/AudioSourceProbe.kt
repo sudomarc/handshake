@@ -90,13 +90,6 @@ object AudioSourceProbe {
         audioSource: Int,
         audioManager: AudioManager,
     ): CandidateResult {
-        if (Build.VERSION.SDK_INT < 23 && audioSource == MediaRecorder.AudioSource.VOICE_DOWNLINK) {
-            // VOICE_DOWNLINK is API 24+; below that it is simply not declared.
-            return CandidateResult(kind, declared = false, granted = false,
-                grantedEvidence = null, opened = false, silenced = false,
-                measuredRms = 0f, error = "not declared below API 24")
-        }
-
         var record: AudioRecord? = null
         return try {
             val channel = AudioFormat.CHANNEL_IN_MONO
@@ -125,17 +118,17 @@ object AudioSourceProbe {
 
             record.startRecording()
             if (record.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
-                record.release()
                 return CandidateResult(kind, declared = true, granted = true,
                     grantedEvidence = null, opened = false, silenced = false,
                     measuredRms = 0f, error = "startRecording had no effect")
             }
 
             // Read ~200ms of frames and measure RMS so "opened" means "returned
-            // samples", not just "start() did not throw".
+            // samples", not just "start() did not throw". `bufferSize` is in
+            // bytes; a Short holds 2 bytes, so each frame reads bufferSize/2/frames
+            // shorts (~200ms total, not 400ms).
             val frames = 4
-            val perFrame = bufferSize / frames
-            val buffer = ShortArray(perFrame)
+            val buffer = ShortArray(bufferSize / frames / 2)
             var energySum = 0.0
             var energyCount = 0
             repeat(frames) {
@@ -151,13 +144,13 @@ object AudioSourceProbe {
                 }
             }
             val rms = if (energyCount > 0) (energySum / energyCount).toFloat() else 0f
-            val silenced = isClientSilenced(audioManager, audioSource)
+            val silenced = isClientSilenced(audioManager, record.audioSessionId)
 
-            record.stop()
-            record.release()
-
+            // `opened` is true only if samples were actually returned. A capture
+            // that produced zero frames is not "audio being captured".
             CandidateResult(kind, declared = true, granted = true, grantedEvidence = null,
-                opened = true, silenced = silenced, measuredRms = rms, error = null)
+                opened = energyCount > 0, silenced = silenced,
+                measuredRms = rms, error = if (energyCount > 0) null else "no samples returned")
         } catch (security: SecurityException) {
             // Stage 2 blocked: the source requires a signature/system permission.
             Log.i(TAG, "$kind stage2 denied: ${security.message}")
@@ -179,15 +172,20 @@ object AudioSourceProbe {
     }
 
     /**
-     * Asks the platform whether the client is currently being silenced by the
-     * capture policy. This is the in-device truth for "opened but silent".
+     * Asks the platform whether *our* recording is currently being silenced by
+     * the capture policy. This is the in-device truth for "opened but silent".
+     * Matching is by audio session id (our own recording), not by source, so
+     * another app's silenced config with the same source cannot be mistaken for
+     * ours. If our config is absent the answer is inconclusive (returns false);
+     * the measured-RMS gate in `sourceManager.ts` independently rejects a
+     * pure-silence capture, so optimism here cannot pass stage 3 alone.
      */
-    private fun isClientSilenced(audioManager: AudioManager, audioSource: Int): Boolean {
+    private fun isClientSilenced(audioManager: AudioManager, audioSessionId: Int): Boolean {
         if (Build.VERSION.SDK_INT < 24) return false
         return try {
-            val configs: List<AudioRecordingConfiguration> = audioManager.activeRecordingConfigs
+            val configs: List<AudioRecordingConfiguration> = audioManager.activeRecordingConfigurations
             configs.any { config ->
-                config.clientAudioSource == audioSource && config.isClientSilenced
+                config.clientAudioSessionId == audioSessionId && config.isClientSilenced
             }
         } catch (_: Throwable) {
             false

@@ -75,12 +75,18 @@ export class CallSessionManager {
   /**
    * Starts a new call session.
    *
-   * Returns null when the start is a duplicate: either a session is already
-   * active, or a session ended within the dedupe window (Android often emits a
-   * spurious `idle`→`active` pair around call setup).
+   * Returns null when the start is a duplicate: either a non-expired session is
+   * already active, or a session ended within the dedupe window (Android often
+   * emits a spurious `idle`→`active` pair around call setup). An abandoned
+   * session that has gone quiet past the timeout is expired here first, so a
+   * missed `idle` event can never block every future call.
    */
   begin(kind: CallKind, nowMs: number): CallSession | null {
-    if (this.current) return null;
+    if (this.current) {
+      // A phantom call (missed idle) must not block new calls forever.
+      if (!this.isExpired(this.current, nowMs)) return null;
+      this.finish(this.current.id, nowMs);
+    }
     if (nowMs - this.lastEndedAtMs < this.dedupeWindowMs) return null;
 
     this.current = {
@@ -98,7 +104,8 @@ export class CallSessionManager {
    *
    * Returns false when `id` does not match the current session, or the session
    * has expired — in both cases the caller must ignore the transition, because
-   * it belongs to a stale or finished call.
+   * it belongs to a stale or finished call. An `"ended"` phase is routed to
+   * [finish] so it cannot leave a half-ended session behind.
    */
   transition(id: string, phase: SessionPhase, nowMs: number): boolean {
     if (!this.current || this.current.id !== id) return false;
@@ -106,6 +113,9 @@ export class CallSessionManager {
       // Treat an expired session as ended; a fresh call must re-`begin`.
       this.finish(id, nowMs);
       return false;
+    }
+    if (phase === "ended") {
+      return this.finish(id, nowMs);
     }
     this.current.phase = phase;
     this.current.lastTransitionAtMs = nowMs;

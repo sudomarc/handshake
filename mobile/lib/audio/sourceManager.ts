@@ -6,7 +6,10 @@
  * (`docs/ANDROID_AUDIO_RESEARCH.md`). A path is only useful for remote analysis
  * when stage 4 holds:
  *
- *   1. DECLARED              — the manifest/code requests the permission/source.
+ *   1. DECLARED              — the source constant is available and the code
+ *                              attempts it on this API level (the probe reports
+ *                              this per candidate; a constant the platform does
+ *                              not expose reports `false`).
  *   2. GRANTED               — the runtime permission is actually granted.
  *   3. OPENED                — `AudioRecord.start()` succeeded and produced samples.
  *   4. CONTAINS REMOTE VOICE — the samples can be attributed to the *remote*
@@ -134,8 +137,11 @@ export function selectAudioSource(report: NativeProbeReport): SourceDecision {
     // Stage 3: the capture actually opened and returned non-silenced samples.
     if (candidate.opened.status !== "ok" || candidate.silenced) continue;
 
-    // Stage 4: attribution.
-    if (candidate.containsRemoteVoice.status === "ok") {
+    // Stage 4: attribution. Only a genuine telephony downlink can be remote-only.
+    // A microphone is refused here even if a malformed/future report claims
+    // stage 4 `ok`: this is the enforcement point, so the honesty rule does not
+    // depend solely on the adapter producing the report.
+    if (kind === "privileged_downlink" && candidate.containsRemoteVoice.status === "ok") {
       return {
         outcome: "SELECTED",
         source: kind,
@@ -145,7 +151,9 @@ export function selectAudioSource(report: NativeProbeReport): SourceDecision {
     }
 
     // A usable microphone that cannot be attributed to the remote party alone.
-    if (kind !== "privileged_downlink" && bestMicrophone === null) {
+    // It must also have produced a non-zero measured energy: `opened` without any
+    // samples is digital silence, which is not "audio being captured".
+    if (kind !== "privileged_downlink" && bestMicrophone === null && candidate.measuredRms > 0) {
       bestMicrophone = kind;
     }
   }
@@ -202,7 +210,7 @@ export function analysisStateForDecision(decision: SourceDecision): {
     case "AUDIO_UNAVAILABLE":
       return {
         state: "capture_unavailable",
-        detail: "Call audio cannot be accessed for analysis on this phone.",
+        detail: "Handshake cannot access this call's audio for analysis.",
       };
   }
 }

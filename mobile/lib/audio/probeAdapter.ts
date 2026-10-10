@@ -16,6 +16,7 @@ import type {
   CandidateReport,
   NativeProbeReport,
   StageResult,
+  StageStatus,
 } from "./sourceManager";
 
 export interface NativeCandidate {
@@ -47,8 +48,12 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function stage(ok: boolean, evidence: string | null | undefined): StageResult {
-  return ok ? { status: "ok" } : { status: "denied", ...(evidence ? { evidence } : {}) };
+function stage(
+  ok: boolean,
+  evidence: string | null | undefined,
+  failStatus: StageStatus = "denied",
+): StageResult {
+  return ok ? { status: "ok" } : { status: failStatus, ...(evidence ? { evidence } : {}) };
 }
 
 function isKnownKind(kind: string): kind is AudioSourceKind {
@@ -93,7 +98,7 @@ export function adaptCandidate(raw: NativeCandidate): CandidateReport | null {
     kind,
     declared: asBool(raw.declared, true),
     granted: stage(granted, grantedEvidence),
-    opened: stage(opened, error),
+    opened: stage(opened, error, "failed"),
     silenced,
     measuredRms: asNumber(raw.measuredRms),
     containsRemoteVoice: attributeRemoteVoice({ kind, granted, opened, silenced }),
@@ -116,8 +121,8 @@ export function adaptReport(raw: NativeReport): NativeProbeReport {
 }
 
 /** The well-formed "nothing usable" report, used when the probe is unavailable. */
-export const EMPTY_PROBE_REPORT: NativeProbeReport = {
+export const EMPTY_PROBE_REPORT: NativeProbeReport = Object.freeze({
   audioMode: "unavailable",
   accessibilityCaptureAvailable: false,
   candidates: [],
-};
+}) as unknown as NativeProbeReport;
