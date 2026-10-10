@@ -82,8 +82,8 @@ const STEPS: Step[] = [
   },
   {
     number: "03",
-    title: "Recognize the device",
-    text: "When one of you calls the other, the paired phone is recognized through the trust backend. The app shows one honest state: Trusted connection, Verify, or Risk detected.",
+    title: "Check the trust state",
+    text: "A supported trust session can confirm the relationship between paired devices. When evidence is missing, Handshake should report “Verify”. This prototype does not automatically receive remote call audio.",
     icon: <IconRadar />,
   },
 ];
