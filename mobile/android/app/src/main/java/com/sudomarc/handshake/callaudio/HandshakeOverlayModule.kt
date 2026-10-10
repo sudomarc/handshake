@@ -129,14 +129,19 @@ class HandshakeOverlayModule(
     /**
      * Pushes the trust state for the current call into the overlay.
      *
-     * `state` is one of trusted | verify | risk. There is no "protected" option:
+     * `state` is one of the honest call states. There is no "protected" option:
      * a confirmed trusted-pair session is the only thing that may claim trust,
      * and the JS layer only sends it after verifying the server's attestation
      * locally. Offline therefore surfaces as `verify`, never as a false claim.
      */
     @ReactMethod
     fun setCallState(state: String, detail: String, promise: Promise) {
-        if (state !in setOf("trusted", "verify", "risk")) {
+        val validStates = setOf(
+            "trusted", "verify", "risk",
+            "initializing", "capture_unavailable", "analyzing", "sending",
+            "verifying", "needs_review", "offline", "error"
+        )
+        if (state !in validStates) {
             promise.reject("OVERLAY_INVALID_STATE", "Unknown call state.")
             return
         }
@@ -206,6 +211,17 @@ class HandshakeOverlayModule(
     fun stopProtection(promise: Promise) {
         context.stopService(Intent(context, HandshakeOverlayService::class.java))
         promise.resolve(true)
+    }
+
+    /**
+     * Retries call-state listener registration. Call this from JS after
+     * READ_PHONE_STATE is granted at runtime, so the native → JS event bridge
+     * becomes active immediately without waiting for setCallState().
+     */
+    @ReactMethod
+    fun retryCallStateRegistration(promise: Promise) {
+        registerCallStateListener()
+        promise.resolve(callStateListenerActive)
     }
 
     /**
