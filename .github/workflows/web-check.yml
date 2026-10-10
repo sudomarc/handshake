@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "mobile/**"
       - "app/**"
       - "components/**"
       - "lib/**"
@@ -16,6 +17,7 @@ on:
       - "README.md"
   pull_request:
     paths:
+      - "mobile/**"
       - "app/**"
       - "components/**"
       - "lib/**"
