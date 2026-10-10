@@ -1,206 +1,115 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-
-/** Designed SVG stand-in: two devices bridged by a trust connection. */
-function TrustPairFallback() {
-  return (
-    <svg
-      viewBox="0 0 600 480"
-      fill="none"
-      className="h-full w-full"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden="true"
-    >
-      {/* Orbital ring */}
-      <ellipse
-        cx="300"
-        cy="238"
-        rx="276"
-        ry="86"
-        stroke="rgba(255,255,255,0.1)"
-        strokeWidth="1.5"
-      />
-      <ellipse
-        cx="300"
-        cy="238"
-        rx="276"
-        ry="86"
-        stroke="rgba(56,189,248,0.22)"
-        strokeWidth="1.5"
-        transform="rotate(-10 300 238)"
-        strokeDasharray="4 10"
-      />
-
-      {/* Left device */}
-      <g transform="rotate(13 150 248)">
-        <rect
-          x="92"
-          y="118"
-          width="116"
-          height="232"
-          rx="30"
-          fill="#14161a"
-          stroke="rgba(255,255,255,0.18)"
-          strokeWidth="1.5"
-        />
-        <rect
-          x="104"
-          y="140"
-          width="92"
-          height="140"
-          rx="12"
-          fill="#0b1016"
-          stroke="rgba(56,189,248,0.22)"
-          strokeWidth="1"
-        />
-        <path
-          d="M128 180l10 -12 12 16 16 -20 14 16"
-          stroke="#38bdf8"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.85"
-        />
-        <circle cx="150" cy="300" r="5" fill="#38bdf8" />
-      </g>
-
-      {/* Right device */}
-      <g transform="rotate(-13 450 248)">
-        <rect
-          x="392"
-          y="118"
-          width="116"
-          height="232"
-          rx="30"
-          fill="#14161a"
-          stroke="rgba(255,255,255,0.18)"
-          strokeWidth="1.5"
-        />
-        <rect
-          x="404"
-          y="140"
-          width="92"
-          height="140"
-          rx="12"
-          fill="#0b1016"
-          stroke="rgba(255,255,255,0.14)"
-          strokeWidth="1"
-        />
-        <path
-          d="M428 176h44M428 196h30M428 216h38"
-          stroke="rgba(255,255,255,0.28)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <circle cx="450" cy="300" r="5" fill="#38bdf8" />
-      </g>
-
-      {/* Clasp hooks */}
-      <path
-        d="M216 198c18 -14 40 -16 60 -9M384 198c-18 -14 -40 -16 -60 -9"
-        stroke="rgba(125,211,252,0.75)"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-
-      {/* Trust beam */}
-      <path
-        d="M218 232c42 44 122 44 164 0"
-        stroke="#38bdf8"
-        strokeWidth="3"
-        strokeDasharray="7 9"
-        strokeLinecap="round"
-      />
-
-      {/* Confirmation node */}
-      <circle cx="300" cy="254" r="15" stroke="rgba(56,189,248,0.5)" strokeWidth="1.5" />
-      <circle cx="300" cy="254" r="7" fill="#38bdf8" />
-      <path
-        d="M296 254l3 3 5 -5.5"
-        stroke="#04121c"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/** Lazy, resilient home for the interactive 3D Trust Pair scene. */
+/** A static, responsive illustration of the kind of trust decision Handshake is designed to surface. */
 export function HeroSceneSlot() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<{ dispose: () => void } | null>(null);
-  const [status, setStatus] = useState<"idle" | "ready" | "failed">("idle");
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let started = false;
-    let disposed = false;
-
-    const start = async () => {
-      if (started || disposed) return;
-      started = true;
-
-      // Probe WebGL before loading any 3D code.
-      const probe = document.createElement("canvas");
-      const gl =
-        probe.getContext("webgl2") ||
-        probe.getContext("webgl") ||
-        probe.getContext("experimental-webgl");
-      if (!gl) {
-        setStatus("failed");
-        return;
-      }
-
-      try {
-        // three.js is pulled in only when the scene is about to become visible.
-        const { createTrustPairScene } = await import("./hero-scene/three-scene");
-        if (disposed) return;
-        handleRef.current = createTrustPairScene(container, { reducedMotion });
-        setStatus("ready");
-      } catch {
-        if (!disposed) setStatus("failed");
-      }
-    };
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          void start();
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "240px 0px" },
-    );
-    observer.observe(container);
-
-    return () => {
-      disposed = true;
-      observer.disconnect();
-      handleRef.current?.dispose();
-      handleRef.current = null;
-    };
-  }, []);
-
   return (
-    <div ref={containerRef} className="relative h-full w-full select-none" aria-hidden="true">
-      <div className="scene-grid absolute inset-0" aria-hidden="true" />
+    <div
+      className="relative mx-auto w-full max-w-[35rem]"
+      role="img"
+      aria-label="Illustration of an incoming call marked Verify because the trusted device could not be confirmed, with guidance to pause and call back using a saved number."
+    >
       <div
-        className={`absolute inset-0 transition-opacity duration-500 ${
-          status === "ready" ? "opacity-0" : "opacity-100"
-        }`}
+        className="pointer-events-none absolute inset-x-[12%] top-[12%] h-[70%] rounded-full bg-sky-500/[0.13] blur-3xl"
+        aria-hidden="true"
+      />
+      <div
+        className="relative overflow-hidden rounded-[1.75rem] border border-white/[0.11] bg-[#0d1016]/95 p-4 shadow-[0_35px_90px_-35px_rgba(56,189,248,0.2)] backdrop-blur sm:rounded-[2rem] sm:p-6"
+        aria-hidden="true"
       >
-        <TrustPairFallback />
-      </div>
-      {status === "failed" ? (
-        <p className="absolute inset-x-0 bottom-2 text-center font-mono text-[0.65rem] tracking-wide text-neutral-400">
-          Interactive scene unavailable — WebGL is not supported here.
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-300/[0.08]">
+              <span className="absolute left-[9px] h-4 w-2.5 rounded-[4px] border border-sky-200/80" />
+              <span className="absolute right-[9px] h-4 w-2.5 rounded-[4px] border border-sky-200/80" />
+              <span className="h-1 w-1 rounded-full bg-sky-200" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-tight text-white">Handshake</p>
+              <p className="mt-0.5 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-neutral-500">
+                Session check
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 font-mono text-[0.58rem] uppercase tracking-[0.12em] text-neutral-400">
+            Example state
+          </span>
+        </div>
+
+        <div className="grid gap-3 py-4 sm:grid-cols-[0.84fr_1.16fr] sm:py-5">
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 sm:p-5">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-neutral-500">
+              Incoming call
+            </p>
+            <div className="mt-5 flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/[0.1] bg-gradient-to-br from-neutral-700 to-neutral-900 text-lg font-medium text-white">
+                M
+              </span>
+              <div className="min-w-0">
+                <p className="text-lg font-semibold tracking-tight text-white">Mum</p>
+                <p className="mt-1 text-xs text-neutral-500">Caller ID can be spoofed</p>
+              </div>
+            </div>
+            <div className="mt-5 space-y-2">
+              <div className="h-1.5 w-full rounded-full bg-white/[0.06]" />
+              <div className="h-1.5 w-4/5 rounded-full bg-white/[0.06]" />
+              <div className="h-1.5 w-2/3 rounded-full bg-white/[0.06]" />
+            </div>
+            <p className="mt-4 text-xs leading-5 text-neutral-500">
+              A familiar voice is not identity proof.
+            </p>
+          </div>
+
+          <div className="flex flex-col rounded-2xl border border-amber-200/15 bg-amber-200/[0.035] p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-neutral-400">
+                Available evidence
+              </p>
+              <span className="h-2 w-2 rounded-full bg-amber-300" />
+            </div>
+            <p className="mt-3 text-[2.6rem] font-semibold leading-none tracking-[-0.06em] text-amber-200 sm:text-5xl">
+              VERIFY
+            </p>
+            <p className="mt-3 text-sm leading-6 text-neutral-300">
+              This session has not been confirmed as a trusted connection.
+            </p>
+            <div className="mt-5 border-t border-white/[0.08] pt-4">
+              <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-neutral-500">
+                A safer next step
+              </p>
+              <p className="mt-2 text-sm font-medium leading-6 text-white">
+                Pause. Call back using a number you already know.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 border-t border-white/[0.08] pt-4">
+          <div className="rounded-xl bg-white/[0.025] px-2 py-3 text-center sm:px-3">
+            <span className="mx-auto flex h-5 w-5 items-center justify-center rounded-full border border-sky-300/30 text-[0.62rem] text-sky-200">
+              1
+            </span>
+            <p className="mt-2 text-[0.65rem] leading-4 text-neutral-400 sm:text-xs">Pair first</p>
+          </div>
+          <div className="rounded-xl bg-white/[0.025] px-2 py-3 text-center sm:px-3">
+            <span className="mx-auto flex h-5 w-5 items-center justify-center rounded-full border border-sky-300/30 text-[0.62rem] text-sky-200">
+              2
+            </span>
+            <p className="mt-2 text-[0.65rem] leading-4 text-neutral-400 sm:text-xs">
+              Confirm together
+            </p>
+          </div>
+          <div className="rounded-xl bg-white/[0.025] px-2 py-3 text-center sm:px-3">
+            <span className="mx-auto flex h-5 w-5 items-center justify-center rounded-full border border-sky-300/30 text-[0.62rem] text-sky-200">
+              3
+            </span>
+            <p className="mt-2 text-[0.65rem] leading-4 text-neutral-400 sm:text-xs">
+              Pause if unsure
+            </p>
+          </div>
+        </div>
+
+        <p className="pt-4 text-center text-[0.62rem] leading-4 text-neutral-600">
+          Illustrative interface. Actual status depends on available evidence and supported behavior.
         </p>
-      ) : null}
+      </div>
     </div>
   );
 }

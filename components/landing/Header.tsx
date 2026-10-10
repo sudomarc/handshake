@@ -5,10 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "./Logo";
 
 const NAV_LINKS = [
-  { href: "#problem", label: "Problem" },
-  { href: "#approach", label: "Approach" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#trust-states", label: "Trust states" },
+  { href: "#tools", label: "Tools" },
   { href: "#faq", label: "FAQ" },
 ] as const;
 
@@ -51,6 +50,7 @@ export function Header() {
 
   useEffect(() => {
     if (!open) return;
+
     const panel = panelRef.current;
     const toggle = toggleRef.current;
     if (!panel) return;
@@ -70,6 +70,7 @@ export function Header() {
         return;
       }
       if (event.key !== "Tab") return;
+
       const active = document.activeElement;
       if (!panel.contains(active)) {
         event.preventDefault();
@@ -90,7 +91,7 @@ export function Header() {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0c0f]/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0a0c0f]/90 backdrop-blur-md">
       <div className="site-shell flex h-16 items-center justify-between gap-4">
         <Logo />
 
@@ -104,18 +105,17 @@ export function Header() {
 
         <div className="hidden items-center gap-3 md:flex">
           <Link href="/circle" className="cta cta-primary text-sm">
-            Pair two phones
+            Explore pairing
           </Link>
         </div>
 
         <button
           ref={toggleRef}
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-neutral-200 transition hover:bg-white/5 md:hidden"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10 text-neutral-200 transition hover:bg-white/5 md:hidden"
           aria-expanded={open}
           aria-controls="landing-menu"
-          aria-haspopup="true"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((value) => !value)}
         >
           <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
           {open ? <CloseIcon /> : <MenuIcon />}
@@ -140,7 +140,7 @@ export function Header() {
               className="cta cta-primary mt-3 text-base"
               onClick={() => setOpen(false)}
             >
-              Pair two phones
+              Explore pairing
             </Link>
           </nav>
         </div>
