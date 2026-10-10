@@ -10,6 +10,8 @@ import { consumeOverlayAction } from "@/lib/overlayIntent";
 import { colors } from "@/lib/theme";
 import { subscribeCallState, retryCallStateRegistration } from "@/lib/callBridge";
 import { autoEvaluateCallTrust, clearCallState } from "@/lib/trust/orchestrator";
+import { evaluateCallAudio, isAudioLimitationState } from "@/lib/audio/callAudioDirector";
+import { runAudioProbe } from "@/lib/audio/nativeProbe";
 import {
   checkRuntimePermissions,
   needsPermissionBanner,
@@ -86,11 +88,32 @@ function CallStateAutomation() {
         void clearCallState().catch(() => {});
         return;
       }
-      void autoEvaluateCallTrust().catch(() => {});
+      void (async () => {
+        // The trust cycle owns the verdict (trusted / risk / verify) and runs first.
+        const result = await autoEvaluateCallTrust().catch(() => null);
+        // Only refine calls that did NOT already resolve to a trust/risk verdict:
+        // the audio probe may add an honest limitation (capture_unavailable or
+        // needs_review), but it can never override a verdict or invent trust.
+        if (result && result.state !== "trusted" && result.state !== "risk") {
+          await refineCallAudioState();
+        }
+      })().catch(() => {});
     });
     return unsubscribe;
   }, []);
   return null;
+}
+
+/**
+ * Runs the on-device audio probe for the current call and, when the honest
+ * outcome is an audio limitation, pushes that state to the overlay. A healthy
+ * microphone that only captures a local+remote mixture surfaces as
+ * `needs_review` — never as an analysis that is not actually happening.
+ */
+async function refineCallAudioState(): Promise<void> {
+  const evaluation = await evaluateCallAudio(runAudioProbe).catch(() => null);
+  if (!evaluation || !isAudioLimitationState(evaluation.state)) return;
+  await callOverlayManager.setCallState(evaluation.state, evaluation.detail).catch(() => {});
 }
 
 /**

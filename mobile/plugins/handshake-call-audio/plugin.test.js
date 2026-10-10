@@ -155,3 +155,66 @@ test("is a no-op on the already-correct committed MainApplication.kt", () => {
   const out = patchMainApplication(committed, { isKotlin: true });
   assert.strictEqual(out, committed, "plugin must not rewrite an already-correct file");
 });
+
+// The CI APK workflows (android-apk.yml, android-qa-apk.yml) build the checked-in
+// `mobile/android/...` sources directly and do NOT run `expo prebuild`, so the
+// packaged copies are what actually ships. If the plugin source-of-truth copies
+// drift from the packaged copies, the shipped APK silently loses features that
+// only exist in the plugin sources (this happened in b8b1bde, where the honest
+// overlay states never reached the packaged module/service). This test is the
+// non-regression guard: keep both copies byte-identical (modulo line endings).
+test("packaged Kotlin copies stay in sync with the plugin sources", () => {
+  const normalize = (s) => s.replace(/\r\n/g, "\n");
+
+  const pluginDir = path.join(__dirname, "android");
+  const packagedDir = path.join(
+    __dirname,
+    "..",
+    "..",
+    "android",
+    "app",
+    "src",
+    "main",
+    "java",
+    "com",
+    "sudomarc",
+    "handshake",
+    "callaudio",
+  );
+
+  const pluginFiles = fs
+    .readdirSync(pluginDir)
+    .filter((f) => f.endsWith(".kt"))
+    .sort();
+
+  assert.ok(pluginFiles.length > 0, "no plugin Kotlin sources found");
+
+  for (const file of pluginFiles) {
+    const packagedPath = path.join(packagedDir, file);
+    assert.ok(
+      fs.existsSync(packagedPath),
+      `packaged copy missing for ${file}; the CI build compiles the packaged sources, so it must exist`,
+    );
+
+    const source = normalize(fs.readFileSync(path.join(pluginDir, file), "utf8"));
+    const packaged = normalize(fs.readFileSync(packagedPath, "utf8"));
+
+    assert.strictEqual(
+      packaged,
+      source,
+      `${file} has drifted between the plugin source-of-truth and the packaged copy that CI builds. ` +
+        `Copy the plugin version into mobile/android/.../callaudio/ (the plugin copy is canonical).`,
+    );
+  }
+
+  // And the reverse: no packaged-only Kotlin file that the plugin does not know
+  // about, otherwise `expo prebuild` would delete/lose it.
+  const packagedOnly = fs
+    .readdirSync(packagedDir)
+    .filter((f) => f.endsWith(".kt") && !pluginFiles.includes(f));
+  assert.deepStrictEqual(
+    packagedOnly,
+    [],
+    "packaged Kotlin files with no plugin counterpart (prebuild would drop them)",
+  );
+});
