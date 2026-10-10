@@ -24,27 +24,27 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "Handshake — Device-level trust for phone calls",
+    default: "Handshake — Verify the relationship, not the voice",
     template: "%s",
   },
   description:
-    "Voice cloning can make a fake sound real. Handshake pairs the phones of the people you trust — once, in person, with a QR scan — then recognizes the paired device during calls and shows one honest state: Trusted, Verify, or Risk.",
+    "Handshake is an Android prototype for establishing device trust with a short-lived QR invitation and checking the evidence a supported flow can confirm. It does not detect cloned voices or automatically analyze every call.",
   applicationName: "Handshake",
   authors: [{ name: "Handshake", url: "https://github.com/sudomarc/handshake" }],
   creator: "Handshake",
   openGraph: {
-    title: "Handshake — Device-level trust for phone calls",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "A cloned voice is not identity proof. Handshake explores a second signal: a trust relationship established between devices in person, with clear limits when evidence is missing.",
     type: "website",
     locale: "en_US",
     siteName: "Handshake",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Handshake — Device-level trust for phone calls",
+    title: "Handshake — Verify the relationship, not the voice",
     description:
-      "The voice can be cloned. The person can still prove who they are. Pair two trusted phones once, and recognize the difference during every call.",
+      "A cloned voice is not identity proof. Handshake explores a second signal: a trust relationship established between devices in person, with clear limits when evidence is missing.",
   },
 };
 

@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "./Logo";
 
 const NAV_LINKS = [
-  { href: "#problem", label: "Problem" },
-  { href: "#approach", label: "Approach" },
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#trust-states", label: "Trust states" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#problem", label: "Problem" },
+  { href: "/#approach", label: "Approach" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/#trust-states", label: "Trust states" },
+  { href: "/#faq", label: "FAQ" },
 ] as const;
 
 function CloseIcon() {
@@ -103,8 +103,8 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/circle" className="cta cta-primary text-sm">
-            Pair two phones
+          <Link href="/download" className="cta cta-primary text-sm">
+            Get the Android app
           </Link>
         </div>
 
@@ -136,11 +136,11 @@ export function Header() {
               </a>
             ))}
             <Link
-              href="/circle"
+              href="/download"
               className="cta cta-primary mt-3 text-base"
               onClick={() => setOpen(false)}
             >
-              Pair two phones
+              Get the Android app
             </Link>
           </nav>
         </div>
