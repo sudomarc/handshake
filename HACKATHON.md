@@ -1,176 +1,36 @@
-# ForgeHacks 2026 — Submission Requirements
+# ForgeHacks 2026 — Handshake submission notes
 
-Last checked: **2026-10-04**
+**Last reconciled with the repository:** 2026-10-10  
+**Submission deadline listed in the official rules:** Saturday, October 10, 2026, 12:00 PM EDT (16:00 UTC).
 
-Primary sources:
+Official sources:
 - https://forgehacks-2026.devpost.com/
 - https://forgehacks-2026.devpost.com/rules
 
-## Dates (from the official Rules tab)
+## Submission requirements
 
-- Hackathon begins: **October 3, 12:00 PM EST**
-- Submission deadline: **October 10, 2026, 12:00 PM EDT**
-- Judging period: October 10–11
-- Winners announced: October 12, 3:00 PM EST
+The rules and submission page require a working AI-powered project, a public GitHub repository, project information describing the problem and technical approach, and a public demo video of **2–4 minutes maximum**. The rules state that missing the required code or video makes a submission ineligible for judging. Confirm the latest requirements directly on Devpost before submitting.
 
-Also from the official rules: teams of 1–4 students; code must be publicly
-viewable; projects must be substantially created during the hackathon period;
-one submission per team. Track prompts: AI + Healthcare, AI + Education,
-AI + Climate, AI + Business, AI + Cybersecurity, AI + Creativity.
+## What Handshake is
 
-## What ForgeHacks requires
+Handshake is an Android-first prototype for checking device-level trust around calls. Two people pair their phones using a short-lived QR invitation; both confirm the relationship. When the app can observe a supported call-state event, the Android overlay can display a trust state based on available evidence.
 
-ForgeHacks describes the build requirement as a **working AI-powered project**
-that addresses a real-world problem in one of its official tracks. The project
-must demonstrate clear AI/ML use and tangible value.
+The complementary Pressure Check analyses text provided by the user for manipulation tactics. It is advisory and does not establish who is speaking.
 
-The submission requirements include:
+## What must not be claimed
 
-1. Project title and short description.
-2. Official track selection.
-3. A **public demo video, 2–4 minutes maximum**, showing:
-   - the problem being solved;
-   - how the project works.
-4. A GitHub repository containing the source code and a clear README.
-5. Written project information covering:
-   - problem statement and target users;
-   - technical approach and components;
-   - real-world impact.
-6. Supporting screenshots, architecture diagram, or a deployment/testing link.
+- Handshake does not detect cloned voices.
+- The current implementation does not receive or analyse the remote audio of ordinary carrier calls or WhatsApp calls.
+- An overlay appearing during a call does not mean the conversation is being transcribed or analysed.
+- WhatsApp call-event detection is not guaranteed in the current `main` branch; notification-listener work remains outside the audited release commit.
+- Device trust is only as reliable as the enrolled devices, backend response and session checks. It is not an absolute guarantee that a person is honest or that a device is uncompromised.
 
-The rules state that submissions missing the required video or code are not
-eligible for judging.
+## Evidence and release status
 
-## How this applies to Handshake
+Use [the final release report](./docs/FINAL_STATUS_2026-10-10.md) for the latest CI result, release artifact, on-device gaps and production limitations. It separates source implementation, automated CI evidence and physical-device evidence.
 
-### Must be genuinely functional
+CI checks do not replace testing the exact release APK on a phone. If QR pairing or call overlay behavior fails on the APK being demonstrated, report the observed result; do not substitute a mockup or a simulated success.
 
-The central Handshake verification flow should be real and testable:
+## Demo guidance
 
-```
-create trusted pair
-       ↓
-two devices
-       ↓
-same rotating code
-       ↓
-claimed code entered
-       ↓
-real server verification
-       ↓
-Verified / Not verified
-```
-
-Any AI feature presented as a live feature must also be connected to the
-configured backend and produce its result during the demonstration or be clearly
-identified as a prerecorded fallback.
-
-### What can be a fallback
-
-A screenshot or prerecorded clip can be used to recover from:
-
-- network failure;
-- unavailable external service;
-- slow/unavailable AI provider;
-- detector downtime;
-- other demo-day failures.
-
-It must be described as a **fallback/presentation aid**, not as proof that the
-live feature is currently functioning.
-
-### What must never be faked
-
-Do not:
-
-- trigger a fake animation that claims verification without checking the code;
-- invent a detector result;
-- invent an AI result;
-- claim an unimplemented mobile application as shipped;
-- claim an unimplemented Business product as shipped;
-- describe future architecture as current functionality.
-
-## Judging implications
-
-The Devpost judging rubric includes:
-
-- Real-World Impact & Relevance
-- Technical Implementation & AI Use
-- Innovation & Creativity
-- **Execution & Completeness**
-- Presentation & Communication
-
-For Handshake, the practical priority is therefore:
-
-**working core → strong real-world story → evidence-backed AI use → polish/usability → clear presentation.**
-
-The core does not need to be a production-ready commercial product. It does
-need to be real enough for a judge to understand and verify what was actually
-built during the hackathon.
-
-## Current Handshake strategy
-
-### Hackathon deliverable — Handshake Personal mobile
-
-The **primary user-facing hackathon product is Handshake Personal**, a real
-mobile app for families and individuals.
-
-The mobile app must genuinely demonstrate:
-
-- trusted-person setup/pair creation;
-- rotating codes;
-- two-device verification;
-- real **Verified / Not verified** results;
-- the AI feature(s) actually included in the demo, when their backend is
-  configured and tested;
-- a usable Android build (APK) for testing/demo.
-
-The current Next.js web app remains in the repository as the existing working
-web prototype and API/reference client. Do not discard or broadly rewrite it
-during the mobile implementation.
-
-### Post-hackathon direction
-
-After the hackathon:
-
-- **Handshake Business** becomes the dedicated web product for organizations;
-- **Handshake Personal** continues as the mobile product;
-- both clients use a shared Handshake Core/API;
-- Personal moves toward automated orchestration rather than exposing internal
-  security/AI tools as separate user choices;
-- production accounts, device enrollment/revocation, persistent storage and
-  production-grade abuse controls are added before any real consumer-security
-  claim.
-
-## Final submission checklist
-
-- [ ] Handshake Personal mobile core verified on two devices.
-- [ ] Android APK/build artifact or equivalent testable mobile build available.
-- [ ] Public demo/testing evidence available where applicable.
-- [ ] Public 2–4 minute video uploaded.
-- [ ] Video explains the problem and demonstrates how Handshake works.
-- [ ] GitHub repository is accessible and contains source code + clear README.
-- [ ] Written description covers problem, target users, technical approach, and impact.
-- [ ] Correct ForgeHacks track identified.
-- [ ] Screenshots/architecture/deployment evidence included.
-- [ ] Every live claim is backed by an actual test.
-- [ ] Fallback footage is clearly treated as fallback.
-
-## Submission checklist status (audit 2026-10-05)
-
-Tags: **VERIFIED** / **OWNER-REPORTED** (no evidence in repo) / **NOT VERIFIED** / **OPEN**.
-
-- Public repository — **VERIFIED** (`sudomarc/handshake`, GitHub API `private: false`).
-- Source code + README — **VERIFIED** present; README needs a final pass (ROADMAP F4) — **OPEN**.
-- Working build — **OWNER-REPORTED** (Vercel backend, EAS APK, Samsung A17). Mobile
-  type check and lint pass (**VERIFIED**). Evidence link/screenshots — **OPEN**.
-- Two-physical-device validation — **NOT VERIFIED**.
-- Demo script — aligned with the real mobile product (this audit) — rehearsal **OPEN**.
-- Public 2–4 min video — **OPEN**.
-- Written description (problem/target users, technical approach, impact) — **OPEN**.
-- Track — README states **AI + Cybersecurity**; confirm the same selection on Devpost — **OPEN**.
-- Links to collect for Devpost: repository URL, video URL, deployed API URL
-  (`https://handshake-pi-amber.vercel.app`, from `mobile/eas.json`), APK/EAS build
-  link, screenshots, architecture diagram.
-- Deadline — Sat Oct 10, 2026, 12:00 PM EDT; target submission Fri Oct 9.
-- Judging — keep the story on the working core (rotating-code verification on two
-  phones); present Pressure check as advisory text analysis only.
+A credible demo can show the real QR pairing flow (only after verifying both phones), then run Pressure Check on an explicitly supplied example transcript and explain its advisory result. State clearly that Handshake is checking device trust, not analysing the live call audio. A voice-clone sample may illustrate the problem, but it must not be presented as audio that Handshake has detected or classified.
