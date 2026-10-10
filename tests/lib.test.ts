@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,8 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +54,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -127,6 +116,40 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("sweeps expired buckets when MAX_BUCKETS capacity is reached", () => {
+    const windowMs = 30000;
+    const now = 1000000;
+
+    // Fill up to MAX_BUCKETS (10,000) with expired entries
+    for (let i = 0; i < 10000; i++) {
+      consume(`key_${i}`, 5, windowMs, now);
+    }
+
+    // Advance time past resetAt
+    const futureNow = now + windowMs + 1000;
+
+    // Consuming a new key triggers sweep and allows creation because old buckets expired
+    const result = consume("new_key_after_sweep", 5, windowMs, futureNow);
+    assert.equal(result.allowed, true);
+  });
+
+  test("refuses new keys when MAX_BUCKETS capacity is reached and no entries are expired", () => {
+    const windowMs = 30000;
+    const now = 1000000;
+
+    // Fill up to MAX_BUCKETS (10,000) with live entries
+    for (let i = 0; i < 10000; i++) {
+      consume(`live_key_${i}`, 5, windowMs, now);
+    }
+
+    // Attempting to consume a brand-new key in the same window refuses due to MAX_BUCKETS capacity
+    const overflowResult = consume("brand_new_overflow_key", 5, windowMs, now);
+    assert.equal(overflowResult.allowed, false);
+    if (!overflowResult.allowed) {
+      assert.equal(typeof overflowResult.retryAfterSeconds, "number");
+    }
+  });
 });
 
 describe("lib/schemas", () => {
@@ -152,10 +175,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +196,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
