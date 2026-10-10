@@ -1,0 +1,65 @@
+name: Web and Mobile Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.ts"
+      - "tsconfig.json"
+      - "postcss.config.mjs"
+      - ".github/workflows/web-check.yml"
+      - "README.md"
+  pull_request:
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.ts"
+      - "tsconfig.json"
+      - "postcss.config.mjs"
+      - ".github/workflows/web-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install mobile dependencies used by native plugin tests
+        run: npm install --no-audit --no-fund
+        working-directory: mobile
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Lint web application
+        run: npm run lint
+
+      - name: Build web application
+        run: npm run build
+
+      - name: Check mobile TypeScript
+        run: npm run typecheck
+        working-directory: mobile
+
+      - name: Lint mobile application
+        run: npm run lint
+        working-directory: mobile
