@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,8 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +54,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -152,10 +141,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +162,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
@@ -226,6 +213,9 @@ describe("lib/http", () => {
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
+      const json6 = await r6.json();
+      assert.equal(json6.error.code, "internal_error");
+      assert.equal(json6.error.message, "Something went wrong on our side. Please try again.");
     } finally {
       console.error = origConsoleError;
     }
