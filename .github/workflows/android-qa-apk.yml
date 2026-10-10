@@ -27,6 +27,10 @@ jobs:
       - name: Install root dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Install mobile JS dependencies for native plugin tests
+        run: npm install --no-audit --no-fund
+        working-directory: mobile
+
       - name: Run test suite (TS modules + native-copy sync guard)
         run: npm test
 
@@ -41,10 +45,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - uses: gradle/actions/setup-gradle@v4
 
