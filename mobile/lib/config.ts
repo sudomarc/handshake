@@ -1,5 +1,7 @@
 // Public Expo variable: contains a URL only, never a secret.
-const raw = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ?? "";
+const raw =
+  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
+  (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
 
 export const API_BASE_URL: string | null = raw ? raw.replace(/\/+$/, "") : null;
 // Pressure analyses depend on an LLM call that can take >15 s server-side;

@@ -12,9 +12,9 @@ End-to-end behavior must be verified against the deployed backend and the exact 
 
 ### 1. Make trust verification dependable
 
-- Verify QR invitation, acceptance, confirmation, enrollment and revocation end to end.
-- Ensure every displayed trusted state is backed by a confirmed trust result.
-- Test online, offline, expired-invitation and restart scenarios.
+- [x] Verify QR invitation, acceptance, confirmation, enrollment and revocation end to end (`tests/pairing.test.ts`, `tests/trust.test.ts`, `tests/trustSession.test.ts`).
+- [x] Ensure every displayed trusted state is backed by a confirmed trust result (`tests/trustResolver.test.ts`, `tests/trustSession.test.ts`).
+- [x] Test online, offline, expired-invitation and restart scenarios (`tests/trustSession.test.ts`, `tests/pairing.test.ts`).
 - Replace instance-local in-memory trust storage before any production use.
 
 ### 2. Stabilize Android call companion behavior

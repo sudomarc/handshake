@@ -6,13 +6,13 @@
  * anywhere in this flow.
  */
 
-import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "@/lib/config";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
 import {
   computeDeviceProof,
   verifyAttestation,
   TRUST_PROTOCOL,
-} from "@/lib/trust/proof";
-import { getDeviceId, getDeviceSecret, newNonce } from "@/lib/trust/deviceIdentity";
+} from "./proof";
+import { getDeviceId, getDeviceSecret, newNonce } from "./deviceIdentity";
 import { z } from "zod";
 
 export const trustStateSchema = z.enum(["unverified", "trusted"]);
@@ -365,7 +365,7 @@ export function inviteQrUrl(inviteId: string): string | null {
  * The invite id is opaque to the client: there is deliberately no format check
  * beyond "non-empty", because the backend owns its id scheme.
  */
-export { parsePairInvite } from "@/lib/trust/pairLink";
+export { parsePairInvite } from "./pairLink";
 
 /**
  * Lightweight reachability probe used by the home surface. Any HTTP response

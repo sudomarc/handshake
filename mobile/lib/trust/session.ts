@@ -26,9 +26,9 @@ import {
   openSession,
   pollSession,
   verifySessionTrust,
-} from "@/lib/trust/api";
-import { deriveCallState, type CallContext, type CallDecision } from "@/lib/trust/callState";
-import { getDeviceId } from "@/lib/trust/deviceIdentity";
+} from "./api";
+import { deriveCallState, type CallContext, type CallDecision } from "./callState";
+import { getDeviceId } from "./deviceIdentity";
 
 export type CallRole = "initiator" | "peer";
 
