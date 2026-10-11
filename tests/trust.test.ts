@@ -20,6 +20,7 @@ import {
   TRUST_PROTOCOL,
   computeDeviceProof,
   sessionAttestation,
+  safeEqualHex,
   verifyDeviceProof,
   verifySessionToken,
 } from "../lib/trustCrypto";
@@ -420,9 +421,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +618,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -634,6 +643,33 @@ describe("trusted-call protocol", () => {
       assert.equal(verifySessionToken(token, claims, 1), true);
       assert.equal(verifySessionToken(token, claims, 3), false);
     });
+
+    test("safeEqualHex handles hex comparison and non-string inputs safely", () => {
+      assert.equal(safeEqualHex("abcd", "abcd"), true);
+      assert.equal(safeEqualHex("abcd", "abce"), false);
+      assert.equal(safeEqualHex("abcd", "abcde"), false);
+      // @ts-expect-error testing invalid type handling
+      assert.equal(safeEqualHex(null, "abcd"), false);
+      // @ts-expect-error testing invalid type handling
+      assert.equal(safeEqualHex("abcd", undefined), false);
+    });
+
+    test("verifyDeviceProof rejects malformed pairId or deviceId shapes", async () => {
+      const fields = {
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        sessionId: TRUST_PROTOCOL,
+        nonce: "n".repeat(32),
+        issuedAt: Date.now(),
+        deviceSecret: "a".repeat(64),
+      };
+      const expected = await computeDeviceProof(fields);
+
+      // Invalid pairId
+      assert.equal(verifyDeviceProof({ ...fields, expected, pairId: "invalid_pair_id" }), false);
+      // Invalid deviceId
+      assert.equal(verifyDeviceProof({ ...fields, expected, deviceId: "short" }), false);
+    });
   });
 
   /* ---------------------------------------------------------------- */
@@ -645,9 +681,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();

@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,16 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+  displayNameSchema,
+  createInviteRequestSchema,
+  acceptInviteRequestSchema,
+  confirmInviteRequestSchema,
+  revokeDeviceRequestSchema,
+  enrollDeviceRequestSchema,
+} from "../lib/trustSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +62,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -152,10 +149,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +170,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
@@ -229,6 +224,79 @@ describe("lib/http", () => {
     } finally {
       console.error = origConsoleError;
     }
+  });
+});
+
+describe("lib/trustSchemas edge cases", () => {
+  test("displayNameSchema validates, trims, and enforces length bounds", () => {
+    assert.equal(displayNameSchema.safeParse("Alice").success, true);
+    assert.equal(displayNameSchema.parse("  Bob  "), "Bob");
+    assert.equal(displayNameSchema.safeParse("").success, false);
+    assert.equal(displayNameSchema.safeParse("   ").success, false);
+    assert.equal(displayNameSchema.safeParse("a".repeat(61)).success, false);
+    assert.equal(displayNameSchema.safeParse("a".repeat(60)).success, true);
+  });
+
+  test("createInviteRequestSchema validates display name", () => {
+    assert.equal(createInviteRequestSchema.safeParse({ displayName: "  Charlie  " }).success, true);
+    assert.equal(createInviteRequestSchema.safeParse({ displayName: "" }).success, false);
+  });
+
+  test("acceptInviteRequestSchema validates device ID, secret, and optional label", () => {
+    const valid = {
+      displayName: "Dave",
+      deviceId: VALID_PAIR_ID,
+      deviceSecret: "1".repeat(64),
+      label: "My Phone",
+    };
+    assert.equal(acceptInviteRequestSchema.safeParse(valid).success, true);
+
+    // Invalid deviceSecret length
+    assert.equal(
+      acceptInviteRequestSchema.safeParse({ ...valid, deviceSecret: "1".repeat(32) }).success,
+      false,
+    );
+
+    // Non-hex deviceId
+    assert.equal(
+      acceptInviteRequestSchema.safeParse({ ...valid, deviceId: "x".repeat(32) }).success,
+      false,
+    );
+  });
+
+  test("confirmInviteRequestSchema validates pairId and credentials", () => {
+    const valid = {
+      pairId: VALID_PAIR_ID,
+      deviceId: VALID_PAIR_ID,
+      deviceSecret: "2".repeat(64),
+    };
+    assert.equal(confirmInviteRequestSchema.safeParse(valid).success, true);
+    assert.equal(confirmInviteRequestSchema.safeParse({ ...valid, pairId: "bad" }).success, false);
+  });
+
+  test("enrollDeviceRequestSchema and revokeDeviceRequestSchema", () => {
+    const validEnroll = {
+      pairId: VALID_PAIR_ID,
+      deviceId: VALID_PAIR_ID,
+      deviceSecret: "3".repeat(64),
+      label: "Work Phone",
+    };
+    assert.equal(enrollDeviceRequestSchema.safeParse(validEnroll).success, true);
+
+    const validRevoke = {
+      pairId: VALID_PAIR_ID,
+      actorDeviceId: VALID_PAIR_ID,
+      actorNonce: VALID_PAIR_ID,
+      actorIssuedAt: Date.now(),
+      actorProof: "f".repeat(64),
+      targetDeviceId: VALID_PAIR_ID,
+      revokeWholeCircle: true,
+    };
+    assert.equal(revokeDeviceRequestSchema.safeParse(validRevoke).success, true);
+    assert.equal(
+      revokeDeviceRequestSchema.safeParse({ ...validRevoke, actorIssuedAt: -100 }).success,
+      false,
+    );
   });
 });
 

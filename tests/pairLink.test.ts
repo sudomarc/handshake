@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { parsePairInvite } from "../mobile/lib/trust/pairLink";
+import { storePendingInvite, consumePendingInvite, peekPendingInvite } from "../mobile/lib/pairing";
 
 const ID = "0123456789abcdef0123456789abcdef";
 
@@ -57,5 +58,27 @@ describe("parsePairInvite", () => {
     assert.equal(parsePairInvite(""), null);
     assert.equal(parsePairInvite(null), null);
     assert.equal(parsePairInvite(undefined), null);
+  });
+});
+
+describe("pending invite registry", () => {
+  test("store, peek, consume lifecycle", () => {
+    // Initially empty
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
+
+    // Store an invite
+    storePendingInvite(ID);
+
+    // Peek reads without consuming
+    assert.equal(peekPendingInvite(), ID);
+    assert.equal(peekPendingInvite(), ID);
+
+    // Consume returns value and clears registry
+    assert.equal(consumePendingInvite(), ID);
+
+    // Subsequent peek and consume return null
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
   });
 });
