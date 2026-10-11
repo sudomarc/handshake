@@ -30,6 +30,15 @@ import {
 import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
+import {
+  deviceIdSchema,
+  deviceSecretSchema,
+  inviteIdSchema,
+  displayNameSchema,
+  enrollDeviceRequestSchema,
+  openSessionRequestSchema,
+  acceptInviteRequestSchema,
+} from "../lib/trustSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -126,6 +135,30 @@ describe("lib/rateLimit", () => {
     // 11th request from same IP with a brand-new pairId should be blocked by IP rate limit
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
+  });
+
+  test("rate limiter capacity limit (MAX_BUCKETS) triggers sweep and refuses when full", () => {
+    const windowMs = 60000;
+    const now = 2000000;
+
+    // Populate MAX_BUCKETS (10,000) active buckets
+    for (let i = 0; i < 10000; i++) {
+      const res = consume(`bucket_${i}`, 5, windowMs, now);
+      assert.equal(res.allowed, true);
+    }
+
+    // 10,001st bucket attempt while all 10,000 are still active in window
+    const overflowRes = consume("bucket_overflow", 5, windowMs, now);
+    assert.equal(overflowRes.allowed, false);
+    if (!overflowRes.allowed) {
+      assert.equal(typeof overflowRes.retryAfterSeconds, "number");
+      assert.ok(overflowRes.retryAfterSeconds > 0);
+    }
+
+    // Advance time past the reset window and consume again — sweep will clear expired buckets
+    const futureTime = now + windowMs + 1000;
+    const recoveredRes = consume("bucket_overflow", 5, windowMs, futureTime);
+    assert.equal(recoveredRes.allowed, true);
   });
 });
 
@@ -229,6 +262,53 @@ describe("lib/http", () => {
     } finally {
       console.error = origConsoleError;
     }
+  });
+});
+
+describe("lib/trustSchemas", () => {
+  test("deviceIdSchema and deviceSecretSchema validation", () => {
+    assert.equal(deviceIdSchema.safeParse(VALID_PAIR_ID).success, true);
+    assert.equal(deviceIdSchema.safeParse("invalid").success, false);
+
+    const validSecret = "a".repeat(64);
+    assert.equal(deviceSecretSchema.safeParse(validSecret).success, true);
+    assert.equal(deviceSecretSchema.safeParse("a".repeat(63)).success, false);
+    assert.equal(deviceSecretSchema.safeParse("G".repeat(64)).success, false); // non-hex
+  });
+
+  test("inviteIdSchema and displayNameSchema validation", () => {
+    assert.equal(inviteIdSchema.safeParse(VALID_PAIR_ID).success, true);
+    assert.equal(inviteIdSchema.safeParse("123").success, false);
+
+    assert.equal(displayNameSchema.safeParse("Alice").success, true);
+    assert.equal(displayNameSchema.safeParse("   ").success, false);
+    assert.equal(displayNameSchema.safeParse("a".repeat(61)).success, false);
+  });
+
+  test("enrollDeviceRequestSchema and acceptInviteRequestSchema validation", () => {
+    const validEnroll = {
+      pairId: VALID_PAIR_ID,
+      deviceId: "b".repeat(32),
+      deviceSecret: "1".repeat(64),
+      label: "My Pixel",
+    };
+    assert.equal(enrollDeviceRequestSchema.safeParse(validEnroll).success, true);
+
+    const validAccept = {
+      displayName: "Bob",
+      deviceId: "b".repeat(32),
+      deviceSecret: "1".repeat(64),
+    };
+    assert.equal(acceptInviteRequestSchema.safeParse(validAccept).success, true);
+
+    const invalidOpenSession = {
+      pairId: VALID_PAIR_ID,
+      deviceId: "b".repeat(32),
+      nonce: "c".repeat(32),
+      issuedAt: -100, // negative timestamp invalid
+      proof: "d".repeat(64),
+    };
+    assert.equal(openSessionRequestSchema.safeParse(invalidOpenSession).success, false);
   });
 });
 
