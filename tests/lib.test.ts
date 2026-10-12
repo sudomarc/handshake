@@ -27,6 +27,7 @@ import {
   PairNotFoundError,
   RateLimitError,
 } from "../lib/errors";
+import { TrustError } from "../lib/trustStore";
 import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
@@ -127,6 +128,25 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("consume handles MAX_BUCKETS limit and sweep on expiry", () => {
+    const windowMs = 60000;
+    const now = 1000000;
+
+    // Fill capacity with MAX_BUCKETS (10,000) distinct active buckets
+    for (let i = 0; i < 10000; i++) {
+      consume(`key_${i}`, 5, windowMs, now);
+    }
+
+    // Attempting to add a 10001st key when all 10000 are active should be refused
+    const refused = consume("overflow_key", 5, windowMs, now);
+    assert.equal(refused.allowed, false);
+
+    // After window expires, sweeping frees expired buckets and allows new requests
+    const afterExpiry = now + windowMs + 1000;
+    const allowed = consume("new_key_after_expiry", 5, windowMs, afterExpiry);
+    assert.equal(allowed.allowed, true);
+  });
 });
 
 describe("lib/schemas", () => {
@@ -226,6 +246,32 @@ describe("lib/http", () => {
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
+
+      // TrustError status and message mapping
+      const t1 = handleApiError(new TrustError("device_revoked", "Device revoked"));
+      assert.equal(t1.status, 403);
+
+      const t2 = handleApiError(new TrustError("device_not_enrolled", "Device not enrolled"));
+      assert.equal(t2.status, 403);
+
+      const t3 = handleApiError(new TrustError("inviting_not_found", "Invite missing"));
+      assert.equal(t3.status, 404);
+
+      const t4 = handleApiError(new TrustError("invalid_proof", "Bad proof"));
+      assert.equal(t4.status, 409);
+      const t4Body = await t4.json();
+      assert.equal(t4Body.error.message, "Handshake could not confirm this device.");
+
+      const t5 = handleApiError(new TrustError("session_expired", "Session expired"));
+      assert.equal(t5.status, 409);
+      const t5Body = await t5.json();
+      assert.equal(t5Body.error.message, "Session expired");
+
+      // Provider error diagnostic mapping
+      const p1 = handleApiError(new Error("Featherless API error (502)"));
+      assert.equal(p1.status, 500);
+      const p1Body = await p1.json();
+      assert.match(p1Body.error.message, /^Temporary diagnostic: Featherless API error \(502\)/);
     } finally {
       console.error = origConsoleError;
     }
