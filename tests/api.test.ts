@@ -6,6 +6,7 @@ import { POST as verifyCodeHandler } from "../app/api/code/verify/route";
 import { POST as createPairHandler } from "../app/api/circle/route";
 import { POST as analyzeHandler } from "../app/api/analyze/route";
 import { POST as challengeHandler } from "../app/api/challenge/route";
+import { GET as pingHandler } from "../app/api/trust/ping/route";
 import { resetRateLimits } from "../lib/rateLimit";
 import { getCurrentCode } from "../lib/totp";
 
@@ -50,6 +51,18 @@ describe("API routes", () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+  });
+
+  describe("GET /api/trust/ping", () => {
+    test("returns 200 with ok status and timestamp", async () => {
+      const res = await pingHandler();
+      assert.equal(res.status, 200);
+
+      const json = await res.json();
+      assert.equal(json.status, "ok");
+      assert.equal(typeof json.timestamp, "number");
+      assert.ok(json.timestamp > 0);
+    });
   });
 
   describe("GET /api/code/current", () => {

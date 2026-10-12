@@ -17,6 +17,7 @@ import { GET as qrHandler } from "../app/api/trust/invite/[inviteId]/qr/route";
 import { GET as circleHandler } from "../app/api/trust/circle/route";
 import { trustStore } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
+import { storePendingInvite, consumePendingInvite, peekPendingInvite } from "../mobile/lib/pairing";
 
 const TEST_KEY = "0123456789abcdef0123456789abcdef";
 const OWNER = { deviceId: "a".repeat(32), deviceSecret: "1".repeat(64) };
@@ -217,9 +218,11 @@ describe("QR pairing invitations", () => {
     const inviteId = created.body.inviteId as string;
 
     // Force expiry (120 s TTL) through the store.
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     const accept = await acceptInvite(inviteId, "Bob", PEER);
@@ -252,9 +255,11 @@ describe("QR pairing invitations", () => {
   test("sweep removes expired invites", async () => {
     const created = await createInvite("Alice");
     const inviteId = created.body.inviteId as string;
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -289,5 +294,29 @@ describe("QR pairing invitations", () => {
     );
     assert.equal(reused.status, 409);
     assert.equal((await reused.json()).error.code, "inviting_not_pending");
+  });
+});
+
+describe("pending invite store (mobile/lib/pairing.ts)", () => {
+  beforeEach(() => {
+    // Clear state before each test
+    consumePendingInvite();
+  });
+
+  test("store, peek, and consume pending invite lifecycle", () => {
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
+
+    const testId = "0123456789abcdef0123456789abcdef";
+    storePendingInvite(testId);
+
+    // peek leaves the invite pending
+    assert.equal(peekPendingInvite(), testId);
+    assert.equal(peekPendingInvite(), testId);
+
+    // consume returns and clears the pending invite
+    assert.equal(consumePendingInvite(), testId);
+    assert.equal(peekPendingInvite(), null);
+    assert.equal(consumePendingInvite(), null);
   });
 });
