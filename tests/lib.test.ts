@@ -27,6 +27,7 @@ import {
   PairNotFoundError,
   RateLimitError,
 } from "../lib/errors";
+import { TrustError } from "../lib/trustStore";
 import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
@@ -226,6 +227,23 @@ describe("lib/http", () => {
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
+
+      const rTrust403 = handleApiError(new TrustError("device_revoked", "Device is revoked"));
+      assert.equal(rTrust403.status, 403);
+      const json403 = await rTrust403.json();
+      assert.equal(json403.error.code, "device_revoked");
+      assert.equal(json403.error.message, "Device is revoked");
+
+      const rTrust404 = handleApiError(new TrustError("inviting_not_found", "Invite not found"));
+      assert.equal(rTrust404.status, 404);
+      const json404 = await rTrust404.json();
+      assert.equal(json404.error.code, "inviting_not_found");
+
+      const rTrust409Sanitized = handleApiError(new TrustError("invalid_proof", "Raw proof error"));
+      assert.equal(rTrust409Sanitized.status, 409);
+      const json409 = await rTrust409Sanitized.json();
+      assert.equal(json409.error.code, "invalid_proof");
+      assert.equal(json409.error.message, "Handshake could not confirm this device.");
     } finally {
       console.error = origConsoleError;
     }
