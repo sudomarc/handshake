@@ -99,7 +99,7 @@ export function Footer() {
 
       <div className="border-t border-white/[0.06]">
         <div className="site-shell flex flex-col gap-3 py-5 text-xs leading-5 text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Handshake · Independent Android-first prototype</p>
+          <p>© 2026 Handshake · Created by <a href="https://github.com/sudomarc" className="text-neutral-300 underline decoration-white/20 underline-offset-4 transition hover:text-white">Sudomarc</a> · Independent Android-first prototype</p>
           <p className="max-w-2xl sm:text-right">
             No cloned-voice detection or remote call-audio analysis in this release.
           </p>
