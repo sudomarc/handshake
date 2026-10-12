@@ -15,7 +15,9 @@ import { POST as acceptHandler } from "../app/api/trust/invite/[inviteId]/accept
 import { POST as confirmHandler } from "../app/api/trust/invite/[inviteId]/confirm/route";
 import { GET as qrHandler } from "../app/api/trust/invite/[inviteId]/qr/route";
 import { GET as circleHandler } from "../app/api/trust/circle/route";
+import { POST as revokeHandler } from "../app/api/trust/revoke/route";
 import { trustStore } from "../lib/trustStore";
+import { computeDeviceProof, TRUST_PROTOCOL } from "../lib/trustCrypto";
 import { resetRateLimits } from "../lib/rateLimit";
 
 const TEST_KEY = "0123456789abcdef0123456789abcdef";
@@ -217,9 +219,11 @@ describe("QR pairing invitations", () => {
     const inviteId = created.body.inviteId as string;
 
     // Force expiry (120 s TTL) through the store.
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     const accept = await acceptInvite(inviteId, "Bob", PEER);
@@ -252,9 +256,11 @@ describe("QR pairing invitations", () => {
   test("sweep removes expired invites", async () => {
     const created = await createInvite("Alice");
     const inviteId = created.body.inviteId as string;
-    const invites = (trustStore as unknown as {
-      invites: Map<string, { expiresAt: number }>;
-    }).invites;
+    const invites = (
+      trustStore as unknown as {
+        invites: Map<string, { expiresAt: number }>;
+      }
+    ).invites;
     invites.get(inviteId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -289,5 +295,49 @@ describe("QR pairing invitations", () => {
     );
     assert.equal(reused.status, 409);
     assert.equal((await reused.json()).error.code, "inviting_not_pending");
+  });
+
+  test("revoking whole circle prevents further interaction and removes circle", async () => {
+    const created = await createInvite("Alice");
+    const inviteId = created.body.inviteId as string;
+    const accepted = await acceptInvite(inviteId, "Bob", PEER);
+    const pairId = accepted.body.pairId as string;
+    await confirmInvite(inviteId, pairId, OWNER);
+
+    // Revoke whole circle using owner's proof
+    const nonce = "0".repeat(32);
+    const issuedAtMs = Date.now();
+    const proof = computeDeviceProof({
+      pairId,
+      deviceId: OWNER.deviceId,
+      sessionId: TRUST_PROTOCOL,
+      nonce,
+      issuedAt: issuedAtMs,
+      deviceSecret: OWNER.deviceSecret,
+    });
+
+    const revokeRes = await revokeHandler(
+      new NextRequest("http://localhost/api/trust/revoke", {
+        method: "POST",
+        body: JSON.stringify({
+          pairId,
+          actorDeviceId: OWNER.deviceId,
+          actorNonce: nonce,
+          actorIssuedAt: issuedAtMs,
+          actorProof: proof,
+          targetDeviceId: PEER.deviceId,
+          revokeWholeCircle: true,
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    assert.equal(revokeRes.status, 200);
+    const revokeBody = await revokeRes.json();
+    assert.equal(revokeBody.pairId, pairId);
+
+    // Circle should list devices as revoked (revokedAt is set)
+    const devices = await circleDevices(pairId);
+    assert.equal(devices.length, 2);
+    assert.ok(devices.every((d: { revokedAt: string | null }) => d.revokedAt !== null));
   });
 });
