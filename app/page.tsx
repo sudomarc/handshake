@@ -9,13 +9,13 @@ import { TrustStatesExplorer } from "@/components/landing/TrustStatesExplorer";
 import { FAQ } from "@/components/landing/FAQ";
 
 export const metadata: Metadata = {
-  title: "Handshake — Verify the relationship, not the voice",
+  title: "Handshake by Sudomarc — Verify the relationship, not the voice",
   description:
-    "Handshake is an Android-first prototype for trusted-device pairing and clearer decisions during high-pressure calls. It does not detect cloned voices or analyze remote call audio.",
+    "Handshake is an Android-first trust and verification prototype created by Sudomarc. Explore trusted-device pairing and safer decisions during high-pressure calls. It does not detect cloned voices or analyze remote call audio.",
   openGraph: {
     title: "Handshake — Verify the relationship, not the voice",
     description:
-      "Set up trusted relationships in advance. When a session cannot be confirmed, pause and verify through a channel you already trust.",
+      "Created by Sudomarc, Handshake helps people explore trusted relationships and verification-first decisions during high-pressure calls. It does not detect cloned voices or analyze remote call audio.",
     type: "website",
   },
   twitter: {
