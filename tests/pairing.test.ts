@@ -290,4 +290,21 @@ describe("QR pairing invitations", () => {
     assert.equal(reused.status, 409);
     assert.equal((await reused.json()).error.code, "inviting_not_pending");
   });
+
+  test("cancelInvite cancels pending invitation and prevents accept/confirm", async () => {
+    const created = await createInvite("Alice");
+    const inviteId = created.body.inviteId as string;
+
+    const cancelled = trustStore.cancelInvite(inviteId);
+    assert.equal(cancelled.state, "cancelled");
+
+    const accept = await acceptInvite(inviteId, "Bob", PEER);
+    assert.equal(accept.res.status, 409);
+    assert.equal(accept.body.error.code, "inviting_not_pending");
+
+    assert.throws(
+      () => trustStore.cancelInvite("0".repeat(32)),
+      (err: { code: string }) => err.code === "inviting_not_found",
+    );
+  });
 });

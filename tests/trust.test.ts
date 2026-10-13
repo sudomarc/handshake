@@ -634,6 +634,21 @@ describe("trusted-call protocol", () => {
       assert.equal(verifySessionToken(token, claims, 1), true);
       assert.equal(verifySessionToken(token, claims, 3), false);
     });
+
+    test("a future-dated session token beyond clock skew fails verification", async () => {
+      const now = Date.now();
+      const claims = {
+        sessionId: "s".repeat(32),
+        pairId: PAIR_A,
+        initiatorDeviceId: alice.deviceId,
+        peerDeviceId: bob.deviceId,
+        issuedAt: now + 120_000,
+        expiresAt: now + 300_000,
+      };
+      const { issueSessionToken } = await import("../lib/trustCrypto");
+      const token = issueSessionToken(claims);
+      assert.equal(verifySessionToken(token, claims, now), false);
+    });
   });
 
   /* ---------------------------------------------------------------- */

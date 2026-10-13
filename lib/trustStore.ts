@@ -487,6 +487,30 @@ class TrustStore {
     return invite;
   }
 
+  /**
+   * Cancels a pending or accepted invitation before it is confirmed.
+   */
+  cancelInvite(inviteId: string): StoredInvite {
+    const invite = this.invites.get(inviteId);
+    if (!invite) {
+      throw new TrustError("inviting_not_found", "This invitation does not exist.");
+    }
+    if (invite.expiresAt <= now()) {
+      invite.state = "expired";
+      invite.updatedAt = now();
+      throw new TrustError("inviting_expired", "This invitation has expired.");
+    }
+    if (invite.state === "confirmed") {
+      throw new TrustError(
+        "inviting_already_confirmed",
+        "A confirmed invitation cannot be cancelled.",
+      );
+    }
+    invite.state = "cancelled";
+    invite.updatedAt = now();
+    return invite;
+  }
+
   /* ---------------------------------------------------------------- */
   /* Helpers                                                          */
   /* ---------------------------------------------------------------- */
