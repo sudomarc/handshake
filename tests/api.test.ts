@@ -49,6 +49,7 @@ describe("API routes", () => {
   });
 
   afterEach(() => {
+    process.env.FEATHERLESS_API_KEY = "test_api_key_12345";
     globalThis.fetch = originalFetch;
   });
 
@@ -221,6 +222,74 @@ describe("API routes", () => {
       assert.equal(json.challenge, "What is your favorite color?");
       assert.equal(json.category, "personal");
       assert.equal(json.difficulty, "easy");
+    });
+
+    test("handles missing FEATHERLESS_API_KEY gracefully in analyze endpoint", async () => {
+      delete process.env.FEATHERLESS_API_KEY;
+
+      const req = new NextRequest("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify({ transcript: "Send money now" }),
+        headers: { "x-forwarded-for": "10.0.0.3", "Content-Type": "application/json" },
+      });
+      const res = await analyzeHandler(req);
+      assert.equal(res.status, 503);
+
+      const json = await res.json();
+      assert.equal(json.error.code, "not_configured");
+    });
+
+    test("handles downstream Featherless API error status response", async () => {
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlString = typeof input === "string" ? input : input.toString();
+        if (urlString.includes("featherless.ai")) {
+          return new Response("Internal Server Error", { status: 500 });
+        }
+        return originalFetch(input);
+      };
+
+      const req = new NextRequest("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify({ transcript: "Urgent wire required" }),
+        headers: { "x-forwarded-for": "10.0.0.4", "Content-Type": "application/json" },
+      });
+      const res = await analyzeHandler(req);
+      assert.equal(res.status, 500);
+
+      const json = await res.json();
+      assert.equal(json.error.code, "internal_error");
+    });
+
+    test("handles malformed JSON response from LLM downstream in analyze endpoint", async () => {
+      globalThis.fetch = async (input: RequestInfo | URL) => {
+        const urlString = typeof input === "string" ? input : input.toString();
+        if (urlString.includes("featherless.ai")) {
+          return new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: {
+                    content: "This is not json text at all",
+                  },
+                },
+              ],
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        return originalFetch(input);
+      };
+
+      const req = new NextRequest("http://localhost/api/analyze", {
+        method: "POST",
+        body: JSON.stringify({ transcript: "Urgent wire required" }),
+        headers: { "x-forwarded-for": "10.0.0.5", "Content-Type": "application/json" },
+      });
+      const res = await analyzeHandler(req);
+      assert.equal(res.status, 500);
+
+      const json = await res.json();
+      assert.equal(json.error.code, "internal_error");
     });
   });
 });
