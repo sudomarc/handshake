@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,15 +14,8 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -68,7 +54,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -127,6 +116,26 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("bucket limit capacity prevents unbounded memory growth", () => {
+    const max = 5;
+    const windowMs = 60000;
+    const now = 3000000;
+
+    // Fill up buckets to 10,000 items
+    for (let i = 0; i < 10000; i++) {
+      consume(`key_${i}`, max, windowMs, now);
+    }
+
+    // 10,001st key when no buckets have expired should be rejected
+    const overCapacityResult = consume("key_over_capacity", max, windowMs, now);
+    assert.equal(overCapacityResult.allowed, false);
+
+    // After window expiration, sweep cleans old buckets and new keys are allowed
+    const nextWindowNow = now + windowMs + 1000;
+    const afterSweepResult = consume("new_key_after_sweep", max, windowMs, nextWindowNow);
+    assert.equal(afterSweepResult.allowed, true);
+  });
 });
 
 describe("lib/schemas", () => {
@@ -152,10 +161,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +182,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
@@ -226,9 +233,33 @@ describe("lib/http", () => {
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
+
+      // Verify unhandled error messages are sanitized and do not leak internal/provider details
+      const r7 = handleApiError(
+        new Error("Featherless API error (500) internal stack trace leakage"),
+      );
+      assert.equal(r7.status, 500);
+      const payload7 = await r7.json();
+      assert.equal(payload7.error.code, "internal_error");
+      assert.equal(payload7.error.message, "Something went wrong on our side. Please try again.");
     } finally {
       console.error = origConsoleError;
     }
+  });
+
+  test("handleApiError handles TrustError codes with appropriate HTTP status", async () => {
+    const { TrustError } = await import("../lib/trustStore");
+
+    const e1 = handleApiError(new TrustError("device_revoked", "Device was revoked"));
+    assert.equal(e1.status, 403);
+
+    const e2 = handleApiError(new TrustError("inviting_not_found", "Invite not found"));
+    assert.equal(e2.status, 404);
+
+    const e3 = handleApiError(new TrustError("invalid_proof", "Invalid proof"));
+    assert.equal(e3.status, 409);
+    const p3 = await e3.json();
+    assert.equal(p3.error.message, "Handshake could not confirm this device.");
   });
 });
 
