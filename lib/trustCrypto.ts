@@ -213,6 +213,7 @@ export function verifySessionToken(
   },
   now = Date.now(),
 ): boolean {
+  if (typeof token !== "string" || !token) return false;
   if (now > expected.expiresAt) return false;
   const expectedToken = issueSessionToken(expected);
   return safeEqualHex(

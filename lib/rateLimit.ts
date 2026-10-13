@@ -34,7 +34,7 @@ export function consume(
       sweep(now);
       // Still full of live buckets: refuse rather than grow without bound.
       if (buckets.size >= MAX_BUCKETS)
-        return { allowed: false, retryAfterSeconds: Math.ceil((resetAt - now) / 1000) };
+        return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((resetAt - now) / 1000)) };
     }
     buckets.set(key, { count: 1, resetAt });
     return { allowed: true, remaining: max - 1 };

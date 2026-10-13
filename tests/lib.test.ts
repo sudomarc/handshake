@@ -31,6 +31,7 @@ import {
   createCallSessionRequestSchema,
 } from "../lib/callSchemas";
 import { callSessionStore } from "../lib/callStore";
+import { verifySessionToken, type PairId, type DeviceId } from "../lib/trustCrypto";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
 const VALID_PAIR_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
@@ -70,6 +71,20 @@ describe("lib/totp", () => {
 
       const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
       assert.equal(wrongVerdict, "not-verified");
+    } finally {
+      process.env.PAIR_DERIVATION_KEY = origKey;
+    }
+  });
+
+  test("verifyCode rejects malformed and non-numeric codes safely", async () => {
+    const origKey = process.env.PAIR_DERIVATION_KEY;
+    try {
+      process.env.PAIR_DERIVATION_KEY = TEST_DERIVATION_KEY;
+      assert.equal(await verifyCode(VALID_PAIR_ID, "abc"), "not-verified");
+      assert.equal(await verifyCode(VALID_PAIR_ID, "12345"), "not-verified");
+      assert.equal(await verifyCode(VALID_PAIR_ID, "1234567"), "not-verified");
+      assert.equal(await verifyCode(VALID_PAIR_ID, ""), "not-verified");
+      assert.equal(await verifyCode(VALID_PAIR_ID, "   "), "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
     }
@@ -126,6 +141,24 @@ describe("lib/rateLimit", () => {
     // 11th request from same IP with a brand-new pairId should be blocked by IP rate limit
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
+  });
+
+  test("consume handles bucket limit exhaustion gracefully", () => {
+    const max = 5;
+    const windowMs = 30000;
+    const now = 1000000;
+
+    // Fill buckets up to MAX_BUCKETS (10000)
+    for (let i = 0; i < 10000; i++) {
+      consume(`bucket:${i}`, max, windowMs, now);
+    }
+
+    // 10001st bucket when table is full and all buckets are unexpired
+    const rFull = consume("bucket:overflow", max, windowMs, now);
+    assert.equal(rFull.allowed, false);
+    if (!rFull.allowed) {
+      assert.equal(rFull.retryAfterSeconds >= 1, true);
+    }
   });
 });
 
@@ -229,6 +262,24 @@ describe("lib/http", () => {
     } finally {
       console.error = origConsoleError;
     }
+  });
+});
+
+describe("lib/trustCrypto", () => {
+  test("verifySessionToken handles invalid token types safely", () => {
+    const dummyPairId = VALID_PAIR_ID as unknown as PairId;
+    const dummyDeviceId = "d1" as unknown as DeviceId;
+    const expected = {
+      sessionId: "s1",
+      pairId: dummyPairId,
+      initiatorDeviceId: dummyDeviceId,
+      peerDeviceId: dummyDeviceId,
+      issuedAt: 1000,
+      expiresAt: 2000,
+    };
+    assert.equal(verifySessionToken("", expected, 1500), false);
+    assert.equal(verifySessionToken(null as unknown as string, expected, 1500), false);
+    assert.equal(verifySessionToken(undefined as unknown as string, expected, 1500), false);
   });
 });
 

@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { generate, verify } from "otplib";
 import { ConfigError } from "./errors";
-import { pairIdSchema, type CurrentCode, type Verdict } from "./schemas";
+import { pairIdSchema, sixDigitCodeSchema, type CurrentCode, type Verdict } from "./schemas";
 
 const PERIOD_SECONDS = 30;
 const MIN_KEY_LENGTH = 32;
@@ -39,10 +39,12 @@ export async function getCurrentCode(pairId: string): Promise<CurrentCode> {
 /** Accepts the current and the previous 30 s window to absorb the rotation boundary. */
 export async function verifyCode(pairId: string, code: string): Promise<Verdict> {
   const secret = derivePairSecret(pairId);
+  const parsedCode = sixDigitCodeSchema.safeParse(code);
+  if (!parsedCode.success) return "not-verified";
   const epoch = Math.floor(Date.now() / 1000);
   const result = await verify({
     secret,
-    token: code,
+    token: parsedCode.data,
     period: PERIOD_SECONDS,
     digits: 6,
     epoch,
