@@ -127,6 +127,26 @@ describe("lib/rateLimit", () => {
     const ipResult11 = consume(`analyze:ip:${clientIp}`, max, windowMs, now);
     assert.equal(ipResult11.allowed, false);
   });
+
+  test("bucket capacity overflow and expired bucket sweep", () => {
+    const max = 5;
+    const windowMs = 10000;
+    const now = 1000;
+
+    // Fill capacity up to MAX_BUCKETS (10,000)
+    for (let i = 0; i < 10000; i++) {
+      consume(`bucket_${i}`, max, windowMs, now);
+    }
+
+    // At capacity with active unexpired buckets: 10,001st bucket is rejected
+    const rejected = consume("bucket_overflow", max, windowMs, now);
+    assert.equal(rejected.allowed, false);
+
+    // Advance time past windowMs so existing buckets expire
+    const nowLater = now + windowMs + 1000;
+    const allowedAfterSweep = consume("bucket_overflow", max, windowMs, nowLater);
+    assert.equal(allowedAfterSweep.allowed, true);
+  });
 });
 
 describe("lib/schemas", () => {
