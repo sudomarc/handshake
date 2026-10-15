@@ -7,6 +7,9 @@
  */
 
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { test, describe, beforeEach, afterEach } from "node:test";
 import { NextRequest } from "next/server";
 import { POST as enrollHandler } from "../app/api/trust/enroll/route";
@@ -420,9 +423,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +620,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +656,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +675,59 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & Export/Import                                     */
+  /* ---------------------------------------------------------------- */
+
+  describe("state export/import and persistence", () => {
+    test("exportState and importState preserve full trust store state", async () => {
+      await enroll(alice, "Alice Phone");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice" });
+      const opened = await openSession(alice);
+
+      const exported = trustStore.exportState();
+      assert.ok(exported.pairs.length > 0);
+      assert.ok(exported.invites.length > 0);
+      assert.ok(exported.sessions.length > 0);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+      assert.equal(trustStore.getInvite(invite.inviteId), null);
+
+      trustStore.importState(exported);
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+      const polled = await pollSession(alice, opened.body.sessionId);
+      assert.equal(polled.res.status, 200);
+    });
+
+    test("atomic file persistence reloads state automatically", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "trust-store-test-"));
+      const storeFile = path.join(tmpDir, "trustStore.json");
+
+      try {
+        trustStore.setFilePath(storeFile);
+        await enroll(alice, "Persisted Alice");
+        const invite = trustStore.createInvite({ ownerDisplayName: "Bob" });
+
+        assert.ok(fs.existsSync(storeFile));
+        const fileContent = fs.readFileSync(storeFile, "utf8");
+        assert.match(fileContent, /Persisted Alice/);
+
+        // Reset store and clear file binding to verify reload from file path constructor
+        trustStore.setFilePath(null);
+        trustStore.reset();
+
+        trustStore.setFilePath(storeFile);
+        assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+        assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Bob");
+      } finally {
+        trustStore.setFilePath(null);
+        trustStore.reset();
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
   });
 });
