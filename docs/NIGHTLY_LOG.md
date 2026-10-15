@@ -39,3 +39,43 @@
 1. Implement durable shared persistence for trust enrollments and sessions (`ROADMAP.md` Priority 1).
 2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
 3. Enhance mobile hook test coverage for offline trust state fallback.
+
+## 2026-10-15
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 15, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (format check noted existing unformatted files in repo; verified touched files are Prettier-clean).
+  - Root `npm test` -> 133 root unit tests PASS, 9 plugin unit tests PASS (142 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap Item 1):** Make trust verification dependable - Implement durable persistence for trust enrollments, invites, and call sessions (`ROADMAP.md` Priority 1).
+- **What was changed:**
+  - `lib/trustStore.ts`: Added state serialization and deserialization (`exportState`, `importState`), atomic file persistence (`saveToFile`, `loadFromFile`), and environment variable configuration (`TRUST_STORE_PATH`) with auto-saving on all mutating store actions.
+  - `tests/trust.test.ts`: Added unit tests covering store state export/import, atomic temporary-file save and reload, and `TRUST_STORE_PATH` auto-loading/auto-saving.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 warnings / errors).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; `.github/workflows/android-apk.yml` untouched.
+
+### Known Risks & Open Findings
+
+- File-backed persistence via `TRUST_STORE_PATH` works for single-server or volume-mounted instances; distributed multi-region serverless deployments without shared volumes will require external database integration (e.g. Redis or Postgres).
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and expand rate limiting and abuse controls for trust endpoints.
