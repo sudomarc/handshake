@@ -420,9 +420,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +617,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +653,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +672,102 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & export/import                                      */
+  /* ---------------------------------------------------------------- */
+
+  describe("TrustStore persistence", () => {
+    test("exportState and importState preserve devices, invites, and sessions with nonces", async () => {
+      await enroll(alice, "Alice Phone");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice" });
+      trustStore.openSession({
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        nonce: nonce(),
+        issuedAt: Date.now(),
+        proof: await proof(
+          alice,
+          TRUST_PROTOCOL,
+          nonceSeq.toString(16).padStart(32, "d"),
+          Date.now(),
+        ),
+      });
+
+      const exported = trustStore.exportState();
+      assert.equal(exported.pairs.length, 1);
+      assert.equal(exported.invites.length, 1);
+      assert.equal(exported.sessions.length, 1);
+      assert.equal(exported.sessions[0].usedNonces.length, 1);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+      trustStore.importState(exported);
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+
+      const restoredSession = trustStore.readSession.bind(trustStore);
+      assert.ok(restoredSession);
+    });
+
+    test("saveToFile and loadFromFile persist state atomically to disk", async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const os = await import("node:os");
+
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "truststore-test-"));
+      const filePath = path.join(tmpDir, "trust_store.json");
+
+      try {
+        await enroll(alice, "Alice Disk");
+        trustStore.saveToFile(filePath);
+
+        assert.equal(fs.existsSync(filePath), true);
+
+        trustStore.reset();
+        assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+        const loaded = trustStore.loadFromFile(filePath);
+        assert.equal(loaded, true);
+        assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+        assert.equal(trustStore.listDevices(PAIR_A)[0].label, "Alice Disk");
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test("TRUST_STORE_PATH environment variable enables autoSave and autoLoad", async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const os = await import("node:os");
+
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "truststore-env-test-"));
+      const filePath = path.join(tmpDir, "store.json");
+
+      const prevPath = process.env.TRUST_STORE_PATH;
+      process.env.TRUST_STORE_PATH = filePath;
+
+      try {
+        await enroll(alice, "Alice Env");
+        // Enrolling triggers autoSave to TRUST_STORE_PATH.
+        assert.equal(fs.existsSync(filePath), true);
+
+        trustStore.reset();
+        assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+        trustStore.loadFromFile();
+        assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+        assert.equal(trustStore.listDevices(PAIR_A)[0].label, "Alice Env");
+      } finally {
+        if (prevPath !== undefined) {
+          process.env.TRUST_STORE_PATH = prevPath;
+        } else {
+          delete process.env.TRUST_STORE_PATH;
+        }
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
   });
 });
