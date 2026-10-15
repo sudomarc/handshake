@@ -420,9 +420,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +617,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +653,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +672,65 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & Export/Import                                      */
+  /* ---------------------------------------------------------------- */
+
+  describe("state export/import and file persistence", () => {
+    test("exportState and importState preserve store state", async () => {
+      await enroll(alice, "Alice Phone");
+      await enroll(bob, "Bob Phone");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice" });
+
+      const exported = trustStore.exportState();
+      assert.equal(exported.pairs.length, 1);
+      assert.equal(exported.pairs[0][1].length, 2);
+      assert.equal(exported.invites.length, 1);
+      assert.equal(exported.invites[0].inviteId, invite.inviteId);
+
+      trustStore.reset();
+      assert.equal(trustStore.exportState().pairs.length, 0);
+
+      trustStore.importState(exported);
+      const reExported = trustStore.exportState();
+      assert.equal(reExported.pairs.length, 1);
+      assert.equal(reExported.pairs[0][1].length, 2);
+      assert.equal(reExported.invites.length, 1);
+      assert.equal(reExported.invites[0].inviteId, invite.inviteId);
+    });
+
+    test("file persistence loads and saves atomically", async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const os = await import("node:os");
+
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "trust-store-test-"));
+      const filePath = path.join(tmpDir, "store.json");
+
+      try {
+        const { trustStore: store1 } = await import("../lib/trustStore");
+        // Instantiate custom store with file path
+        const customStoreClass = store1.constructor as new (p?: string) => typeof store1;
+        const storeInstance1 = new customStoreClass(filePath);
+
+        storeInstance1.enroll({
+          pairId: PAIR_A,
+          deviceId: alice.deviceId,
+          deviceSecret: alice.deviceSecret,
+          label: "Alice",
+        });
+
+        assert.equal(fs.existsSync(filePath), true);
+
+        const storeInstance2 = new customStoreClass(filePath);
+        const devices = storeInstance2.listDevices(PAIR_A);
+        assert.equal(devices.length, 1);
+        assert.equal(devices[0].deviceId, alice.deviceId);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
   });
 });
