@@ -23,7 +23,10 @@ import {
   verifyDeviceProof,
   verifySessionToken,
 } from "../lib/trustCrypto";
-import { TrustError, trustStore, SESSION_TTL_MS } from "../lib/trustStore";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { existsSync, unlinkSync } from "node:fs";
+import { TrustError, trustStore, TrustStore, SESSION_TTL_MS } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
 import type { DeviceId, PairId } from "../lib/trustSchemas";
 
@@ -420,9 +423,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +620,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +656,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +675,106 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* TrustStore state export/import & file persistence                 */
+  /* ---------------------------------------------------------------- */
+
+  describe("TrustStore state export/import & persistence", () => {
+    const testFilePath = join(tmpdir(), `handshake-trust-test-${Date.now()}.json`);
+
+    afterEach(() => {
+      delete process.env.TRUST_STORE_PATH;
+      if (existsSync(testFilePath)) {
+        try {
+          unlinkSync(testFilePath);
+        } catch {
+          // ignore
+        }
+      }
+    });
+
+    test("exportState and importState preserve devices, sessions and invites", () => {
+      const store1 = new TrustStore();
+      store1.enroll({
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+        label: "Alice",
+      });
+      const invite = store1.createInvite({ ownerDisplayName: "Alice" });
+
+      const snapshot = store1.exportState();
+      assert.equal(snapshot.pairs.length, 1);
+      assert.equal(snapshot.invites.length, 1);
+      assert.equal(snapshot.invites[0].inviteId, invite.inviteId);
+
+      const store2 = new TrustStore();
+      store2.importState(snapshot);
+      assert.equal(store2.listDevices(PAIR_A).length, 1);
+      assert.equal(store2.getInvite(invite.inviteId)?.inviteId, invite.inviteId);
+    });
+
+    test("saveToFile and loadFromFile restore state from disk", () => {
+      const store1 = new TrustStore(testFilePath);
+      store1.enroll({
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+        label: "Alice",
+      });
+      const invite = store1.createInvite({ ownerDisplayName: "Alice" });
+
+      assert.equal(existsSync(testFilePath), true);
+
+      const store2 = new TrustStore(testFilePath);
+      assert.equal(store2.listDevices(PAIR_A).length, 1);
+      assert.equal(store2.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+    });
+
+    test("TRUST_STORE_PATH environment variable enables auto-persistence", () => {
+      process.env.TRUST_STORE_PATH = testFilePath;
+      const store1 = new TrustStore();
+      store1.enroll({ pairId: PAIR_A, deviceId: alice.deviceId, deviceSecret: alice.deviceSecret });
+
+      assert.equal(existsSync(testFilePath), true);
+
+      const store2 = new TrustStore();
+      assert.equal(store2.listDevices(PAIR_A).length, 1);
+      assert.equal(store2.listDevices(PAIR_A)[0].deviceId, alice.deviceId);
+    });
+
+    test("persists full QR invitation lifecycle across separate store instances", () => {
+      // Step 1: Create invite in instance 1.
+      const store1 = new TrustStore(testFilePath);
+      const created = store1.createInvite({ ownerDisplayName: "Alice" });
+
+      // Step 2: Accept invite in instance 2 (simulating server restart or new process).
+      const store2 = new TrustStore(testFilePath);
+      const accepted = store2.acceptInvite({
+        inviteId: created.inviteId,
+        peerDisplayName: "Bob",
+        deviceId: bob.deviceId,
+        deviceSecret: bob.deviceSecret,
+      });
+      assert.equal(accepted.invite.state, "accepted");
+      assert.ok(accepted.invite.pairId);
+
+      // Step 3: Confirm invite in instance 3.
+      const store3 = new TrustStore(testFilePath);
+      const confirmed = store3.confirmInvite({
+        inviteId: created.inviteId,
+        pairId: accepted.invite.pairId!,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+      });
+      assert.equal(confirmed.state, "confirmed");
+
+      // Step 4: Verify both enrolled devices are present in instance 4.
+      const store4 = new TrustStore(testFilePath);
+      const devices = store4.listDevices(accepted.invite.pairId!);
+      assert.equal(devices.length, 2);
+    });
   });
 });
