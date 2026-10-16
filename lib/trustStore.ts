@@ -11,6 +11,8 @@
  */
 
 import { randomBytes } from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
   sessionAttestation,
   issueSessionToken,
@@ -20,6 +22,25 @@ import {
   type PairId,
 } from "./trustCrypto";
 import type { TrustState } from "./trustSchemas";
+
+export interface SerializedSession {
+  sessionId: string;
+  pairId: PairId;
+  initiatorDeviceId: DeviceId;
+  peerDeviceId: DeviceId | null;
+  challengeNonce: string;
+  issuedAt: number;
+  expiresAt: number;
+  usedNonces: string[];
+  state: TrustState;
+}
+
+export interface TrustStoreSnapshot {
+  version: number;
+  pairs: Array<{ pairId: PairId; devices: StoredDevice[] }>;
+  sessions: SerializedSession[];
+  invites: StoredInvite[];
+}
 
 /** How long a call session may stay open waiting for the peer device. */
 export const SESSION_TTL_MS = 5 * 60_000;
@@ -115,11 +136,20 @@ class TrustStore {
   private sessions = new Map<string, StoredSession>();
   private invites = new Map<string, StoredInvite>();
   private timer: NodeJS.Timeout | null;
+  private persistencePath: string | null = null;
 
-  constructor() {
+  constructor(filePath?: string) {
+    this.persistencePath = filePath ?? process.env.TRUST_STORE_PATH ?? null;
+    if (this.persistencePath) {
+      this.loadFromFile(this.persistencePath);
+    }
     // unref keeps the sweep timer from holding the process open in tests.
     this.timer = setInterval(() => this.sweep(), CLEANUP_INTERVAL_MS);
     this.timer.unref?.();
+  }
+
+  setPersistencePath(filePath: string | null): void {
+    this.persistencePath = filePath;
   }
 
   /* ---------------------------------------------------------------- */
@@ -156,6 +186,7 @@ class TrustStore {
       revokedAt: null,
     };
     devices.set(input.deviceId, device);
+    this.autoSave();
     return device;
   }
 
@@ -201,6 +232,7 @@ class TrustStore {
       if (touched && session.state === "trusted") session.state = "unverified";
     }
 
+    this.autoSave();
     return revoked;
   }
 
@@ -259,6 +291,7 @@ class TrustStore {
     this.consumeNonce(session, input.nonce);
     device.lastSeenAt = at;
     this.sessions.set(session.sessionId, session);
+    this.autoSave();
     return session;
   }
 
@@ -297,6 +330,7 @@ class TrustStore {
     session.state = "trusted";
     session.issuedAt = now();
     device.lastSeenAt = session.issuedAt;
+    this.autoSave();
     return session;
   }
 
@@ -368,6 +402,7 @@ class TrustStore {
       updatedAt: at,
     };
     this.invites.set(invite.inviteId, invite);
+    this.autoSave();
     return invite;
   }
 
@@ -430,6 +465,7 @@ class TrustStore {
       deviceSecret: input.deviceSecret,
       label: input.label,
     });
+    this.autoSave();
     return { invite, device };
   }
 
@@ -484,6 +520,7 @@ class TrustStore {
     });
     invite.state = "confirmed";
     invite.updatedAt = now();
+    this.autoSave();
     return invite;
   }
 
@@ -556,6 +593,106 @@ class TrustStore {
         if (stale && device.revokedAt !== null) devices.delete(deviceId);
       }
       if (devices.size === 0) this.pairs.delete(pairId);
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & State Import/Export                                */
+  /* ---------------------------------------------------------------- */
+
+  exportState(): TrustStoreSnapshot {
+    const pairs: Array<{ pairId: PairId; devices: StoredDevice[] }> = [];
+    for (const [pairId, deviceMap] of this.pairs.entries()) {
+      pairs.push({
+        pairId,
+        devices: Array.from(deviceMap.values()),
+      });
+    }
+
+    const sessions: SerializedSession[] = [];
+    for (const session of this.sessions.values()) {
+      sessions.push({
+        ...session,
+        usedNonces: Array.from(session.usedNonces),
+      });
+    }
+
+    const invites: StoredInvite[] = Array.from(this.invites.values());
+
+    return {
+      version: 1,
+      pairs,
+      sessions,
+      invites,
+    };
+  }
+
+  importState(snapshot: TrustStoreSnapshot): void {
+    if (!snapshot || snapshot.version !== 1) {
+      throw new TrustError("invalid_proof", "Invalid or unsupported trust store snapshot version.");
+    }
+
+    this.pairs.clear();
+    for (const p of snapshot.pairs || []) {
+      const deviceMap = new Map<DeviceId, StoredDevice>();
+      for (const d of p.devices || []) {
+        deviceMap.set(d.deviceId, d);
+      }
+      this.pairs.set(p.pairId, deviceMap);
+    }
+
+    this.sessions.clear();
+    for (const s of snapshot.sessions || []) {
+      this.sessions.set(s.sessionId, {
+        ...s,
+        usedNonces: new Set(s.usedNonces || []),
+      });
+    }
+
+    this.invites.clear();
+    for (const inv of snapshot.invites || []) {
+      this.invites.set(inv.inviteId, inv);
+    }
+  }
+
+  saveToFile(filePath?: string): void {
+    const targetPath = filePath ?? this.persistencePath;
+    if (!targetPath) return;
+
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const snapshot = this.exportState();
+    const data = JSON.stringify(snapshot, null, 2);
+    const tmpPath = `${targetPath}.tmp.${randomBytes(4).toString("hex")}`;
+
+    fs.writeFileSync(tmpPath, data, "utf8");
+    fs.renameSync(tmpPath, targetPath);
+  }
+
+  loadFromFile(filePath?: string): boolean {
+    const targetPath = filePath ?? this.persistencePath;
+    if (!targetPath || !fs.existsSync(targetPath)) return false;
+
+    try {
+      const data = fs.readFileSync(targetPath, "utf8");
+      const snapshot = JSON.parse(data) as TrustStoreSnapshot;
+      this.importState(snapshot);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private autoSave(): void {
+    if (this.persistencePath) {
+      try {
+        this.saveToFile(this.persistencePath);
+      } catch {
+        // Safe fallback - persistence errors shouldn't crash active requests
+      }
     }
   }
 

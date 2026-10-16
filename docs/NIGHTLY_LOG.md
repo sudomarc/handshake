@@ -1,5 +1,46 @@
 # Nightly Engineer Log
 
+## 2026-10-16
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 16, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS (142 total PASS) after `cd mobile && npm ci`.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap Item #1):** "Replace instance-local in-memory trust storage before any production use" / "Introduce durable shared storage".
+- **What was changed:**
+  - `lib/trustStore.ts`: Implemented `exportState()`, `importState()`, `saveToFile()`, `loadFromFile()`, `setPersistencePath()`, and `autoSave()` for file-backed atomic persistence. `TRUST_STORE_PATH` env var or constructor/method argument can configure state persistence path across restarts.
+  - `tests/trustPersistence.test.ts`: Added unit tests for state snapshot export/import, atomic file persistence, corrupt file handling, and version validation.
+  - `package.json`: Included `tests/trustPersistence.test.ts` in `"test"` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 lint or build errors).
+- Root `npm test`: 138 root unit tests PASS (including 5 new persistence tests), 9 plugin unit tests PASS (147 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires Android SDK; workflow file unchanged.
+
+### Known Risks & Open Findings
+
+- File-backed atomic persistence in `lib/trustStore.ts` provides single-instance server durability across process restarts. Multi-region serverless clustering with simultaneous writes requires a distributed store (e.g., Redis/Postgres) as documented in `SECURITY.md`.
+- Remote carrier call audio and third-party app audio remain unavailable due to Android OS permission constraints (`CAPTURE_AUDIO_OUTPUT`).
+
+### Needs Human
+
+- On-device 2-phone QR pairing and live call overlay verification against deployed backend environments.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review rate-limiting persistence across process restarts for `/api/trust/*` endpoints.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
