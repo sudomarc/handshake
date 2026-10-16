@@ -39,3 +39,44 @@
 1. Implement durable shared persistence for trust enrollments and sessions (`ROADMAP.md` Priority 1).
 2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
 3. Enhance mobile hook test coverage for offline trust state fallback.
+
+## 2026-10-16
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 16, 2026, post Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test`: 135 root unit tests PASS, 9 plugin unit tests PASS (144 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Priority 1 item on `ROADMAP.md`: "Replace instance-local in-memory trust storage before any production use."
+- **What was changed:**
+  - `lib/trustStore.ts`: Implemented `exportState()`, `importState()`, `loadFromFile()`, and `saveToFile()` with atomic file writing (`fs.writeFileSync` to temp file then `fs.renameSync`). Added optional constructor `persistencePath` parameter and fallback to `process.env.TRUST_STORE_PATH`. Configured automatic state saving on state mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `readSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`, `reset`).
+  - `tests/trust.test.ts`: Added unit test suite covering `exportState`/`importState` roundtrip (including `usedNonces` Set conversion) and file-backed atomic persistence across store instances and `TRUST_STORE_PATH`.
+  - `ROADMAP.md`: Checked off the trust storage persistence roadmap item.
+
+### Verification Gate Summary
+
+- Root build, lint, and tests: PASS (144/144 tests PASS).
+- Mobile typecheck and lint: PASS (0 errors / 0 warnings).
+- Touched files formatted with Prettier (`lib/trustStore.ts`, `tests/trust.test.ts`, `ROADMAP.md`, `docs/NIGHTLY_LOG.md`).
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; `.github/workflows/android-apk.yml` untouched.
+
+### Known Risks & Open Findings
+
+- File-backed persistence supports single-instance local disk storage or network-mounted volumes; distributed serverless deployments across disjoint regions require Redis/SQL adapter for shared multi-region persistence.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review rate limiting in `lib/rateLimit.ts` for file-backed/distributed state persistence.
