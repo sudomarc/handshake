@@ -39,3 +39,42 @@
 1. Implement durable shared persistence for trust enrollments and sessions (`ROADMAP.md` Priority 1).
 2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
 3. Enhance mobile hook test coverage for offline trust state fallback.
+
+## 2026-10-17
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 17, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (format check had pre-existing formatting warnings on untouched files).
+  - Root `npm test` -> 133 root tests PASS, 9 plugin tests PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=./mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Implemented durable snapshot export/import and atomic file-backed persistence for `TrustStore` (`lib/trustStore.ts`).
+- **What was changed:**
+  - `lib/trustStore.ts`: Added `exportState()`, `importState()`, `loadFromFile()`, and atomic `saveToFile()` using write-to-temp-file and `renameSync`. Configured via `TRUST_STORE_PATH` env var or explicit constructor path parameter.
+  - `tests/trust.test.ts`: Added unit tests for snapshot export/import, `usedNonces` Set restoration (verifying nonce replay protection persists across snapshots), and atomic file persistence.
+  - `ROADMAP.md`: Marked trust store persistence task complete.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build && npm test`: 135 root unit tests PASS, 9 plugin unit tests PASS (144 total PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS (0 errors / 0 warnings).
+- Native config-plugin tests: PASS (9/9).
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Audit and strengthen rate limiting persistence across server restarts.
