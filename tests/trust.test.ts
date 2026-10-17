@@ -7,6 +7,9 @@
  */
 
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { test, describe, beforeEach, afterEach } from "node:test";
 import { NextRequest } from "next/server";
 import { POST as enrollHandler } from "../app/api/trust/enroll/route";
@@ -23,7 +26,7 @@ import {
   verifyDeviceProof,
   verifySessionToken,
 } from "../lib/trustCrypto";
-import { TrustError, trustStore, SESSION_TTL_MS } from "../lib/trustStore";
+import { TrustError, TrustStore, trustStore, SESSION_TTL_MS } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
 import type { DeviceId, PairId } from "../lib/trustSchemas";
 
@@ -420,9 +423,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -485,7 +490,6 @@ describe("trusted-call protocol", () => {
       assert.notEqual((await openSession(bob)).res.status, 201);
       assert.notEqual((await joinSession(bob, sessionId)).res.status, 200);
 
-      // The previously confirmed session no longer reads as trusted.
       // The previously confirmed session no longer reads as trusted.
       assert.equal((await pollSession(alice, sessionId)).body.state, "unverified");
     });
@@ -555,6 +559,94 @@ describe("trusted-call protocol", () => {
   });
 
   /* ---------------------------------------------------------------- */
+  /* Persistence & State Export/Import                               */
+  /* ---------------------------------------------------------------- */
+
+  describe("TrustStore Persistence & State Export/Import", () => {
+    let tmpDir: string;
+    let tmpFile: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "trust-store-test-"));
+      tmpFile = path.join(tmpDir, "subfolder", "trust-state.json");
+    });
+
+    afterEach(() => {
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    test("exportState and importState preserve full store state parity", () => {
+      const store1 = new TrustStore();
+      store1.enroll({
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+        label: "Alice Phone",
+      });
+      const invite = store1.createInvite({ ownerDisplayName: "Alice" });
+
+      const exported = store1.exportState();
+      assert.equal(exported.version, 1);
+      assert.equal(exported.pairs.length, 1);
+      assert.equal(exported.pairs[0].pairId, PAIR_A);
+      assert.equal(exported.invites.length, 1);
+      assert.equal(exported.invites[0].inviteId, invite.inviteId);
+
+      const store2 = new TrustStore();
+      store2.importState(exported);
+      assert.equal(store2.listDevices(PAIR_A).length, 1);
+      assert.equal(store2.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+    });
+
+    test("atomic file persistence saves state and restores on new instance creation", () => {
+      const store1 = new TrustStore({ persistPath: tmpFile });
+      store1.enroll({
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+        label: "Alice Phone",
+      });
+
+      assert.ok(fs.existsSync(tmpFile), "Persistence file should be created automatically");
+
+      // Simulating new server instance / process restart reading same persistence file
+      const store2 = new TrustStore({ persistPath: tmpFile });
+      const devices = store2.listDevices(PAIR_A);
+      assert.equal(devices.length, 1);
+      assert.equal(devices[0].deviceId, alice.deviceId);
+      assert.equal(devices[0].label, "Alice Phone");
+    });
+
+    test("setPersistPath enables file persistence on existing store", () => {
+      const store = new TrustStore();
+      store.enroll({
+        pairId: PAIR_B,
+        deviceId: stranger.deviceId,
+        deviceSecret: stranger.deviceSecret,
+      });
+
+      assert.equal(fs.existsSync(tmpFile), false);
+      store.setPersistPath(tmpFile);
+      store.saveToFile();
+
+      assert.ok(fs.existsSync(tmpFile));
+      const newStore = new TrustStore({ persistPath: tmpFile });
+      assert.equal(newStore.listDevices(PAIR_B).length, 1);
+    });
+
+    test("throws when importing invalid state or version mismatch", () => {
+      const store = new TrustStore();
+      assert.throws(
+        () =>
+          store.importState({ version: 2 } as unknown as Parameters<typeof store.importState>[0]),
+        /Invalid or unsupported trust store state version/,
+      );
+    });
+  });
+
+  /* ---------------------------------------------------------------- */
   /* Crypto primitives                                               */
   /* ---------------------------------------------------------------- */
 
@@ -615,8 +707,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +743,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
