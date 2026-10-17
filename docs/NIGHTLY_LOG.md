@@ -39,3 +39,44 @@
 1. Implement durable shared persistence for trust enrollments and sessions (`ROADMAP.md` Priority 1).
 2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
 3. Enhance mobile hook test coverage for offline trust state fallback.
+
+## 2026-10-15
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 15, 2026).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint & build), format:check warnings on untouched files.
+  - Root `npm test` -> 133 root tests + 9 plugin tests PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck & lint).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Item 1 under "Make trust verification dependable" in `ROADMAP.md` ("Replace instance-local in-memory trust storage before any production use").
+- **What was changed:**
+  - `lib/trustStore.ts`: Implemented `exportState()`, `importState()`, and atomic file-backed persistence configured via `TRUST_STORE_PATH` or an explicit file path parameter.
+  - `tests/trust.test.ts`: Added unit tests covering export/import roundtrip, file persistence across store instances, atomic file writes, and corrupt file error handling.
+  - `ROADMAP.md`: Updated status for trust store persistence.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS.
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; `.github/workflows/android-apk.yml` untouched.
+
+### Known Risks & Open Findings
+
+- Serverless deployments with multiple isolated ephemeral instances without persistent disk should configure `TRUST_STORE_PATH` on a shared persistent volume or use external database storage.
+- Remote carrier call audio and third-party calling app audio remain inaccessible on Android due to system security boundaries (`CAPTURE_AUDIO_OUTPUT` restriction).
+
+### Needs Human
+
+- On-device QR invitation & pairing end-to-end verification across two physical Android devices.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Audit and strengthen rate limiting and nonce replay prevention on `/api/trust/*` endpoints.
