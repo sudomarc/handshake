@@ -1,5 +1,45 @@
 # Nightly Engineer Log
 
+## 2026-10-17
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 17, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS.
+  - Root `npm test` -> PASS (133 root tests + 9 plugin tests).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** `ROADMAP.md` Priority 1: "Replace instance-local in-memory trust storage before any production use" / "Introduce durable shared persistence".
+- **What was changed:**
+  - `lib/trustStore.ts`: Added state export/import (`exportState`, `importState`) and atomic file-backed persistence (`loadFromFile`, `saveToFile`) with `TRUST_STORE_PATH` env var support. Automatically persists state mutations with error isolation and change-detection during periodic sweeps.
+  - `tests/trust.test.ts`: Added comprehensive unit tests for `exportState`, `importState`, explicit file path persistence, and `TRUST_STORE_PATH` env variable handling.
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build`: PASS (0 warnings / errors).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- File-backed persistence relies on single-node filesystem access or persistent volume mount; multi-instance serverless deployments require an external database / store adapter (e.g. Postgres / Redis).
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and audit API route input bounds and rate-limiting configs across trust protocol routes.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
