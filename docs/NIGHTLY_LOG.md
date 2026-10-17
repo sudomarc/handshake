@@ -1,5 +1,44 @@
 # Nightly Engineer Log
 
+## 2026-10-17
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 17, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Implemented durable atomic file-backed persistence and state export/import for `TrustStore` (`ROADMAP.md` Section 1: "Replace instance-local in-memory trust storage before any production use").
+- **What was changed:**
+  - `lib/trustStore.ts`: Implemented `exportState()` and `importState()` methods to serialize/deserialize enrolled devices, active call sessions (converting `usedNonces` `Set` to `Array` and back), and QR invitations. Added support for file-backed atomic persistence configured via constructor `persistPath` or `TRUST_STORE_PATH` environment variable using temporary file writes and atomic `fs.renameSync`.
+  - `tests/trust.test.ts`: Added unit tests verifying `exportState`/`importState` roundtrip integrity, nonce replay prevention after state restoration, and multi-instance atomic file persistence.
+
+### Verification Gate Summary
+
+- Root `npm test`: 135 root unit tests PASS, 9 plugin unit tests PASS (144 total tests PASS).
+- Root `npm run lint && npm run build`: PASS (0 warnings / errors).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- File-backed atomic persistence is ideal for single-instance container deployments or persistent file paths (`TRUST_STORE_PATH`). Multi-node serverless clusters across ephemeral disk environments still require a distributed datastore (Redis/Postgres) for cross-node state sync.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under simulated network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and refine session cleanup/eviction heuristics under high load.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
