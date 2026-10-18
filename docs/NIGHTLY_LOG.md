@@ -1,5 +1,47 @@
 # Nightly Engineer Log
 
+## 2026-10-18
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 18, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS.
+  - Root `npm test`: 138 root unit tests PASS, 9 plugin unit tests PASS (147 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level:** Priority 2 (Roadmap Item 1: Replace instance-local in-memory trust storage before any production use).
+- **What was changed:**
+  - `lib/trustStore.ts`: Added state export/import (`exportState`, `importState`), file-backed storage (`filePath` constructor option and `TRUST_STORE_PATH` env var), atomic persistence (`persist` with temp write and `renameSync`), and directory auto-creation (`mkdirSync`).
+  - `tests/trustPersistence.test.ts`: Added unit test suite for state export/import roundtrips, atomic file saving/loading, env var configuration, directory creation, replay protection persistence, and store reset.
+  - `package.json`: Included `tests/trustPersistence.test.ts` in `"test"` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors).
+- Root `npm test`: 138 root unit tests PASS, 9 plugin unit tests PASS (147 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS (0 errors).
+- Plugin tests: 9/9 PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+- Distributed rate limiting and durable multi-region locking remain to be addressed for multi-region deployment.
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios (`ROADMAP.md` Priority 1).
+2. Enhance mobile hook test coverage for offline trust state fallback (`ROADMAP.md` Priority 1).
+3. Review distributed rate-limiting and replay-prevention bounds across server instances (`ROADMAP.md` Priority 4).
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
