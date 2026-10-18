@@ -11,6 +11,7 @@
  */
 
 import { randomBytes } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import {
   sessionAttestation,
   issueSessionToken,
@@ -379,10 +380,7 @@ class TrustStore {
   getInvite(inviteId: string): StoredInvite | null {
     const invite = this.invites.get(inviteId);
     if (!invite) return null;
-    if (
-      invite.expiresAt <= now() &&
-      (invite.state === "pending" || invite.state === "accepted")
-    ) {
+    if (invite.expiresAt <= now() && (invite.state === "pending" || invite.state === "accepted")) {
       invite.state = "expired";
       invite.updatedAt = now();
     }
@@ -413,10 +411,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state !== "pending") {
-      throw new TrustError(
-        "inviting_not_pending",
-        "This invitation can no longer be accepted.",
-      );
+      throw new TrustError("inviting_not_pending", "This invitation can no longer be accepted.");
     }
 
     const pairId = newId() as PairId;
@@ -458,10 +453,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state === "confirmed") {
-      throw new TrustError(
-        "inviting_already_confirmed",
-        "This invitation is already confirmed.",
-      );
+      throw new TrustError("inviting_already_confirmed", "This invitation is already confirmed.");
     }
     if (invite.state !== "accepted") {
       throw new TrustError(
@@ -564,6 +556,86 @@ class TrustStore {
     this.pairs.clear();
     this.sessions.clear();
     this.invites.clear();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* State persistence                                                */
+  /* ---------------------------------------------------------------- */
+
+  exportState(): {
+    pairs: Array<[PairId, StoredDevice[]]>;
+    sessions: Array<Omit<StoredSession, "usedNonces"> & { usedNonces: string[] }>;
+    invites: StoredInvite[];
+  } {
+    const pairs: Array<[PairId, StoredDevice[]]> = [];
+    for (const [pairId, devices] of this.pairs) {
+      pairs.push([pairId, Array.from(devices.values())]);
+    }
+
+    const sessions = Array.from(this.sessions.values()).map((s) => ({
+      ...s,
+      usedNonces: Array.from(s.usedNonces),
+    }));
+
+    const invites = Array.from(this.invites.values());
+
+    return { pairs, sessions, invites };
+  }
+
+  importState(state: {
+    pairs: Array<[PairId, StoredDevice[]]>;
+    sessions: Array<Omit<StoredSession, "usedNonces"> & { usedNonces: string[] }>;
+    invites: StoredInvite[];
+  }): void {
+    this.reset();
+
+    for (const [pairId, devices] of state.pairs) {
+      const deviceMap = new Map<DeviceId, StoredDevice>();
+      for (const device of devices) {
+        deviceMap.set(device.deviceId, device);
+      }
+      this.pairs.set(pairId, deviceMap);
+    }
+
+    for (const session of state.sessions) {
+      this.sessions.set(session.sessionId, {
+        ...session,
+        usedNonces: new Set(session.usedNonces),
+      });
+    }
+
+    for (const invite of state.invites) {
+      this.invites.set(invite.inviteId, invite);
+    }
+  }
+
+  saveToFile(filePath?: string): void {
+    const targetPath = filePath || process.env.TRUST_STORE_PATH;
+    if (!targetPath) return;
+
+    const data = JSON.stringify(this.exportState(), null, 2);
+    const tempPath = `${targetPath}.tmp.${randomBytes(4).toString("hex")}`;
+    try {
+      writeFileSync(tempPath, data, { encoding: "utf8", mode: 0o600 });
+      renameSync(tempPath, targetPath);
+    } catch (err) {
+      console.error("Failed to persist trust store state:", err);
+    }
+  }
+
+  loadFromFile(filePath?: string): boolean {
+    const targetPath = filePath || process.env.TRUST_STORE_PATH;
+    if (!targetPath || !existsSync(targetPath)) return false;
+
+    try {
+      const content = readFileSync(targetPath, "utf8");
+      const state = JSON.parse(content);
+      this.importState(state);
+      return true;
+    } catch (err) {
+      console.error("Failed to load trust store state:", err);
+      return false;
+    }
   }
 }
 
