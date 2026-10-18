@@ -1,5 +1,50 @@
 # Nightly Engineer Log
 
+## 2026-10-18
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 18, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (77 files failed format:check globally; scoped formatting to touched files per rules).
+  - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS (142 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (format:check warned on untouched files).
+  - Plugin: `NODE_PATH=./mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap - Priority 1 item):** Implemented state export/import capabilities and optional atomic file-backed persistence for `TrustStore` in `lib/trustStore.ts`.
+- **What was changed:**
+  - `lib/trustStore.ts`:
+    - Added `TrustStoreSnapshot` interface and `SerializedSession` type for JSON serialization of store entities.
+    - Exported `TrustStore` class and added `exportState(): TrustStoreSnapshot`, `importState(snapshot: TrustStoreSnapshot): void`, `saveToFile(filePath?: string): boolean`, and `loadFromFile(filePath?: string): boolean` methods.
+    - Configured auto-loading on initialization and auto-flushing (`flush()`) on state mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `readSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`, `reset`) when persistence is configured via `process.env.TRUST_STORE_PATH` or explicit path parameter.
+    - Handled atomic file writes via temporary file and `renameSync`.
+  - `tests/trust.test.ts`:
+    - Added unit tests for `exportState` / `importState` round-tripping.
+    - Added unit tests for file persistence (saving on mutation, atomic write, auto-loading on init, graceful handling of non-existent files).
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build`: PASS (0 warnings / errors).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/trustStore.ts` and `tests/trust.test.ts`): PASS.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Multi-region or distributed serverless deployments requiring Redis/Postgres persistence for real-time state sharing across stateless functions.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review rate-limiting persistence requirements for multi-instance deployments.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
