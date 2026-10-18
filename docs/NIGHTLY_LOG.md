@@ -1,5 +1,47 @@
 # Nightly Engineer Log
 
+## 2026-10-18
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 18, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+  - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS (142 total tests PASS).
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** First unchecked item in Priority 1 on `ROADMAP.md`: "Replace instance-local in-memory trust storage before any production use."
+- **What was changed:**
+  - `lib/trustStore.ts`: Added `exportState()` and `importState()` serialization methods, along with atomic file-backed persistence configured via constructor parameter or `TRUST_STORE_PATH` environment variable. Automatically persists state on store mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`, `reset`).
+  - `tests/trust.test.ts`: Added unit tests for exportState/importState roundtrips and atomic file-backed state loading/saving.
+  - `ROADMAP.md`: Ticked off instance-local trust storage replacement under Priority 1.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 warnings / errors).
+- Root `npm test`: 135 root unit tests PASS, 9 plugin unit tests PASS (144 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- File-backed trust storage (`TRUST_STORE_PATH`) provides persistent atomic state for single-server or volume-mounted deployments. High-concurrency multi-region serverless deployments should eventually move to a distributed database (e.g. Postgres / Redis) if multi-master write conflicts occur.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend with `TRUST_STORE_PATH` configured.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and refine rate limiting persistence and distributed key handling.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
