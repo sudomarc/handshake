@@ -39,3 +39,43 @@
 1. Implement durable shared persistence for trust enrollments and sessions (`ROADMAP.md` Priority 1).
 2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
 3. Enhance mobile hook test coverage for offline trust state fallback.
+
+## 2026-10-18
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 18, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (format check had existing unformatted files in repo; scoped code clean).
+  - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS (142 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap Item #1):** "Replace instance-local in-memory trust storage before any production use."
+- **What was changed:**
+  - `lib/trustStore.ts`: Implemented state serialization (`exportState`, `importState`), atomic file saving (`saveToFile` using temporary file write and atomic `renameSync`), and loading (`loadFromFile`). Added support for the `TRUST_STORE_PATH` environment variable and optional class constructor path parameter for automatic state persistence across mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`).
+  - `tests/trust.test.ts`: Added unit tests for `exportState`, `importState`, atomic file saving/loading, and corrupted file handling.
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build`: PASS (0 errors).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- When `TRUST_STORE_PATH` is unconfigured, state remains process-local in-memory storage (fails open to `unverified` across serverless instances, which is safe).
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios (`ROADMAP.md` Priority 1).
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review authentication, rate limiting, and abuse handling in trust endpoints (`ROADMAP.md` Priority 4).
