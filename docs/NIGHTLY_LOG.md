@@ -1,5 +1,48 @@
 # Nightly Engineer Log
 
+## 2026-10-19
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 19, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test`: 133 root tests PASS, 9 plugin tests PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap Item #1):** "Replace instance-local in-memory trust storage before any production use." Implemented state snapshot serialization (`exportState` and `importState`) and file-backed atomic persistence in `lib/trustStore.ts`.
+- **What was changed:**
+  - `lib/trustStore.ts`: Added versioned snapshot export/import methods and atomic disk persistence using temporary write-and-rename (`saveToFile`, `loadFromFile`) triggered automatically across all store mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`). Configurable via `TRUST_STORE_PATH` env var or options parameter.
+  - `tests/trustStorePersistence.test.ts`: Created new unit test suite validating snapshot serialization, file persistence across process restarts, and corrupt/missing file recovery.
+  - `package.json`: Added `tests/trustStorePersistence.test.ts` to `npm test` command.
+
+### Verification Gate Summary
+
+- Root `NODE_PATH=$(pwd)/mobile/node_modules npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total PASS).
+- Root `npm run lint && npm run build`: PASS (0 errors / 0 warnings).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS (0 errors).
+- Native plugin tests: 9/9 PASS.
+- Rebuild check: `./gradlew :app:assembleRelease` requires Android SDK environment; workflow `.github/workflows/android-apk.yml` left untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and call verification against multi-instance backend deployments.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and audit shared rate-limit store options for serverless deployments.
+
+---
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
