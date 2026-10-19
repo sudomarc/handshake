@@ -1,5 +1,48 @@
 # Nightly Engineer Log
 
+## 2026-10-19
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 19, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test` -> 139 root unit tests PASS, 9 plugin unit tests PASS (148 total PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap Priority 1: Make trust verification dependable):** Implemented file-backed atomic persistence and state export/import for `TrustStore` (`lib/trustStore.ts`).
+- **What was changed:**
+  - `lib/trustStore.ts`: Added `TrustStoreState` interface, `exportState()`, `importState()`, `loadFromFile()`, `saveToFile()`, `setStoragePath()`, and atomic write strategy (`writeFileSync` to temp file + `renameSync`) triggered on store mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`, `reset`). Configurable via `TRUST_STORE_PATH` env var or explicit path parameter.
+  - `tests/trustStorePersistence.test.ts`: Added 6 comprehensive unit tests covering state export/import roundtrips, auto-persistence via `TRUST_STORE_PATH`, `setStoragePath` behavior, `usedNonces` Set preservation, corrupt file resilience, and file unlinking on `reset()`.
+  - `package.json`: Included `tests/trustStorePersistence.test.ts` in the `npm test` script.
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build`: PASS (0 errors).
+- Root `npm test`: 139 root unit tests PASS, 9 plugin unit tests PASS (148 total PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- File-backed atomic persistence preserves state across process restarts on single-instance nodes/deployments. Distributed multi-instance serverless deployments across isolated ephemeral instances require a shared Redis/Postgres datastore for cross-instance state sharing.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback (`usePairs` and `useLiveCode`).
+3. Review and refine input validation schemas for rate-limiting edge cases.
+
+---
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
