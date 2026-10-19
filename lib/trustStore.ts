@@ -12,7 +12,6 @@
 
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from "node:fs";
-import { dirname } from "node:path";
 import {
   sessionAttestation,
   issueSessionToken,

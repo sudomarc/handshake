@@ -26,7 +26,7 @@ import {
   verifyDeviceProof,
   verifySessionToken,
 } from "../lib/trustCrypto";
-import { TrustError, trustStore, SESSION_TTL_MS } from "../lib/trustStore";
+import { TrustError, trustStore, TrustStore, SESSION_TTL_MS } from "../lib/trustStore";
 import { resetRateLimits } from "../lib/rateLimit";
 import type { DeviceId, PairId } from "../lib/trustSchemas";
 
@@ -692,7 +692,7 @@ describe("trusted-call protocol", () => {
     });
 
     test("exports and imports trustStore state accurately across instances", () => {
-      const store1 = new (trustStore.constructor as any)();
+      const store1 = new TrustStore();
       store1.enroll({
         pairId: PAIR_A,
         deviceId: alice.deviceId,
@@ -705,7 +705,7 @@ describe("trusted-call protocol", () => {
       assert.ok(exported.includes("Alice Phone"));
       assert.ok(exported.includes(invite.inviteId));
 
-      const store2 = new (trustStore.constructor as any)();
+      const store2 = new TrustStore();
       store2.importState(exported);
 
       const devices = store2.listDevices(PAIR_A);
@@ -719,7 +719,7 @@ describe("trusted-call protocol", () => {
     });
 
     test("file-backed persistence loads initial state and persists on mutations", () => {
-      const store1 = new (trustStore.constructor as any)(testFile);
+      const store1 = new TrustStore(testFile);
       store1.enroll({
         pairId: PAIR_A,
         deviceId: alice.deviceId,
@@ -730,7 +730,7 @@ describe("trusted-call protocol", () => {
       assert.ok(existsSync(testFile));
 
       // Instantiate new store pointing to the same file
-      const store2 = new (trustStore.constructor as any)(testFile);
+      const store2 = new TrustStore(testFile);
       const devices = store2.listDevices(PAIR_A);
       assert.equal(devices.length, 1);
       assert.equal(devices[0].label, "Alice Persistent");
@@ -743,7 +743,7 @@ describe("trusted-call protocol", () => {
         label: "Bob Persistent",
       });
 
-      const store3 = new (trustStore.constructor as any)(testFile);
+      const store3 = new TrustStore(testFile);
       const devices3 = store3.listDevices(PAIR_A);
       assert.equal(devices3.length, 2);
     });

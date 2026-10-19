@@ -15,8 +15,8 @@
 
 - **Priority Level 2 (Roadmap Item #1):** Make trust verification dependable by replacing ephemeral in-memory storage with file-backed durable state persistence.
 - **What was changed:**
-  - `lib/trustStore.ts`: Implemented `exportState()` and `importState(json)` for serializing and deserializing `pairs`, `sessions` (including `usedNonces` Sets), and `invites`. Added optional atomic file-backed persistence configured via constructor parameter or `TRUST_STORE_PATH` environment variable. Automatically reloads state on initialization and persists atomically on all state-mutating operations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`).
-  - `tests/trust.test.ts`: Added unit test suite for state export/import and atomic disk persistence across store re-instantiations.
+  - `lib/trustStore.ts`: Implemented `exportState()` and `importState(json)` for serializing and deserializing `pairs`, `sessions` (including `usedNonces` Sets), and `invites`. Added optional atomic file-backed persistence configured via constructor parameter or `TRUST_STORE_PATH` environment variable. Automatically reloads state on initialization and persists atomically on all state-mutating operations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`). Removed unused `dirname` import.
+  - `tests/trust.test.ts`: Added unit test suite for state export/import and atomic disk persistence across store re-instantiations using strongly-typed `TrustStore` instances.
   - `ROADMAP.md`: Marked trust storage state export/import and file-backed persistence completed.
 
 ### Verification Gate Summary
