@@ -420,9 +420,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +617,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +653,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +672,81 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & state export/import                                */
+  /* ---------------------------------------------------------------- */
+
+  describe("persistence & state export/import", () => {
+    const testFilePath = "./tests/.tmp_test_trust_store.json";
+
+    afterEach(async () => {
+      delete process.env.TRUST_STORE_PATH;
+      try {
+        const { unlinkSync, existsSync } = await import("node:fs");
+        if (existsSync(testFilePath)) {
+          unlinkSync(testFilePath);
+        }
+      } catch {
+        // ignore cleanup errors
+      }
+    });
+
+    test("exportState and importState roundtrip correctly preserves pairs, sessions, and invites", async () => {
+      await enroll(alice, "Alice Phone");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice" });
+      const sessionOpened = await openSession(alice);
+      assert.equal(sessionOpened.res.status, 201);
+
+      const exported = trustStore.exportState();
+      assert.equal(exported.version, 1);
+      assert.equal(exported.pairs.length, 1);
+      assert.equal(exported.invites.length, 1);
+      assert.equal(exported.sessions.length, 1);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+      assert.equal(trustStore.getInvite(invite.inviteId), null);
+
+      trustStore.importState(exported);
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.listDevices(PAIR_A)[0].label, "Alice Phone");
+      assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+    });
+
+    test("saveToFile and loadFromFile persist state to disk and restore it", async () => {
+      await enroll(alice, "Alice Primary");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice Owner" });
+
+      const saved = trustStore.saveToFile(testFilePath);
+      assert.equal(saved, true);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+      const loaded = trustStore.loadFromFile(testFilePath);
+      assert.equal(loaded, true);
+
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Alice Owner");
+    });
+
+    test("TRUST_STORE_PATH env var triggers auto-save and auto-load", async () => {
+      process.env.TRUST_STORE_PATH = testFilePath;
+
+      // Mutation auto-saves to process.env.TRUST_STORE_PATH
+      await enroll(alice, "Alice AutoSave");
+
+      const { existsSync } = await import("node:fs");
+      assert.equal(existsSync(testFilePath), true);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+      trustStore.loadFromFile();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.listDevices(PAIR_A)[0].label, "Alice AutoSave");
+    });
   });
 });
