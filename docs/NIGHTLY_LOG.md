@@ -1,5 +1,50 @@
 # Nightly Engineer Log
 
+## 2026-10-19
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 19, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS.
+  - Root `npm test` -> 133 root unit tests PASS, 9 plugin unit tests PASS (142 total PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Unchecked item under Priority 1 ("Replace instance-local in-memory trust storage before any production use").
+- **What was changed:**
+  - `lib/trustStore.ts`: Added export/import capabilities (`exportState()`, `importState()`), atomic file persistence (`saveToFile()`, `loadFromFile()`), and auto-load/auto-persist logic configured via `TRUST_STORE_PATH` environment variable. Added defensive shape checks during import.
+  - `.env.example`: Documented `TRUST_STORE_PATH` optional environment variable.
+  - `tests/trust.test.ts`: Added unit tests for snapshot export/import roundtrip, atomic disk persistence, and environment variable auto-persistence.
+  - `ROADMAP.md`: Marked trust storage persistence item as checked with test evidence.
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build && npm run format:check`: PASS.
+- Root `npm test`: 136 root unit tests PASS (+3 new tests), 9 plugin unit tests PASS (145 total PASS).
+- Mobile `npm run typecheck && npm run lint && npm run format:check`: PASS.
+- Plugin tests: PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Synchronous atomic file writes occur on state mutations when `TRUST_STORE_PATH` is set. Under extremely high request volume, an asynchronous debounced write queue or distributed Redis/database adapter could be considered for multi-region clustering.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review rate limiting and abuse prevention boundaries across API endpoints.
+
+---
+
 ## 2026-10-14
 
 ### Phase & Baseline Status

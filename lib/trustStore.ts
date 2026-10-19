@@ -11,6 +11,8 @@
  */
 
 import { randomBytes } from "node:crypto";
+import { readFileSync, writeFileSync, renameSync, mkdirSync, existsSync } from "node:fs";
+import { dirname } from "node:path";
 import {
   sessionAttestation,
   issueSessionToken,
@@ -52,6 +54,18 @@ export interface StoredSession {
   /** Nonces already accepted for this session. Each may be used exactly once. */
   usedNonces: Set<string>;
   state: TrustState;
+}
+
+export interface SerializedStoredSession extends Omit<StoredSession, "usedNonces"> {
+  usedNonces: string[];
+}
+
+export interface TrustStoreSnapshot {
+  version: 1;
+  exportedAt: number;
+  pairs: Array<[PairId, StoredDevice[]]>;
+  sessions: SerializedStoredSession[];
+  invites: StoredInvite[];
 }
 
 export type InviteState = "pending" | "accepted" | "confirmed" | "expired" | "cancelled";
@@ -120,6 +134,114 @@ class TrustStore {
     // unref keeps the sweep timer from holding the process open in tests.
     this.timer = setInterval(() => this.sweep(), CLEANUP_INTERVAL_MS);
     this.timer.unref?.();
+    this.autoLoad();
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Persistence & Snapshot Export/Import                              */
+  /* ---------------------------------------------------------------- */
+
+  exportState(): TrustStoreSnapshot {
+    const pairsArray: Array<[PairId, StoredDevice[]]> = [];
+    for (const [pairId, devicesMap] of this.pairs) {
+      pairsArray.push([pairId, Array.from(devicesMap.values())]);
+    }
+
+    const sessionsArray: SerializedStoredSession[] = [];
+    for (const session of this.sessions.values()) {
+      sessionsArray.push({
+        ...session,
+        usedNonces: Array.from(session.usedNonces),
+      });
+    }
+
+    return {
+      version: 1,
+      exportedAt: now(),
+      pairs: pairsArray,
+      sessions: sessionsArray,
+      invites: Array.from(this.invites.values()),
+    };
+  }
+
+  importState(snapshot: TrustStoreSnapshot): void {
+    if (
+      !snapshot ||
+      snapshot.version !== 1 ||
+      !Array.isArray(snapshot.pairs) ||
+      !Array.isArray(snapshot.sessions) ||
+      !Array.isArray(snapshot.invites)
+    ) {
+      throw new Error("Invalid or unsupported TrustStoreSnapshot version or shape");
+    }
+
+    this.pairs.clear();
+    for (const [pairId, devicesList] of snapshot.pairs) {
+      if (!Array.isArray(devicesList)) continue;
+      const devicesMap = new Map<DeviceId, StoredDevice>();
+      for (const dev of devicesList) {
+        if (dev && typeof dev.deviceId === "string") {
+          devicesMap.set(dev.deviceId, { ...dev });
+        }
+      }
+      this.pairs.set(pairId, devicesMap);
+    }
+
+    this.sessions.clear();
+    for (const rawSession of snapshot.sessions) {
+      if (!rawSession || typeof rawSession.sessionId !== "string") continue;
+      const session: StoredSession = {
+        ...rawSession,
+        usedNonces: new Set(Array.isArray(rawSession.usedNonces) ? rawSession.usedNonces : []),
+      };
+      this.sessions.set(session.sessionId, session);
+    }
+
+    this.invites.clear();
+    for (const invite of snapshot.invites) {
+      if (invite && typeof invite.inviteId === "string") {
+        this.invites.set(invite.inviteId, { ...invite });
+      }
+    }
+  }
+
+  saveToFile(filePath?: string): void {
+    const targetPath = filePath || process.env.TRUST_STORE_PATH;
+    if (!targetPath) return;
+
+    try {
+      const dir = dirname(targetPath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+      const snapshot = this.exportState();
+      const tmpPath = `${targetPath}.${randomBytes(6).toString("hex")}.tmp`;
+      writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), "utf-8");
+      renameSync(tmpPath, targetPath);
+    } catch {
+      // Ignore write errors gracefully to preserve availability
+    }
+  }
+
+  loadFromFile(filePath?: string): void {
+    const targetPath = filePath || process.env.TRUST_STORE_PATH;
+    if (!targetPath || !existsSync(targetPath)) return;
+
+    try {
+      const raw = readFileSync(targetPath, "utf-8");
+      const snapshot = JSON.parse(raw) as TrustStoreSnapshot;
+      this.importState(snapshot);
+    } catch {
+      // Ignore read errors gracefully
+    }
+  }
+
+  private autoLoad(): void {
+    this.loadFromFile();
+  }
+
+  private autoPersist(): void {
+    this.saveToFile();
   }
 
   /* ---------------------------------------------------------------- */
@@ -156,6 +278,7 @@ class TrustStore {
       revokedAt: null,
     };
     devices.set(input.deviceId, device);
+    this.autoPersist();
     return device;
   }
 
@@ -201,6 +324,7 @@ class TrustStore {
       if (touched && session.state === "trusted") session.state = "unverified";
     }
 
+    this.autoPersist();
     return revoked;
   }
 
@@ -259,6 +383,7 @@ class TrustStore {
     this.consumeNonce(session, input.nonce);
     device.lastSeenAt = at;
     this.sessions.set(session.sessionId, session);
+    this.autoPersist();
     return session;
   }
 
@@ -297,6 +422,7 @@ class TrustStore {
     session.state = "trusted";
     session.issuedAt = now();
     device.lastSeenAt = session.issuedAt;
+    this.autoPersist();
     return session;
   }
 
@@ -368,6 +494,7 @@ class TrustStore {
       updatedAt: at,
     };
     this.invites.set(invite.inviteId, invite);
+    this.autoPersist();
     return invite;
   }
 
@@ -379,10 +506,7 @@ class TrustStore {
   getInvite(inviteId: string): StoredInvite | null {
     const invite = this.invites.get(inviteId);
     if (!invite) return null;
-    if (
-      invite.expiresAt <= now() &&
-      (invite.state === "pending" || invite.state === "accepted")
-    ) {
+    if (invite.expiresAt <= now() && (invite.state === "pending" || invite.state === "accepted")) {
       invite.state = "expired";
       invite.updatedAt = now();
     }
@@ -413,10 +537,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state !== "pending") {
-      throw new TrustError(
-        "inviting_not_pending",
-        "This invitation can no longer be accepted.",
-      );
+      throw new TrustError("inviting_not_pending", "This invitation can no longer be accepted.");
     }
 
     const pairId = newId() as PairId;
@@ -430,6 +551,7 @@ class TrustStore {
       deviceSecret: input.deviceSecret,
       label: input.label,
     });
+    this.autoPersist();
     return { invite, device };
   }
 
@@ -458,10 +580,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state === "confirmed") {
-      throw new TrustError(
-        "inviting_already_confirmed",
-        "This invitation is already confirmed.",
-      );
+      throw new TrustError("inviting_already_confirmed", "This invitation is already confirmed.");
     }
     if (invite.state !== "accepted") {
       throw new TrustError(
@@ -484,6 +603,7 @@ class TrustStore {
     });
     invite.state = "confirmed";
     invite.updatedAt = now();
+    this.autoPersist();
     return invite;
   }
 
@@ -543,19 +663,35 @@ class TrustStore {
 
   sweep(): void {
     const at = now();
+    let changed = false;
     for (const [sessionId, session] of this.sessions) {
-      if (session.expiresAt <= at) this.sessions.delete(sessionId);
+      if (session.expiresAt <= at) {
+        this.sessions.delete(sessionId);
+        changed = true;
+      }
     }
     // Expired invites are terminal and can never be reused.
     for (const [inviteId, invite] of this.invites) {
-      if (invite.expiresAt <= at) this.invites.delete(inviteId);
+      if (invite.expiresAt <= at) {
+        this.invites.delete(inviteId);
+        changed = true;
+      }
     }
     for (const [pairId, devices] of this.pairs) {
       for (const [deviceId, device] of devices) {
         const stale = at - Math.max(device.lastSeenAt, device.enrolledAt) > DEVICE_TTL_MS;
-        if (stale && device.revokedAt !== null) devices.delete(deviceId);
+        if (stale && device.revokedAt !== null) {
+          devices.delete(deviceId);
+          changed = true;
+        }
       }
-      if (devices.size === 0) this.pairs.delete(pairId);
+      if (devices.size === 0) {
+        this.pairs.delete(pairId);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.autoPersist();
     }
   }
 

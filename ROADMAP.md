@@ -15,7 +15,7 @@ End-to-end behavior must be verified against the deployed backend and the exact 
 - Verify QR invitation, acceptance, confirmation, enrollment and revocation end to end.
 - Ensure every displayed trusted state is backed by a confirmed trust result.
 - Test online, offline, expired-invitation and restart scenarios.
-- Replace instance-local in-memory trust storage before any production use.
+- [x] Implement file-backed durable persistence and export/import capabilities for `TrustStore` via `TRUST_STORE_PATH` (verified in `tests/trust.test.ts`).
 
 ### 2. Stabilize Android call companion behavior
 
