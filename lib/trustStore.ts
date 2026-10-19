@@ -11,6 +11,8 @@
  */
 
 import { randomBytes } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import {
   sessionAttestation,
   issueSessionToken,
@@ -55,6 +57,12 @@ export interface StoredSession {
 }
 
 export type InviteState = "pending" | "accepted" | "confirmed" | "expired" | "cancelled";
+
+export interface TrustStoreState {
+  pairs: Array<[PairId, Array<[DeviceId, StoredDevice]>]>;
+  sessions: Array<[string, Omit<StoredSession, "usedNonces"> & { usedNonces: string[] }]>;
+  invites: Array<[string, StoredInvite]>;
+}
 
 /**
  * One-time QR pairing invitation (see GET /api/trust/invite/*).
@@ -110,16 +118,107 @@ function now(): number {
   return Date.now();
 }
 
-class TrustStore {
+export class TrustStore {
   private pairs = new Map<PairId, Map<DeviceId, StoredDevice>>();
   private sessions = new Map<string, StoredSession>();
   private invites = new Map<string, StoredInvite>();
   private timer: NodeJS.Timeout | null;
+  private persistencePath: string | null = null;
 
-  constructor() {
+  constructor(persistencePath?: string) {
+    if (persistencePath) {
+      this.persistencePath = persistencePath;
+    }
+    this.loadPersistence();
+
     // unref keeps the sweep timer from holding the process open in tests.
     this.timer = setInterval(() => this.sweep(), CLEANUP_INTERVAL_MS);
     this.timer.unref?.();
+  }
+
+  private get effectivePath(): string | null {
+    return this.persistencePath ?? process.env.TRUST_STORE_PATH ?? null;
+  }
+
+  exportState(): TrustStoreState {
+    const pairsSerialized: Array<[PairId, Array<[DeviceId, StoredDevice]>]> = [
+      ...this.pairs.entries(),
+    ].map(([pairId, deviceMap]) => [pairId, [...deviceMap.entries()]]);
+    const sessionsSerialized = [...this.sessions.entries()].map(
+      ([id, session]) =>
+        [
+          id,
+          {
+            ...session,
+            usedNonces: [...session.usedNonces],
+          },
+        ] as [string, Omit<StoredSession, "usedNonces"> & { usedNonces: string[] }],
+    );
+    const invitesSerialized = [...this.invites.entries()];
+
+    return {
+      pairs: pairsSerialized,
+      sessions: sessionsSerialized,
+      invites: invitesSerialized,
+    };
+  }
+
+  importState(state: TrustStoreState): void {
+    this.pairs.clear();
+    this.sessions.clear();
+    this.invites.clear();
+
+    if (state.pairs) {
+      for (const [pairId, devices] of state.pairs) {
+        this.pairs.set(pairId, new Map(devices));
+      }
+    }
+
+    if (state.sessions) {
+      for (const [id, sessionData] of state.sessions) {
+        this.sessions.set(id, {
+          ...sessionData,
+          usedNonces: new Set(sessionData.usedNonces),
+        });
+      }
+    }
+
+    if (state.invites) {
+      for (const [id, invite] of state.invites) {
+        this.invites.set(id, invite);
+      }
+    }
+  }
+
+  private loadPersistence(): void {
+    const filePath = this.effectivePath;
+    if (!filePath) return;
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        const data = JSON.parse(raw) as TrustStoreState;
+        this.importState(data);
+      }
+    } catch {
+      // Ignore corrupt or missing file on load
+    }
+  }
+
+  private savePersistence(): void {
+    const filePath = this.effectivePath;
+    if (!filePath) return;
+    try {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const state = this.exportState();
+      const tmpPath = `${filePath}.tmp.${randomBytes(4).toString("hex")}`;
+      fs.writeFileSync(tmpPath, JSON.stringify(state, null, 2), "utf-8");
+      fs.renameSync(tmpPath, filePath);
+    } catch {
+      // Ignore persistence write errors (e.g., read-only environments)
+    }
   }
 
   /* ---------------------------------------------------------------- */
@@ -156,6 +255,7 @@ class TrustStore {
       revokedAt: null,
     };
     devices.set(input.deviceId, device);
+    this.savePersistence();
     return device;
   }
 
@@ -201,6 +301,7 @@ class TrustStore {
       if (touched && session.state === "trusted") session.state = "unverified";
     }
 
+    this.savePersistence();
     return revoked;
   }
 
@@ -259,6 +360,7 @@ class TrustStore {
     this.consumeNonce(session, input.nonce);
     device.lastSeenAt = at;
     this.sessions.set(session.sessionId, session);
+    this.savePersistence();
     return session;
   }
 
@@ -297,6 +399,7 @@ class TrustStore {
     session.state = "trusted";
     session.issuedAt = now();
     device.lastSeenAt = session.issuedAt;
+    this.savePersistence();
     return session;
   }
 
@@ -368,6 +471,7 @@ class TrustStore {
       updatedAt: at,
     };
     this.invites.set(invite.inviteId, invite);
+    this.savePersistence();
     return invite;
   }
 
@@ -379,10 +483,7 @@ class TrustStore {
   getInvite(inviteId: string): StoredInvite | null {
     const invite = this.invites.get(inviteId);
     if (!invite) return null;
-    if (
-      invite.expiresAt <= now() &&
-      (invite.state === "pending" || invite.state === "accepted")
-    ) {
+    if (invite.expiresAt <= now() && (invite.state === "pending" || invite.state === "accepted")) {
       invite.state = "expired";
       invite.updatedAt = now();
     }
@@ -413,10 +514,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state !== "pending") {
-      throw new TrustError(
-        "inviting_not_pending",
-        "This invitation can no longer be accepted.",
-      );
+      throw new TrustError("inviting_not_pending", "This invitation can no longer be accepted.");
     }
 
     const pairId = newId() as PairId;
@@ -430,6 +528,7 @@ class TrustStore {
       deviceSecret: input.deviceSecret,
       label: input.label,
     });
+    this.savePersistence();
     return { invite, device };
   }
 
@@ -458,10 +557,7 @@ class TrustStore {
       throw new TrustError("inviting_expired", "This invitation has expired.");
     }
     if (invite.state === "confirmed") {
-      throw new TrustError(
-        "inviting_already_confirmed",
-        "This invitation is already confirmed.",
-      );
+      throw new TrustError("inviting_already_confirmed", "This invitation is already confirmed.");
     }
     if (invite.state !== "accepted") {
       throw new TrustError(
@@ -484,6 +580,7 @@ class TrustStore {
     });
     invite.state = "confirmed";
     invite.updatedAt = now();
+    this.savePersistence();
     return invite;
   }
 
@@ -557,6 +654,7 @@ class TrustStore {
       }
       if (devices.size === 0) this.pairs.delete(pairId);
     }
+    this.savePersistence();
   }
 
   /** Test helper only. */
@@ -564,6 +662,7 @@ class TrustStore {
     this.pairs.clear();
     this.sessions.clear();
     this.invites.clear();
+    this.savePersistence();
   }
 }
 
