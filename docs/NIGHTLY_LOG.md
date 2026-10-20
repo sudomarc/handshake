@@ -1,5 +1,47 @@
 # Nightly Engineer Log
 
+## 2026-10-20
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 20, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS.
+  - Root `npm test`: 133 root tests PASS, 9 plugin tests PASS (requires `mobile/node_modules` present).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap item):** Implemented atomic file-backed persistence and state export/import for `lib/trustStore.ts` (`ROADMAP.md` Priority 1 item).
+- **What was changed:**
+  - `lib/trustStore.ts`: Added `exportState()`, `importState()`, `saveToFile()`, and `loadFromFile()` supporting atomic JSON persistence configured via `process.env.TRUST_STORE_PATH` or path parameter. Auto-triggers save on store mutations.
+  - `tests/trust.test.ts`: Added 3 unit tests covering state export/import round-trip, atomic file save/load persistence, and corrupt file error handling.
+  - `ARCHITECTURE.md`, `SECURITY.md`, `ROADMAP.md`: Updated documentation and roadmap items to reflect atomic file persistence capabilities and configuration via `TRUST_STORE_PATH`.
+
+### Verification Gate Summary
+
+- Root `npm ci && npm run lint && npm run build`: PASS (0 warnings / errors).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `cd mobile && npm run typecheck && npm run lint`: PASS.
+- Plugin tests: PASS.
+- Prettier formatting applied to modified files.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+- Multi-instance serverless deployments across multiple regions still benefit from distributed database storage for instant global state sync.
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend with `TRUST_STORE_PATH` enabled.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Audit dependency vulnerabilities and patch non-breaking security updates.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status

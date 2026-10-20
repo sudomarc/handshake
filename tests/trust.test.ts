@@ -7,6 +7,7 @@
  */
 
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { test, describe, beforeEach, afterEach } from "node:test";
 import { NextRequest } from "next/server";
 import { POST as enrollHandler } from "../app/api/trust/enroll/route";
@@ -420,9 +421,11 @@ describe("trusted-call protocol", () => {
       void session;
 
       // Force expiry.
-      const stored = (trustStore as unknown as {
-        sessions: Map<string, { expiresAt: number }>;
-      }).sessions.get(sessionId);
+      const stored = (
+        trustStore as unknown as {
+          sessions: Map<string, { expiresAt: number }>;
+        }
+      ).sessions.get(sessionId);
       assert.ok(stored);
       stored!.expiresAt = Date.now() - 1;
 
@@ -615,8 +618,14 @@ describe("trusted-call protocol", () => {
         expiresAt: 2,
       };
       const base_value = sessionAttestation(base);
-      assert.equal(sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value, false);
-      assert.equal(sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value, false);
+      assert.equal(
+        sessionAttestation({ ...base, peerDeviceId: stranger.deviceId }) === base_value,
+        false,
+      );
+      assert.equal(
+        sessionAttestation({ ...base, sessionId: "x".repeat(32) }) === base_value,
+        false,
+      );
       assert.equal(sessionAttestation({ ...base, expiresAt: 3 }) === base_value, false);
     });
 
@@ -645,9 +654,11 @@ describe("trusted-call protocol", () => {
     const opened = await openSession(alice);
     const sessionId = opened.body.sessionId as string;
 
-    const sessions = (trustStore as unknown as {
-      sessions: Map<string, { expiresAt: number }>;
-    }).sessions;
+    const sessions = (
+      trustStore as unknown as {
+        sessions: Map<string, { expiresAt: number }>;
+      }
+    ).sessions;
     sessions.get(sessionId)!.expiresAt = Date.now() - 1;
 
     trustStore.sweep();
@@ -662,5 +673,68 @@ describe("trusted-call protocol", () => {
 
   test("SESSION_TTL_MS is a bounded short window", () => {
     assert.ok(SESSION_TTL_MS > 0 && SESSION_TTL_MS <= 10 * 60_000);
+  });
+
+  /* ---------------------------------------------------------------- */
+  /* Store persistence & state import/export                          */
+  /* ---------------------------------------------------------------- */
+
+  describe("store persistence", () => {
+    const testFile = `./tmp/test-trust-store-${Date.now()}.json`;
+
+    afterEach(() => {
+      delete process.env.TRUST_STORE_PATH;
+      if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
+      }
+    });
+
+    test("exportState and importState round-trip state accurately", async () => {
+      await enroll(alice, "Alice Phone");
+      const invite = trustStore.createInvite({ ownerDisplayName: "Alice" });
+      const opened = await openSession(alice);
+
+      const exported = trustStore.exportState();
+      assert.equal(exported.version, 1);
+      assert.ok(exported.pairs[PAIR_A]);
+      assert.ok(exported.invites[invite.inviteId]);
+      assert.ok(exported.sessions[opened.body.sessionId]);
+
+      trustStore.reset();
+      assert.equal(trustStore.listDevices(PAIR_A).length, 0);
+
+      trustStore.importState(exported);
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+      assert.equal(trustStore.getInvite(invite.inviteId)?.ownerDisplayName, "Alice");
+    });
+
+    test("file-backed persistence syncs across file save/load", async () => {
+      process.env.TRUST_STORE_PATH = testFile;
+      await enroll(alice, "Alice Phone");
+      trustStore.createInvite({ ownerDisplayName: "Alice" });
+
+      assert.ok(fs.existsSync(testFile));
+
+      trustStore.reset(); // Also saves empty state to testFile because TRUST_STORE_PATH is set
+      trustStore.enroll({
+        pairId: alice.pairId,
+        deviceId: alice.deviceId,
+        deviceSecret: alice.deviceSecret,
+        label: "Alice Phone",
+      });
+      trustStore.saveToFile();
+
+      const loaded = trustStore.loadFromFile(testFile);
+      assert.equal(loaded, true);
+      assert.equal(trustStore.listDevices(PAIR_A).length, 1);
+    });
+
+    test("corrupt file is handled gracefully without crashing", () => {
+      fs.mkdirSync("./tmp", { recursive: true });
+      fs.writeFileSync(testFile, "invalid json {");
+
+      const loaded = trustStore.loadFromFile(testFile);
+      assert.equal(loaded, false);
+    });
   });
 });

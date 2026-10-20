@@ -12,23 +12,23 @@ device trust states, validated AI results, and static content.
 
 ## Components
 
-| Component          | Location                            | Responsibility                                                                          |
-| ------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| Home               | `mobile/app/(tabs)/index.tsx`       | Protection-ready home, automatic recognition state and warning setup                    |
-| Trusted people     | `mobile/app/(tabs)/trusted.tsx`     | QR pairing: show/scan a short-lived invite, confirm, manage trusted relationships       |
-| Person detail      | `mobile/app/trusted/[pairId].tsx`   | Enrolled devices, revocation                                                           |
-| Pressure check     | `app/analyze/page.tsx`              | Transcript in → pressure score + risk level + reasoning (advisory)                      |
-| Call warnings      | `mobile/lib/callOverlay.ts`         | Optional Android overlay above phone/calling apps                                       |
-| Demo / pairing     | `app/demo/page.tsx`                 | Flow description of two-phone QR pairing + automatic recognition (no live QR on web)    |
-| Codes module       | `lib/totp.ts`                       | `otplib` wrapper for the **legacy** `/api/code/*` compatibility routes                  |
-| Trust protocol     | `lib/trustCrypto.ts`                | Device proofs, session attestation, invite/pairing primitives                           |
-| Trust store        | `lib/trustStore.ts`                 | In-memory store: devices, invitations, sessions (per server instance)                   |
-| AI module          | `lib/llm.ts` / `lib/featherless.ts` | Server-only `fetch` client for Featherless (OpenAI-compatible `chat/completions`)       |
-| Schemas            | `lib/schemas.ts`                    | zod schemas for every API input/output and LLM output                                   |
-| Trust schemas      | `lib/trustSchemas.ts`               | zod wire contracts for invites, enrollment, revocation and sessions                     |
-| Prompts            | `lib/featherless.ts`                | System prompts with untrusted-data fence (`<UNTRUSTED_TRANSCRIPT>`, `<SHARED_CONTEXT>`) |
-| Rate limiting      | `lib/rateLimit.ts`                  | Fixed-window in-memory rate limiter (demo-grade)                                        |
-| Store              | `lib/store.ts`                      | Legacy demo-grade pair storage (stateless derived secrets)                              |
+| Component      | Location                            | Responsibility                                                                          |
+| -------------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| Home           | `mobile/app/(tabs)/index.tsx`       | Protection-ready home, automatic recognition state and warning setup                    |
+| Trusted people | `mobile/app/(tabs)/trusted.tsx`     | QR pairing: show/scan a short-lived invite, confirm, manage trusted relationships       |
+| Person detail  | `mobile/app/trusted/[pairId].tsx`   | Enrolled devices, revocation                                                            |
+| Pressure check | `app/analyze/page.tsx`              | Transcript in → pressure score + risk level + reasoning (advisory)                      |
+| Call warnings  | `mobile/lib/callOverlay.ts`         | Optional Android overlay above phone/calling apps                                       |
+| Demo / pairing | `app/demo/page.tsx`                 | Flow description of two-phone QR pairing + automatic recognition (no live QR on web)    |
+| Codes module   | `lib/totp.ts`                       | `otplib` wrapper for the **legacy** `/api/code/*` compatibility routes                  |
+| Trust protocol | `lib/trustCrypto.ts`                | Device proofs, session attestation, invite/pairing primitives                           |
+| Trust store    | `lib/trustStore.ts`                 | File-backed or in-memory store: devices, invitations, sessions (`TRUST_STORE_PATH`)     |
+| AI module      | `lib/llm.ts` / `lib/featherless.ts` | Server-only `fetch` client for Featherless (OpenAI-compatible `chat/completions`)       |
+| Schemas        | `lib/schemas.ts`                    | zod schemas for every API input/output and LLM output                                   |
+| Trust schemas  | `lib/trustSchemas.ts`               | zod wire contracts for invites, enrollment, revocation and sessions                     |
+| Prompts        | `lib/featherless.ts`                | System prompts with untrusted-data fence (`<UNTRUSTED_TRANSCRIPT>`, `<SHARED_CONTEXT>`) |
+| Rate limiting  | `lib/rateLimit.ts`                  | Fixed-window in-memory rate limiter (demo-grade)                                        |
+| Store          | `lib/store.ts`                      | Legacy demo-grade pair storage (stateless derived secrets)                              |
 
 ## Data flows
 
@@ -151,10 +151,7 @@ this exposure for the primary flow: the relation id is internal, and enrollment
 requires proving possession of a device that accepted (or confirmed) a
 short-lived invite.
 
-**Fallback if the trust store's statelessness misbehaves:** move trust state to
-a shared durable store (e.g. Postgres/Redis) — required for serverless hosting
-with more than one instance (see the production limitations in this document and in
-SECURITY.md).
+**Trust store persistence & state serialization:** `lib/trustStore.ts` supports atomic file-backed persistence configured via the `TRUST_STORE_PATH` environment variable or explicit path parameter. State export/import (`exportState()`, `importState()`) allows serializing enrolled devices, call sessions, nonces, and pending/accepted QR invitations for process restarts and multi-instance sync.
 
 **Production version would need:** a real database; real accounts with login +
 device registration (2FA); secrets encrypted at rest with key management;

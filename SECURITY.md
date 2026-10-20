@@ -29,7 +29,7 @@ These are implementation facts, not a substitute for an independent security rev
 
 ### 1. Serverless persistence
 
-`lib/trustStore.ts` keeps device enrollments, invitations and call sessions in process-local memory. Different serverless instances can have different state, and restarts can lose state. A production deployment needs shared, durable storage and tested consistency/expiry behavior.
+`lib/trustStore.ts` supports atomic file-backed persistence configured via the `TRUST_STORE_PATH` environment variable and state export/import (`exportState()`, `importState()`). For process restarts or single-node persistent hosting, this preserves enrolled devices, invitations, nonces, and sessions. For distributed multi-instance serverless deployments, a shared durable database (e.g., Postgres/Redis) is still recommended for multi-region consistency.
 
 ### 2. Device-proof cryptography
 
