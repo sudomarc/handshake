@@ -1,5 +1,52 @@
 # Nightly Engineer Log
 
+## 2026-10-20
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 20, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 136 root tests PASS, 9 plugin tests PASS.
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap):** Implemented state export/import and atomic file-backed persistence for `TrustStore` (`ROADMAP.md` Priority 1: "Replace instance-local in-memory trust storage before any production use").
+- **What was changed:**
+  - `lib/trustStore.ts`:
+    - Added `TrustStoreState` interface for typed state serialization.
+    - Exported `TrustStore` class alongside singleton instance `trustStore`.
+    - Implemented `exportState()` and `importState()` methods supporting rehydration of `Map` and `Set` structures (`usedNonces`).
+    - Implemented atomic file-backed persistence configured via constructor `filePath` argument or `TRUST_STORE_PATH` environment variable.
+    - Added atomic write mechanism (temp file write followed by `renameSync`) on state mutations (`enroll`, `revoke`, `openSession`, `joinSession`, `createInvite`, `acceptInvite`, `confirmInvite`, `sweep`, `reset`).
+  - `tests/trust.test.ts`:
+    - Added comprehensive unit tests for `exportState` / `importState`, atomic file-backed persistence, and `TRUST_STORE_PATH` env var persistence.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 136 root unit tests PASS, 9 plugin unit tests PASS (145 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/trustStore.ts`, `tests/trust.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Production serverless deployments using multiple stateless container instances without persistent volume mounts or env `TRUST_STORE_PATH` pointing to shared storage will continue using process-local memory.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Implement distributed rate limiting or shared Redis store adapter interface for `lib/rateLimit.ts` (`ROADMAP.md` Priority 4).
+2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+3. Enhance mobile hook test coverage for offline trust state fallback.
+
 ## 2026-10-14
 
 ### Phase & Baseline Status
