@@ -1,5 +1,54 @@
 # Nightly Engineer Log
 
+## 2026-10-21
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 21, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 141 root tests PASS, 9 plugin tests PASS (150 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Prepare for production):** Implemented pluggable store interface `RateLimiterStore`, `MemoryRateLimiterStore`, `FileBackedRateLimiterStore`, and state serialization (`exportRateLimitState`, `importRateLimitState`) for rate limiting (`ROADMAP.md` Priority 4: "Review authentication, rate limiting, abuse handling and operational monitoring").
+- **What was changed:**
+  - `lib/rateLimit.ts`:
+    - Defined `Bucket` type and `RateLimiterStore` interface (`get`, `set`, `delete`, `clear`, `entries`, `size`, `sweep`).
+    - Implemented `MemoryRateLimiterStore` with capacity limit (`MAX_BUCKETS = 10_000`) and automatic expired key cleanup.
+    - Implemented `FileBackedRateLimiterStore` supporting atomic file-backed persistence configured via constructor or `RATE_LIMIT_STORE_PATH` environment variable.
+    - Added `getRateLimiterStore()`, `setRateLimiterStore()`, `exportRateLimitState()`, and `importRateLimitState()`.
+    - Retained 100% backward compatibility for `consume()` and `resetRateLimits()`.
+  - `tests/rateLimit.test.ts`:
+    - Added comprehensive unit tests covering fixed-window rate limiting, bucket capacity limits, automatic sweeping, store state serialization, file-backed atomic persistence, and `RATE_LIMIT_STORE_PATH` env var configuration.
+  - `package.json`:
+    - Registered `tests/rateLimit.test.ts` in root `"test"` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 141 root unit tests PASS, 9 plugin unit tests PASS (150 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/rateLimit.ts`, `tests/rateLimit.test.ts`, `package.json`, `docs/NIGHTLY_LOG.md`, `ROADMAP.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Default rate limiting setup without `RATE_LIMIT_STORE_PATH` or custom store adapter uses process-local memory on serverless environments.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Implement distributed rate limiting Redis store adapter / multi-instance sync for `lib/rateLimit.ts` (`ROADMAP.md` Priority 4).
+2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+3. Enhance mobile hook test coverage for offline trust state fallback.
+
 ## 2026-10-20
 
 ### Phase & Baseline Status
