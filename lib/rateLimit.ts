@@ -81,7 +81,7 @@ export class RedisRateLimiterStore implements RateLimiterStore {
     return Boolean(this.url);
   }
 
-  private async fetchRedis(command: string[]): Promise<any> {
+  private async fetchRedis(command: string[]): Promise<unknown> {
     if (!this.isConfigured()) return null;
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (this.token) {
@@ -95,7 +95,7 @@ export class RedisRateLimiterStore implements RateLimiterStore {
         body: JSON.stringify(command),
       });
       if (!res.ok) return null;
-      const data = (await res.json()) as { result?: any; error?: any };
+      const data = (await res.json()) as { result?: unknown; error?: unknown };
       return data.result ?? null;
     } catch {
       return null;

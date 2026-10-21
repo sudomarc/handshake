@@ -154,7 +154,7 @@ describe("lib/rateLimit enhanced store and persistence", () => {
 
   test("RedisRateLimiterStore mock REST interactions", async () => {
     const origFetch = global.fetch;
-    const calls: { url: string; body: any }[] = [];
+    const calls: { url: string; body: unknown }[] = [];
 
     global.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
       calls.push({ url: String(url), body: JSON.parse(init?.body as string) });
