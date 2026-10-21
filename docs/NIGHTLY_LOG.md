@@ -1,5 +1,52 @@
 # Nightly Engineer Log
 
+## 2026-10-22 (Distributed Redis Rate Limiting & Async Consumption)
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 22, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 148 root unit tests PASS, 9 plugin unit tests PASS (157 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Prepare for production):** Implemented distributed rate limiting Redis store adapter (`RedisRateLimiterStore`), atomic REST rate token consumption (`INCR` + `EXPIRE`), and async consumption (`consumeAsync`) for API routes (`ROADMAP.md` Priority 4: "Review authentication, rate limiting, abuse handling and operational monitoring").
+- **What was changed:**
+  - `lib/rateLimit.ts`:
+    - Defined `AsyncRateLimiterStore` interface (`getAsync`, `setAsync`, `deleteAsync`, `clearAsync`, `consumeAsync`).
+    - Implemented `RedisRateLimiterStore` implementing both `RateLimiterStore` and `AsyncRateLimiterStore` interfaces with atomic Redis REST increment/expire logic and graceful fallback to local memory store.
+    - Updated `consumeAsync()` function to seamlessly handle synchronous and asynchronous rate limiter stores.
+    - Configured auto-store selection checking `RATE_LIMIT_REDIS_URL` or `REDIS_URL`, then `RATE_LIMIT_STORE_PATH`, defaulting to `MemoryRateLimiterStore`.
+  - `app/api/*`: Updated all API route handlers (`analyze`, `challenge`, `code/verify`, `trust/enroll`, `trust/invite/accept`, `trust/invite/confirm`, `trust/invite`, `trust/revoke`, `trust/session`) to use `await consumeAsync()`.
+  - `tests/rateLimit.test.ts`:
+    - Added comprehensive unit tests for `RedisRateLimiterStore` using mock REST fetch, testing `getAsync`, `setAsync`, `deleteAsync`, `clearAsync`, `consumeAsync`, network error fallback, and environment configuration (`RATE_LIMIT_REDIS_URL`).
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 148 root unit tests PASS, 9 plugin unit tests PASS (157 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/rateLimit.ts`, `tests/rateLimit.test.ts`, `docs/NIGHTLY_LOG.md`, `app/api/*`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- When no `RATE_LIMIT_REDIS_URL` or `RATE_LIMIT_STORE_PATH` is configured, rate limiting defaults to process-local memory.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios (`ROADMAP.md` Priority 4).
+2. Enhance mobile hook test coverage for offline trust state fallback (`ROADMAP.md` Priority 2).
+3. Review authentication headers and error messaging across API endpoints (`ROADMAP.md` Priority 4).
+
 ## 2026-10-21 (Run 2: CallSessionStore Persistence)
 
 ### Phase & Baseline Status
@@ -165,7 +212,8 @@
 
 - Root `npm ci && npm run lint && npm run build && npm run format:check`: PASS (0 warnings / errors).
 - Root `npm test`: 133 root unit tests PASS, 9 plugin unit tests PASS (142 total tests PASS).
-- Mobile `npm run typecheck && npm run lint && npm run format:check`: PASS.
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier format check on touched files: PASS.
 - Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
 
 ### Known Risks & Open Findings
