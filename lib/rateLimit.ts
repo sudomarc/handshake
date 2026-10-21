@@ -18,7 +18,7 @@ export interface RateLimiterStore {
   set(key: string, bucket: Bucket): void | Promise<void>;
   delete(key: string): void | Promise<void>;
   clear(): void | Promise<void>;
-  entries(): IterableIterator<[string, Bucket]> | Promise<IterableIterator<[string, Bucket]>>;
+  entries(): IterableIterator<[string, Bucket]>;
   size(): number | Promise<number>;
   sweep(now: number): void | Promise<void>;
 }

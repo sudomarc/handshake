@@ -181,15 +181,18 @@ describe("lib/rateLimit enhanced store and persistence", () => {
       assert.notEqual(bucket, undefined);
       assert.equal(bucket?.count, 1);
       assert.equal(calls.length, 1);
-      assert.equal(calls[0].body[0], "GET");
+      const body0 = calls[0].body as string[];
+      assert.equal(body0[0], "GET");
 
       await store.set("test-key", { count: 2, resetAt: 1_060_000 });
       assert.equal(calls.length, 2);
-      assert.equal(calls[1].body[0], "SETEX");
+      const body1 = calls[1].body as string[];
+      assert.equal(body1[0], "SETEX");
 
       await store.delete("test-key");
       assert.equal(calls.length, 3);
-      assert.equal(calls[2].body[0], "DEL");
+      const body2 = calls[2].body as string[];
+      assert.equal(body2[0], "DEL");
     } finally {
       global.fetch = origFetch;
     }
