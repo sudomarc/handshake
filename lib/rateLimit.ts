@@ -14,13 +14,13 @@ export type RateLimitResult =
   { allowed: true; remaining: number } | { allowed: false; retryAfterSeconds: number };
 
 export interface RateLimiterStore {
-  get(key: string): Bucket | undefined;
-  set(key: string, bucket: Bucket): void;
-  delete(key: string): void;
-  clear(): void;
-  entries(): IterableIterator<[string, Bucket]>;
-  size(): number;
-  sweep(now: number): void;
+  get(key: string): Bucket | undefined | Promise<Bucket | undefined>;
+  set(key: string, bucket: Bucket): void | Promise<void>;
+  delete(key: string): void | Promise<void>;
+  clear(): void | Promise<void>;
+  entries(): IterableIterator<[string, Bucket]> | Promise<IterableIterator<[string, Bucket]>>;
+  size(): number | Promise<number>;
+  sweep(now: number): void | Promise<void>;
 }
 
 export const MAX_BUCKETS = 10_000;
@@ -58,6 +58,99 @@ export class MemoryRateLimiterStore implements RateLimiterStore {
         this.buckets.delete(key);
       }
     }
+  }
+}
+
+export class RedisRateLimiterStore implements RateLimiterStore {
+  private url: string;
+  private token: string | null;
+  private fallbackStore = new MemoryRateLimiterStore();
+
+  constructor(options?: { url?: string; token?: string }) {
+    const rawUrl =
+      options?.url ??
+      process.env.RATE_LIMIT_REDIS_URL ??
+      process.env.UPSTASH_REDIS_REST_URL ??
+      process.env.REDIS_URL ??
+      "";
+    this.token = options?.token ?? process.env.UPSTASH_REDIS_REST_TOKEN ?? null;
+    this.url = rawUrl.replace(/\/$/, "");
+  }
+
+  private isConfigured(): boolean {
+    return Boolean(this.url);
+  }
+
+  private async fetchRedis(command: string[]): Promise<any> {
+    if (!this.isConfigured()) return null;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`;
+    }
+
+    try {
+      const res = await fetch(this.url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(command),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { result?: any; error?: any };
+      return data.result ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async get(key: string): Promise<Bucket | undefined> {
+    if (!this.isConfigured()) {
+      return this.fallbackStore.get(key);
+    }
+    const raw = await this.fetchRedis(["GET", `ratelimit:${key}`]);
+    if (!raw || typeof raw !== "string") {
+      return this.fallbackStore.get(key);
+    }
+    try {
+      const parsed = JSON.parse(raw) as Bucket;
+      if (typeof parsed.count === "number" && typeof parsed.resetAt === "number") {
+        return parsed;
+      }
+    } catch {
+      // Fallback on JSON parse error
+    }
+    return this.fallbackStore.get(key);
+  }
+
+  async set(key: string, bucket: Bucket): Promise<void> {
+    this.fallbackStore.set(key, bucket);
+    if (!this.isConfigured()) return;
+
+    const ttlMs = Math.max(1000, bucket.resetAt - Date.now());
+    const ttlSeconds = Math.ceil(ttlMs / 1000);
+    const jsonStr = JSON.stringify(bucket);
+    await this.fetchRedis(["SETEX", `ratelimit:${key}`, String(ttlSeconds), jsonStr]);
+  }
+
+  async delete(key: string): Promise<void> {
+    this.fallbackStore.delete(key);
+    if (!this.isConfigured()) return;
+    await this.fetchRedis(["DEL", `ratelimit:${key}`]);
+  }
+
+  async clear(): Promise<void> {
+    this.fallbackStore.clear();
+  }
+
+  entries(): IterableIterator<[string, Bucket]> {
+    return this.fallbackStore.entries();
+  }
+
+  size(): number {
+    return this.fallbackStore.size();
+  }
+
+  sweep(now: number): void {
+    this.fallbackStore.sweep(now);
   }
 }
 
@@ -139,9 +232,21 @@ export class FileBackedRateLimiterStore implements RateLimiterStore {
   }
 }
 
-let activeStore: RateLimiterStore = process.env.RATE_LIMIT_STORE_PATH
-  ? new FileBackedRateLimiterStore()
-  : new MemoryRateLimiterStore();
+function createDefaultStore(): RateLimiterStore {
+  if (
+    process.env.RATE_LIMIT_REDIS_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.REDIS_URL
+  ) {
+    return new RedisRateLimiterStore();
+  }
+  if (process.env.RATE_LIMIT_STORE_PATH) {
+    return new FileBackedRateLimiterStore();
+  }
+  return new MemoryRateLimiterStore();
+}
+
+let activeStore: RateLimiterStore = createDefaultStore();
 
 export function getRateLimiterStore(): RateLimiterStore {
   return activeStore;
@@ -183,12 +288,17 @@ export function consume(
   // Windows are aligned to wall-clock multiples of windowMs, like the TOTP windows.
   const resetAt = now - (now % windowMs) + windowMs;
   const existing = store.get(key);
+  if (existing instanceof Promise) {
+    throw new Error("Store returned a Promise; use consumeAsync for async rate limiters.");
+  }
 
   if (!existing || existing.resetAt <= now) {
-    if (store.size() >= MAX_BUCKETS) {
+    const sz = store.size();
+    if (typeof sz === "number" && sz >= MAX_BUCKETS) {
       store.sweep(now);
+      const szAfter = store.size();
       // Still full of live buckets: refuse rather than grow without bound.
-      if (store.size() >= MAX_BUCKETS) {
+      if (typeof szAfter === "number" && szAfter >= MAX_BUCKETS) {
         return { allowed: false, retryAfterSeconds: Math.ceil((resetAt - now) / 1000) };
       }
     }
@@ -204,6 +314,40 @@ export function consume(
   }
   existing.count += 1;
   store.set(key, existing);
+  return { allowed: true, remaining: max - existing.count };
+}
+
+export async function consumeAsync(
+  key: string,
+  max: number,
+  windowMs: number,
+  now = Date.now(),
+  store: RateLimiterStore = activeStore,
+): Promise<RateLimitResult> {
+  const resetAt = now - (now % windowMs) + windowMs;
+  const existing = await store.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    const sz = await store.size();
+    if (sz >= MAX_BUCKETS) {
+      await store.sweep(now);
+      const szAfter = await store.size();
+      if (szAfter >= MAX_BUCKETS) {
+        return { allowed: false, retryAfterSeconds: Math.ceil((resetAt - now) / 1000) };
+      }
+    }
+    await store.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: max - 1 };
+  }
+
+  if (existing.count >= max) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+  existing.count += 1;
+  await store.set(key, existing);
   return { allowed: true, remaining: max - existing.count };
 }
 

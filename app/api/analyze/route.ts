@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { RateLimitError } from "@/lib/errors";
 import { handleApiError } from "@/lib/http";
-import { consume } from "@/lib/rateLimit";
+import { consumeAsync } from "@/lib/rateLimit";
 import { analyzePressure } from "@/lib/llm";
 import { analysisRequestSchema, pressureCheckResponseSchema } from "@/lib/schemas";
 
@@ -16,11 +16,11 @@ export async function POST(req: NextRequest) {
     const body = analysisRequestSchema.parse(raw);
 
     // Rate limit: 10 requests per minute per IP and per pair to control costs and prevent pairId credit bypass (SECURITY.md T6)
-    const perClient = consume(`analyze:ip:${clientKey(req)}`, 10, 60_000);
+    const perClient = await consumeAsync(`analyze:ip:${clientKey(req)}`, 10, 60_000);
     if (!perClient.allowed) throw new RateLimitError(perClient.retryAfterSeconds);
 
     if (body.pairId) {
-      const perPair = consume(`analyze:pair:${body.pairId}`, 10, 60_000);
+      const perPair = await consumeAsync(`analyze:pair:${body.pairId}`, 10, 60_000);
       if (!perPair.allowed) throw new RateLimitError(perPair.retryAfterSeconds);
     }
 

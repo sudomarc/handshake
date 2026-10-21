@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/http";
-import { consume } from "@/lib/rateLimit";
+import { consumeAsync } from "@/lib/rateLimit";
 import {
   confirmInviteRequestSchema,
   confirmInviteResponseSchema,
@@ -32,7 +32,7 @@ export async function POST(
     const raw: unknown = await req.json().catch(() => null);
     const body = confirmInviteRequestSchema.parse(raw);
 
-    const perClient = consume(`trust:invite:confirm:ip:${clientKey(req)}`, 10, 60_000);
+    const perClient = await consumeAsync(`trust:invite:confirm:ip:${clientKey(req)}`, 10, 60_000);
     if (!perClient.allowed) {
       return NextResponse.json(
         {
