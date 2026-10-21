@@ -1,5 +1,52 @@
 # Nightly Engineer Log
 
+## 2026-10-21 (Run 2: CallSessionStore Persistence)
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 21, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 141 root tests PASS, 9 plugin tests PASS (150 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Prepare for production):** Implemented state export/import (`exportState`, `importState`), automated cleanup persistence, and atomic file-backed persistence for `CallSessionStore` (`ROADMAP.md` Priority 4: "Prepare for production: Introduce durable shared storage").
+- **What was changed:**
+  - `lib/callStore.ts`:
+    - Defined and exported `CallSessionStoreState` interface for typed call session state serialization.
+    - Exported `CallSessionStore` class alongside singleton instance `callSessionStore`.
+    - Implemented `exportState()` and `importState()` methods for `CallSession` map serialization and rehydration.
+    - Added atomic file-backed persistence configured via constructor `filePath` argument or `CALL_STORE_PATH` environment variable.
+    - Added atomic write mechanism (temp file write followed by `renameSync`) on state mutations (`createSession`, `setOffer`, `setAnswer`, `addIceCandidate`, `endSession`, `cleanup`, `reset`).
+  - `tests/lib.test.ts`:
+    - Added unit tests for `CallSessionStore` covering `exportState` / `importState`, atomic file-backed persistence, and `CALL_STORE_PATH` env var persistence.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 144 root unit tests PASS, 9 plugin unit tests PASS (153 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/callStore.ts`, `tests/lib.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Default call session setup without `CALL_STORE_PATH` or custom store adapter uses process-local memory on serverless environments.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Implement distributed rate limiting Redis store adapter / multi-instance sync for `lib/rateLimit.ts` (`ROADMAP.md` Priority 4).
+2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+3. Enhance mobile hook test coverage for offline trust state fallback.
+
 ## 2026-10-21
 
 ### Phase & Baseline Status
