@@ -1,15 +1,11 @@
 import assert from "node:assert/strict";
 import { test, describe, beforeEach } from "node:test";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { ZodError } from "zod";
-import {
-  derivePairSecret,
-  getCurrentCode,
-  verifyCode,
-} from "../lib/totp";
-import {
-  consume,
-  resetRateLimits,
-} from "../lib/rateLimit";
+import { derivePairSecret, getCurrentCode, verifyCode } from "../lib/totp";
+import { consume, resetRateLimits } from "../lib/rateLimit";
 import {
   pairIdSchema,
   sixDigitCodeSchema,
@@ -21,16 +17,9 @@ import {
 } from "../lib/schemas";
 import { createPair, getPair, listPairs } from "../lib/store";
 import { handleApiError } from "../lib/http";
-import {
-  ConfigError,
-  NotImplementedError,
-  PairNotFoundError,
-  RateLimitError,
-} from "../lib/errors";
-import {
-  createCallSessionRequestSchema,
-} from "../lib/callSchemas";
-import { callSessionStore } from "../lib/callStore";
+import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "../lib/errors";
+import { createCallSessionRequestSchema } from "../lib/callSchemas";
+import { callSessionStore, CallSessionStore } from "../lib/callStore";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
 const VALID_PAIR_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
@@ -68,7 +57,10 @@ describe("lib/totp", () => {
       const verdict = await verifyCode(VALID_PAIR_ID, current.code);
       assert.equal(verdict, "verified");
 
-      const wrongVerdict = await verifyCode(VALID_PAIR_ID, "000000" === current.code ? "111111" : "000000");
+      const wrongVerdict = await verifyCode(
+        VALID_PAIR_ID,
+        "000000" === current.code ? "111111" : "000000",
+      );
       assert.equal(wrongVerdict, "not-verified");
     } finally {
       process.env.PAIR_DERIVATION_KEY = origKey;
@@ -152,10 +144,7 @@ describe("lib/schemas", () => {
   test("analysisRequestSchema validates transcript constraints", () => {
     assert.equal(analysisRequestSchema.safeParse({ transcript: "Hello Mom" }).success, true);
     assert.equal(analysisRequestSchema.safeParse({ transcript: "" }).success, false);
-    assert.equal(
-      analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success,
-      false,
-    );
+    assert.equal(analysisRequestSchema.safeParse({ transcript: "a".repeat(4001) }).success, false);
   });
 
   test("pressureCheckResponseSchema validates response schema", () => {
@@ -176,7 +165,8 @@ describe("lib/schemas", () => {
 
   test("challengeRequestSchema and response schema", () => {
     assert.equal(
-      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" }).success,
+      challengeRequestSchema.safeParse({ pairId: VALID_PAIR_ID, context: "Dog name is Rover" })
+        .success,
       true,
     );
 
@@ -297,5 +287,91 @@ describe("lib/callSchemas & lib/callStore", () => {
     // End session
     const ended = await callSessionStore.endSession(session.sessionId);
     assert.equal(ended?.status, "ended");
+  });
+
+  test("exportState and importState preserve call sessions", async () => {
+    const store1 = new CallSessionStore();
+    const session = await store1.createSession({
+      pairId: VALID_PAIR_ID,
+      callerId: "12345678901234567890123456789012",
+    });
+    await store1.setOffer(session.sessionId, {
+      sessionId: session.sessionId,
+      offer: { type: "offer", sdp: "sdp-123" },
+      fromDeviceId: "12345678901234567890123456789012",
+    });
+
+    const exported = store1.exportState();
+    assert.equal(exported.sessions.length, 1);
+    assert.equal(exported.sessions[0].sessionId, session.sessionId);
+    assert.equal(exported.sessions[0].offer?.sdp, "sdp-123");
+
+    const store2 = new CallSessionStore();
+    store2.importState(exported);
+    const fetched = await store2.getSession(session.sessionId);
+    assert.notEqual(fetched, null);
+    assert.equal(fetched?.offer?.sdp, "sdp-123");
+  });
+
+  test("file-backed persistence automatically saves and loads state atomically", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "call-store-test-"));
+    const filePath = join(tmpDir, "call_sessions.json");
+
+    try {
+      const store1 = new CallSessionStore(filePath);
+      const session = await store1.createSession({
+        pairId: VALID_PAIR_ID,
+        callerId: "12345678901234567890123456789012",
+      });
+
+      assert.equal(existsSync(filePath), true);
+
+      const store2 = new CallSessionStore(filePath);
+      const loaded = await store2.getSession(session.sessionId);
+      assert.notEqual(loaded, null);
+      assert.equal(loaded?.pairId, VALID_PAIR_ID);
+
+      await store2.setAnswer(session.sessionId, {
+        sessionId: session.sessionId,
+        answer: { type: "answer", sdp: "sdp-ans" },
+        fromDeviceId: "98765432109876543210987654321098",
+      });
+
+      const store3 = new CallSessionStore(filePath);
+      const loaded2 = await store3.getSession(session.sessionId);
+      assert.equal(loaded2?.status, "active");
+      assert.equal(loaded2?.answer?.sdp, "sdp-ans");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("CALL_STORE_PATH env var configures store persistence", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "call-store-env-test-"));
+    const filePath = join(tmpDir, "env_sessions.json");
+    const origEnv = process.env.CALL_STORE_PATH;
+
+    try {
+      process.env.CALL_STORE_PATH = filePath;
+      const store1 = new CallSessionStore();
+      const session = await store1.createSession({
+        pairId: VALID_PAIR_ID,
+        callerId: "12345678901234567890123456789012",
+      });
+
+      assert.equal(existsSync(filePath), true);
+
+      const store2 = new CallSessionStore();
+      const loaded = await store2.getSession(session.sessionId);
+      assert.notEqual(loaded, null);
+      assert.equal(loaded?.sessionId, session.sessionId);
+    } finally {
+      if (origEnv !== undefined) {
+        process.env.CALL_STORE_PATH = origEnv;
+      } else {
+        delete process.env.CALL_STORE_PATH;
+      }
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
