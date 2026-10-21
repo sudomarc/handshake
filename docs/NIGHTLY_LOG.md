@@ -1,5 +1,51 @@
 # Nightly Engineer Log
 
+## 2026-10-21 (Run 3: Distributed Rate Limiter & Redis Adapter)
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 21, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS.
+  - Root `npm test` -> 148 root tests PASS, 9 plugin tests PASS (157 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS.
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Prepare for production):** Implemented `AsyncRateLimiterStore` interface, `RedisRateLimiterStore` distributed REST store adapter with automatic memory fallback, and `consumeAsync()` function (`ROADMAP.md` Priority 4: "Review authentication, rate limiting, abuse handling and operational monitoring").
+- **What was changed:**
+  - `lib/rateLimit.ts`:
+    - Defined `AsyncRateLimiterStore` interface supporting async rate limit operations (`get`, `set`, `delete`, `clear`, `entries`, `size`, `sweep`).
+    - Implemented `RedisRateLimiterStore` supporting distributed Redis REST endpoints (e.g., Upstash / Redis REST API) with configurable timeout and automatic fallback to in-memory store on network errors.
+    - Implemented `consumeAsync()` function supporting both synchronous and asynchronous rate limiter stores.
+    - Updated default store factory to select `RedisRateLimiterStore` when `RATE_LIMIT_REDIS_URL` or `REDIS_URL` environment variables are present.
+  - `tests/rateLimit.test.ts`:
+    - Added unit tests for `consumeAsync()`, `RedisRateLimiterStore` remote communication, network error fallback, and environment variable configuration.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 148 root unit tests PASS, 9 plugin unit tests PASS (157 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/rateLimit.ts`, `tests/rateLimit.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Standard `consume()` calls sync `get()` and `set()`. For distributed Redis storage in serverless environments, API routes can adopt `consumeAsync()`.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios (`ROADMAP.md` Priority 1).
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and audit API error responses to ensure no internal technical details leak across boundary errors.
+
 ## 2026-10-21 (Run 2: CallSessionStore Persistence)
 
 ### Phase & Baseline Status

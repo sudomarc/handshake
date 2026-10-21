@@ -1,8 +1,10 @@
 /**
- * Fixed-window rate limiter with pluggable store support and file-backed persistence.
+ * Fixed-window rate limiter with pluggable store support, file-backed persistence,
+ * and distributed Redis REST store adapter.
  *
- * Supports in-memory storage (default) and file-backed atomic persistence configured via
- * constructor parameter or `RATE_LIMIT_STORE_PATH` environment variable.
+ * Supports in-memory storage (default), file-backed atomic persistence configured via
+ * constructor parameter or `RATE_LIMIT_STORE_PATH` environment variable, and distributed
+ * Redis REST storage via `RATE_LIMIT_REDIS_URL` or `REDIS_URL` environment variables.
  */
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
@@ -21,6 +23,18 @@ export interface RateLimiterStore {
   entries(): IterableIterator<[string, Bucket]>;
   size(): number;
   sweep(now: number): void;
+}
+
+export interface AsyncRateLimiterStore {
+  get(key: string): Promise<Bucket | undefined> | Bucket | undefined;
+  set(key: string, bucket: Bucket): Promise<void> | void;
+  delete(key: string): Promise<void> | void;
+  clear(): Promise<void> | void;
+  entries():
+    | Promise<IterableIterator<[string, Bucket]> | [string, Bucket][]>
+    | IterableIterator<[string, Bucket]>;
+  size(): Promise<number> | number;
+  sweep(now: number): Promise<void> | void;
 }
 
 export const MAX_BUCKETS = 10_000;
@@ -139,36 +153,177 @@ export class FileBackedRateLimiterStore implements RateLimiterStore {
   }
 }
 
-let activeStore: RateLimiterStore = process.env.RATE_LIMIT_STORE_PATH
-  ? new FileBackedRateLimiterStore()
-  : new MemoryRateLimiterStore();
+export interface RedisRateLimiterStoreOptions {
+  url?: string;
+  token?: string;
+  fetchFn?: typeof fetch;
+  timeoutMs?: number;
+}
 
-export function getRateLimiterStore(): RateLimiterStore {
+export class RedisRateLimiterStore implements AsyncRateLimiterStore {
+  private url: string | null;
+  private token: string | null;
+  private fetchFn: typeof fetch;
+  private timeoutMs: number;
+  private memoryFallback = new MemoryRateLimiterStore();
+
+  constructor(options?: RedisRateLimiterStoreOptions) {
+    this.url = options?.url ?? process.env.RATE_LIMIT_REDIS_URL ?? process.env.REDIS_URL ?? null;
+    this.token =
+      options?.token ?? process.env.RATE_LIMIT_REDIS_TOKEN ?? process.env.REDIS_TOKEN ?? null;
+    this.fetchFn = options?.fetchFn ?? globalThis.fetch;
+    this.timeoutMs = options?.timeoutMs ?? 3000;
+  }
+
+  private async request(path: string, method = "GET", body?: unknown): Promise<unknown> {
+    if (!this.url) {
+      throw new Error("Redis URL is not configured");
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const targetUrl = new URL(path, this.url).toString();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (this.token) {
+        headers["Authorization"] = `Bearer ${this.token}`;
+      }
+
+      const res = await this.fetchFn(targetUrl, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+
+      const data = (await res.json()) as { result?: unknown };
+      return data?.result !== undefined ? data.result : data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async get(key: string): Promise<Bucket | undefined> {
+    if (!this.url) return this.memoryFallback.get(key);
+    try {
+      const res = await this.request(`/get/${encodeURIComponent(key)}`);
+      if (typeof res === "string") {
+        const parsed = JSON.parse(res) as Bucket;
+        if (parsed && typeof parsed.count === "number" && typeof parsed.resetAt === "number") {
+          this.memoryFallback.set(key, parsed);
+          return parsed;
+        }
+      } else if (res && typeof res === "object" && "count" in res && "resetAt" in res) {
+        const bucket = res as Bucket;
+        this.memoryFallback.set(key, bucket);
+        return bucket;
+      }
+      return undefined;
+    } catch {
+      return this.memoryFallback.get(key);
+    }
+  }
+
+  async set(key: string, bucket: Bucket): Promise<void> {
+    this.memoryFallback.set(key, bucket);
+    if (!this.url) return;
+    try {
+      const ttlSeconds = Math.max(1, Math.ceil((bucket.resetAt - Date.now()) / 1000));
+      await this.request(
+        `/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(bucket))}?EX=${ttlSeconds}`,
+        "POST",
+      );
+    } catch {
+      // Best effort fallback
+    }
+  }
+
+  async delete(key: string): Promise<void> {
+    this.memoryFallback.delete(key);
+    if (!this.url) return;
+    try {
+      await this.request(`/del/${encodeURIComponent(key)}`, "POST");
+    } catch {
+      // Best effort fallback
+    }
+  }
+
+  async clear(): Promise<void> {
+    this.memoryFallback.clear();
+    if (!this.url) return;
+    try {
+      await this.request("/flushdb", "POST");
+    } catch {
+      // Best effort fallback
+    }
+  }
+
+  async entries(): Promise<[string, Bucket][]> {
+    return Array.from(this.memoryFallback.entries());
+  }
+
+  async size(): Promise<number> {
+    return this.memoryFallback.size();
+  }
+
+  async sweep(now: number): Promise<void> {
+    this.memoryFallback.sweep(now);
+  }
+}
+
+function createDefaultStore(): RateLimiterStore | AsyncRateLimiterStore {
+  if (process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL) {
+    return new RedisRateLimiterStore();
+  }
+  if (process.env.RATE_LIMIT_STORE_PATH) {
+    return new FileBackedRateLimiterStore();
+  }
+  return new MemoryRateLimiterStore();
+}
+
+let activeStore: RateLimiterStore | AsyncRateLimiterStore = createDefaultStore();
+
+export function getRateLimiterStore(): RateLimiterStore | AsyncRateLimiterStore {
   return activeStore;
 }
 
-export function setRateLimiterStore(store: RateLimiterStore): void {
+export function setRateLimiterStore(store: RateLimiterStore | AsyncRateLimiterStore): void {
   activeStore = store;
 }
 
 export function exportRateLimitState(
-  store: RateLimiterStore = activeStore,
+  store: RateLimiterStore | AsyncRateLimiterStore = activeStore,
 ): Record<string, Bucket> {
   const result: Record<string, Bucket> = {};
-  for (const [key, bucket] of store.entries()) {
-    result[key] = { ...bucket };
+  if ("entries" in store && typeof store.entries === "function") {
+    const entries = store.entries();
+    if (
+      entries &&
+      typeof (entries as IterableIterator<[string, Bucket]>)[Symbol.iterator] === "function"
+    ) {
+      for (const [key, bucket] of entries as IterableIterator<[string, Bucket]>) {
+        result[key] = { ...bucket };
+      }
+    }
   }
   return result;
 }
 
 export function importRateLimitState(
   state: Record<string, Bucket>,
-  store: RateLimiterStore = activeStore,
+  store: RateLimiterStore | AsyncRateLimiterStore = activeStore,
 ): void {
-  store.clear();
+  if ("clear" in store) store.clear();
   for (const [key, bucket] of Object.entries(state)) {
     if (bucket && typeof bucket.count === "number" && typeof bucket.resetAt === "number") {
-      store.set(key, { ...bucket });
+      if ("set" in store) store.set(key, { ...bucket });
     }
   }
 }
@@ -178,18 +333,22 @@ export function consume(
   max: number,
   windowMs: number,
   now = Date.now(),
-  store: RateLimiterStore = activeStore,
+  store: RateLimiterStore | AsyncRateLimiterStore = activeStore,
 ): RateLimitResult {
-  // Windows are aligned to wall-clock multiples of windowMs, like the TOTP windows.
   const resetAt = now - (now % windowMs) + windowMs;
-  const existing = store.get(key);
+  const existing = store.get(key) as Bucket | undefined;
+
+  const currentSize = (store.size() as number) ?? 0;
 
   if (!existing || existing.resetAt <= now) {
-    if (store.size() >= MAX_BUCKETS) {
+    if (currentSize >= MAX_BUCKETS) {
       store.sweep(now);
-      // Still full of live buckets: refuse rather than grow without bound.
-      if (store.size() >= MAX_BUCKETS) {
-        return { allowed: false, retryAfterSeconds: Math.ceil((resetAt - now) / 1000) };
+      const newSize = (store.size() as number) ?? 0;
+      if (newSize >= MAX_BUCKETS) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.ceil((resetAt - now) / 1000),
+        };
       }
     }
     store.set(key, { count: 1, resetAt });
@@ -207,7 +366,49 @@ export function consume(
   return { allowed: true, remaining: max - existing.count };
 }
 
+export async function consumeAsync(
+  key: string,
+  max: number,
+  windowMs: number,
+  now = Date.now(),
+  store: RateLimiterStore | AsyncRateLimiterStore = activeStore,
+): Promise<RateLimitResult> {
+  const resetAt = now - (now % windowMs) + windowMs;
+  const existing = await store.get(key);
+
+  const currentSize = await store.size();
+
+  if (!existing || existing.resetAt <= now) {
+    if (currentSize >= MAX_BUCKETS) {
+      await store.sweep(now);
+      const newSize = await store.size();
+      if (newSize >= MAX_BUCKETS) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.ceil((resetAt - now) / 1000),
+        };
+      }
+    }
+    await store.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: max - 1 };
+  }
+
+  if (existing.count >= max) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+  const updated = { ...existing, count: existing.count + 1 };
+  await store.set(key, updated);
+  return { allowed: true, remaining: max - updated.count };
+}
+
 /** Test helper only. */
-export function resetRateLimits(store: RateLimiterStore = activeStore): void {
-  store.clear();
+export function resetRateLimits(
+  store: RateLimiterStore | AsyncRateLimiterStore = activeStore,
+): void {
+  if ("clear" in store) {
+    store.clear();
+  }
 }
