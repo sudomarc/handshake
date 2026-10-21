@@ -1,5 +1,52 @@
 # Nightly Engineer Log
 
+## 2026-10-21 (Run 3: Redis Rate Limiter Store & Async Consumption)
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 21, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 147 root tests PASS, 9 plugin tests PASS (156 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Prepare for production):** Implemented `RedisRateLimiterStore` and `consumeAsync` for multi-instance distributed rate limiting (`ROADMAP.md` Priority 4: "Review authentication, rate limiting, abuse handling and operational monitoring").
+- **What was changed:**
+  - `lib/rateLimit.ts`:
+    - Updated `RateLimiterStore` interface methods to allow `Promise` return types for async stores.
+    - Implemented `RedisRateLimiterStore` supporting Upstash/Redis HTTP REST protocol via zero-dependency `fetch`.
+    - Supported auto-configuration via `RATE_LIMIT_REDIS_URL`, `UPSTASH_REDIS_REST_URL`, or `REDIS_URL` environment variables.
+    - Added `consumeAsync()` to enable async rate limit checks across distributed stores while retaining full backward compatibility for sync `consume()`.
+    - Built graceful network error and timeout fallback handling to in-memory fallback store.
+  - `tests/rateLimit.test.ts`:
+    - Added unit tests for `RedisRateLimiterStore` HTTP REST commands, `consumeAsync`, and network timeout/unreachable fallback behavior using an embedded HTTP server test fixture.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 147 root unit tests PASS, 9 plugin unit tests PASS (156 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/rateLimit.ts`, `tests/rateLimit.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Production Redis instances using custom authentication methods other than HTTP REST bearer token require Upstash REST URL or compatible HTTP proxy interface.
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios (`ROADMAP.md` Priority 1).
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Review and refine structured error logging across API routes.
+
 ## 2026-10-21 (Run 2: CallSessionStore Persistence)
 
 ### Phase & Baseline Status
