@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/http";
-import { consume } from "@/lib/rateLimit";
+import { consumeAsync } from "@/lib/rateLimit";
 import {
   enrollDeviceRequestSchema,
   enrollDeviceResponseSchema,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const raw: unknown = await req.json().catch(() => null);
     const body = enrollDeviceRequestSchema.parse(raw);
 
-    const perClient = consume(`trust:enroll:ip:${clientKey(req)}`, 20, 60_000);
+    const perClient = await consumeAsync(`trust:enroll:ip:${clientKey(req)}`, 20, 60_000);
     if (!perClient.allowed) {
       return NextResponse.json(
         {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         { status: 429, headers: { "Retry-After": String(perClient.retryAfterSeconds) } },
       );
     }
-    const perPair = consume(`trust:enroll:pair:${body.pairId}`, 20, 60_000);
+    const perPair = await consumeAsync(`trust:enroll:pair:${body.pairId}`, 20, 60_000);
     if (!perPair.allowed) {
       return NextResponse.json(
         {
