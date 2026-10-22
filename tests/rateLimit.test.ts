@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   consume,
+  consumeAsync,
   resetRateLimits,
   MemoryRateLimiterStore,
   FileBackedRateLimiterStore,
+  RedisRateLimiterStore,
   exportRateLimitState,
   importRateLimitState,
   setRateLimiterStore,
@@ -124,5 +126,75 @@ describe("lib/rateLimit enhanced store and persistence", () => {
     const res = consume("new:key", 5, 60_000, now, store);
     assert.equal(res.allowed, true);
     assert.equal(store.get("new:key")?.count, 1);
+  });
+
+  test("RedisRateLimiterStore fallback and consumeAsync", async () => {
+    const redisStore = new RedisRateLimiterStore(); // Unconfigured, falls back to Memory
+    const key = "redis:user1";
+    const max = 2;
+    const windowMs = 60_000;
+    const now = 1_000_000;
+
+    const r1 = await consumeAsync(key, max, windowMs, now, redisStore);
+    assert.equal(r1.allowed, true);
+    if (r1.allowed) assert.equal(r1.remaining, 1);
+
+    const r2 = await consumeAsync(key, max, windowMs, now, redisStore);
+    assert.equal(r2.allowed, true);
+    if (r2.allowed) assert.equal(r2.remaining, 0);
+
+    const r3 = await consumeAsync(key, max, windowMs, now, redisStore);
+    assert.equal(r3.allowed, false);
+
+    // Test sync consume throwing when store returns promise
+    assert.throws(() => {
+      consume(key, max, windowMs, now, redisStore);
+    }, /Store returned a Promise; use consumeAsync/);
+  });
+
+  test("RedisRateLimiterStore mock REST interactions", async () => {
+    const origFetch = global.fetch;
+    const calls: { url: string; body: unknown }[] = [];
+
+    global.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(url), body: JSON.parse(init?.body as string) });
+      const command = JSON.parse(init?.body as string)[0];
+      if (command === "GET") {
+        return {
+          ok: true,
+          json: async () => ({ result: JSON.stringify({ count: 1, resetAt: 1_060_000 }) }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ result: "OK" }),
+      } as Response;
+    }) as typeof fetch;
+
+    try {
+      const store = new RedisRateLimiterStore({
+        url: "https://mock-upstash.redis.com",
+        token: "mock-token",
+      });
+
+      const bucket = await store.get("test-key");
+      assert.notEqual(bucket, undefined);
+      assert.equal(bucket?.count, 1);
+      assert.equal(calls.length, 1);
+      const body0 = calls[0].body as string[];
+      assert.equal(body0[0], "GET");
+
+      await store.set("test-key", { count: 2, resetAt: 1_060_000 });
+      assert.equal(calls.length, 2);
+      const body1 = calls[1].body as string[];
+      assert.equal(body1[0], "SETEX");
+
+      await store.delete("test-key");
+      assert.equal(calls.length, 3);
+      const body2 = calls[2].body as string[];
+      assert.equal(body2[0], "DEL");
+    } finally {
+      global.fetch = origFetch;
+    }
   });
 });

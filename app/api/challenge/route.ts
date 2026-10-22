@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { RateLimitError } from "@/lib/errors";
 import { handleApiError } from "@/lib/http";
-import { consume } from "@/lib/rateLimit";
+import { consumeAsync } from "@/lib/rateLimit";
 import { generateChallenge } from "@/lib/llm";
 import { challengeRequestSchema, challengeResponseSchema } from "@/lib/schemas";
 
@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
     const body = challengeRequestSchema.parse(raw);
 
     // Rate limit: 10 requests per minute per IP and per pair to control costs and prevent pairId credit bypass (SECURITY.md T6)
-    const perClient = consume(`challenge:ip:${clientKey(req)}`, 10, 60_000);
+    const perClient = await consumeAsync(`challenge:ip:${clientKey(req)}`, 10, 60_000);
     if (!perClient.allowed) throw new RateLimitError(perClient.retryAfterSeconds);
 
-    const perPair = consume(`challenge:pair:${body.pairId}`, 10, 60_000);
+    const perPair = await consumeAsync(`challenge:pair:${body.pairId}`, 10, 60_000);
     if (!perPair.allowed) throw new RateLimitError(perPair.retryAfterSeconds);
 
     const result = await generateChallenge(body.context ?? "");

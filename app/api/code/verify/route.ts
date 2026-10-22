@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { RateLimitError } from "@/lib/errors";
 import { handleApiError } from "@/lib/http";
-import { consume } from "@/lib/rateLimit";
+import { consumeAsync } from "@/lib/rateLimit";
 import { verifyCodeRequestSchema, verifyCodeResponseSchema } from "@/lib/schemas";
 import { verifyCode } from "@/lib/totp";
 
@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
     const body = verifyCodeRequestSchema.parse(raw);
 
     // 5 attempts per 30 s window per pair (SECURITY.md, T2), then locked until the window ends.
-    const perPair = consume(`verify:pair:${body.pairId}`, 5, 30_000);
+    const perPair = await consumeAsync(`verify:pair:${body.pairId}`, 5, 30_000);
     if (!perPair.allowed) throw new RateLimitError(perPair.retryAfterSeconds);
     // Secondary guard against one client hammering many pairs.
-    const perClient = consume(`verify:ip:${clientKey(req)}`, 30, 60_000);
+    const perClient = await consumeAsync(`verify:ip:${clientKey(req)}`, 30, 60_000);
     if (!perClient.allowed) throw new RateLimitError(perClient.retryAfterSeconds);
 
     const verdict = await verifyCode(body.pairId, body.code);
