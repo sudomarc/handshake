@@ -11,10 +11,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  classifyTrust,
-  resolveAnalysisPlan,
-} from "../mobile/lib/trust/trustResolver";
+import { classifyTrust, resolveAnalysisPlan } from "../mobile/lib/trust/trustResolver";
 import type { SourceDecision } from "../mobile/lib/audio/sourceManager";
 
 const SELECTED_REMOTE: SourceDecision = {
@@ -87,6 +84,28 @@ describe("classifyTrust", () => {
     assert.equal(c, "IDENTITY_UNAVAILABLE");
   });
 
+  test("network failure and timeout failures under network partition produce expected unverified classifications", () => {
+    // Network error during session polling / handshake
+    const networkFail = classifyTrust({
+      callActive: true,
+      evidence: null,
+      failure: { kind: "network" },
+    });
+    assert.equal(networkFail, "IDENTITY_UNAVAILABLE");
+    const networkPlan = resolveAnalysisPlan({ classification: networkFail, source: null });
+    assert.equal(networkPlan.action, "SURFACE_UNVERIFIABLE");
+
+    // Timeout (peer unreachable / offline during partition)
+    const timeoutFail = classifyTrust({
+      callActive: true,
+      evidence: null,
+      failure: { kind: "timeout" },
+    });
+    assert.equal(timeoutFail, "UNKNOWN_IDENTITY");
+    const timeoutPlan = resolveAnalysisPlan({ classification: timeoutFail, source: null });
+    assert.equal(timeoutPlan.action, "SURFACE_AUDIO_UNAVAILABLE");
+  });
+
   test("no call active → IDENTITY_UNAVAILABLE", () => {
     const c = classifyTrust({ callActive: false, evidence: null });
     assert.equal(c, "IDENTITY_UNAVAILABLE");
@@ -117,12 +136,18 @@ describe("resolveAnalysisPlan", () => {
   });
 
   test("PARTIALLY_TRUSTED does NOT skip analysis (inconsistent evidence is not safety)", () => {
-    const plan = resolveAnalysisPlan({ classification: "PARTIALLY_TRUSTED", source: SELECTED_REMOTE });
+    const plan = resolveAnalysisPlan({
+      classification: "PARTIALLY_TRUSTED",
+      source: SELECTED_REMOTE,
+    });
     assert.equal(plan.action, "RUN_REMOTE_ANALYSIS");
   });
 
   test("UNKNOWN_IDENTITY with an attributable remote source runs analysis", () => {
-    const plan = resolveAnalysisPlan({ classification: "UNKNOWN_IDENTITY", source: SELECTED_REMOTE });
+    const plan = resolveAnalysisPlan({
+      classification: "UNKNOWN_IDENTITY",
+      source: SELECTED_REMOTE,
+    });
     assert.equal(plan.action, "RUN_REMOTE_ANALYSIS");
   });
 
@@ -142,7 +167,10 @@ describe("resolveAnalysisPlan", () => {
   });
 
   test("TRUST_RELATION_INVALID surfaces unverifiable without consulting audio", () => {
-    const plan = resolveAnalysisPlan({ classification: "TRUST_RELATION_INVALID", source: SELECTED_REMOTE });
+    const plan = resolveAnalysisPlan({
+      classification: "TRUST_RELATION_INVALID",
+      source: SELECTED_REMOTE,
+    });
     assert.equal(plan.action, "SURFACE_UNVERIFIABLE");
   });
 
