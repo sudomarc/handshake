@@ -610,6 +610,29 @@ describe("trusted-call protocol", () => {
       );
     });
 
+    test("verifyDeviceProof handles non-finite numbers and clock skew threshold bounds", async () => {
+      const fields = {
+        pairId: PAIR_A,
+        deviceId: alice.deviceId,
+        sessionId: TRUST_PROTOCOL,
+        nonce: "n".repeat(32),
+        issuedAt: 1_700_000_000_000,
+        deviceSecret: "a".repeat(64),
+      };
+      const expected = await computeDeviceProof(fields);
+
+      // Non-finite timestamps reject cleanly
+      assert.equal(verifyDeviceProof({ ...fields, expected, issuedAt: NaN }), false);
+      assert.equal(verifyDeviceProof({ ...fields, expected, now: Infinity }), false);
+
+      // Exact skew boundaries
+      assert.equal(verifyDeviceProof({ ...fields, expected, now: fields.issuedAt + 60_000 }), true);
+      assert.equal(
+        verifyDeviceProof({ ...fields, expected, now: fields.issuedAt + 60_001 }),
+        false,
+      );
+    });
+
     test("attestation binds both devices and the session window", async () => {
       const base = {
         pairId: PAIR_A,
@@ -637,13 +660,40 @@ describe("trusted-call protocol", () => {
         pairId: PAIR_A,
         initiatorDeviceId: alice.deviceId,
         peerDeviceId: bob.deviceId,
-        issuedAt: 1,
-        expiresAt: 2,
+        issuedAt: 1_700_000_000_000,
+        expiresAt: 1_700_000_300_000,
       };
       const { issueSessionToken } = await import("../lib/trustCrypto");
       const token = issueSessionToken(claims);
-      assert.equal(verifySessionToken(token, claims, 1), true);
-      assert.equal(verifySessionToken(token, claims, 3), false);
+      assert.equal(verifySessionToken(token, claims, 1_700_000_000_000), true);
+      assert.equal(verifySessionToken(token, claims, 1_700_000_300_001), false);
+    });
+
+    test("verifySessionToken validates input types, non-finite bounds, and skew limits", async () => {
+      const claims = {
+        sessionId: "s".repeat(32),
+        pairId: PAIR_A,
+        initiatorDeviceId: alice.deviceId,
+        peerDeviceId: bob.deviceId,
+        issuedAt: 1_700_000_000_000,
+        expiresAt: 1_700_000_300_000,
+      };
+      const { issueSessionToken } = await import("../lib/trustCrypto");
+      const token = issueSessionToken(claims);
+
+      // Malformed or empty tokens
+      assert.equal(verifySessionToken("", claims, 1_700_000_000_000), false);
+      assert.equal(verifySessionToken(null as unknown as string, claims, 1_700_000_000_000), false);
+
+      // Non-finite values
+      assert.equal(
+        verifySessionToken(token, { ...claims, expiresAt: NaN }, 1_700_000_000_000),
+        false,
+      );
+      assert.equal(verifySessionToken(token, claims, Infinity), false);
+
+      // Issued at in the future beyond allowed clock skew limit
+      assert.equal(verifySessionToken(token, claims, 1_700_000_000_000 - 60_001), false);
     });
   });
 

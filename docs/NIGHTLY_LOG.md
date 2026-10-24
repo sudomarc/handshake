@@ -1,5 +1,50 @@
 # Nightly Engineer Log
 
+## 2026-10-23
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 23, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 146 root tests PASS, 9 plugin tests PASS (155 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Security and Edge Cases):** Validated and hardened cryptographic proof verification (`verifyDeviceProof`) and session token verification (`verifySessionToken`) in `lib/trustCrypto.ts` against non-finite timestamp values (`NaN`, `Infinity`), lower-bound clock skew, and malformed inputs. Expanded test coverage in `tests/trust.test.ts` and `tests/trustResolver.test.ts`.
+- **What was changed:**
+  - `lib/trustCrypto.ts`:
+    - Added `Number.isFinite` checks for timestamps in `verifyDeviceProof` and `verifySessionToken` to prevent `NaN` arithmetic bypasses.
+    - Enforced lower-bound skew validation (`now < expected.issuedAt - MAX_CLOCK_SKEW_MS`) and type checking on token string inputs in `verifySessionToken`.
+  - `tests/trust.test.ts`:
+    - Added tests for `verifyDeviceProof` and `verifySessionToken` testing NaN / non-finite timestamps, exact clock skew threshold boundaries (`60_000` ms vs `60_001` ms), and null/empty string token inputs.
+  - `tests/trustResolver.test.ts`:
+    - Added test assertions for network error (`kind: "network"`) and timeout (`kind: "timeout"`) failures under network partition during call trust evaluation.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 149 root unit tests PASS, 9 plugin unit tests PASS (158 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/trustCrypto.ts`, `tests/trust.test.ts`, `tests/trustResolver.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Enhance mobile hook test coverage for offline trust state fallback.
+2. Audit API error responses for sensitive data leaks or inconsistent status codes.
+3. Review Next.js API route Zod schema error messaging and structured error responses.
+
 ## 2026-10-22
 
 ### Phase & Baseline Status

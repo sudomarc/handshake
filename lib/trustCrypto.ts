@@ -152,6 +152,7 @@ export function verifyDeviceProof(input: {
   now?: number;
 }): boolean {
   const now = input.now ?? Date.now();
+  if (!Number.isFinite(input.issuedAt) || !Number.isFinite(now)) return false;
   if (Math.abs(now - input.issuedAt) > MAX_CLOCK_SKEW_MS) return false;
 
   const pairId = pairIdSchema.safeParse(input.pairId);
@@ -213,7 +214,17 @@ export function verifySessionToken(
   },
   now = Date.now(),
 ): boolean {
-  if (now > expected.expiresAt) return false;
+  if (
+    !Number.isFinite(now) ||
+    !Number.isFinite(expected.expiresAt) ||
+    !Number.isFinite(expected.issuedAt)
+  ) {
+    return false;
+  }
+  if (now > expected.expiresAt || now < expected.issuedAt - MAX_CLOCK_SKEW_MS) {
+    return false;
+  }
+  if (typeof token !== "string" || !token) return false;
   const expectedToken = issueSessionToken(expected);
   return safeEqualHex(
     createHash("sha256").update(expectedToken, "utf8").digest("hex"),
