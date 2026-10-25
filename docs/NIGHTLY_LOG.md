@@ -1,5 +1,51 @@
 # Nightly Engineer Log
 
+## 2026-10-25
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 25, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 149 root tests PASS, 9 plugin tests PASS (158 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 2 (Roadmap) & Priority Level 4 (Continuous improvement - Tests & Mobile Quality):** Created mock registration module `tests/mocks/register-react-native.ts` and mobile unit test suite `tests/mobileSession.test.ts` testing in-call session orchestration (`runCallTrust`), offline/network failure fallbacks, progress updates, device identity (`getDeviceId`, `getDeviceSecret`, `clearDeviceIdentity`), and SecureStore pair storage (`addPair`, `updatePair`, `removePair`, `getAllPairs`).
+- **What was changed:**
+  - `tests/mocks/register-react-native.ts`:
+    - Created Node test runner mock module supporting `expo-crypto`, `expo-secure-store`, `react-native`, and alias path resolution (`@/`) for mobile modules.
+  - `tests/mobileSession.test.ts`:
+    - Added unit test suite for `runCallTrust` (offline fallback when no circle exists, network failure handling, progress callbacks), `deviceIdentity` key generation and persistence, and `storage` SecureStore CRUD operations.
+  - `mobile/lib/trust/session.ts` and `mobile/lib/trust/api.ts`:
+    - Converted internal imports to relative paths (`./api`, `./callState`, `./deviceIdentity`, `./proof`, `./pairLink`, `../config`) ensuring clean resolution across React Native bundlers and Node test runner.
+  - `package.json`:
+    - Added `--import ./tests/mocks/register-react-native.ts` and registered `tests/mobileSession.test.ts` in `"test"` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 153 root unit tests PASS, 9 plugin unit tests PASS (162 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`package.json`, `tests/mocks/register-react-native.ts`, `tests/mobileSession.test.ts`, `mobile/lib/trust/session.ts`, `mobile/lib/trust/api.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Audit API error responses for sensitive data leaks or inconsistent status codes.
+2. Review Next.js API route Zod schema error messaging and structured error responses.
+3. Add unit test coverage for mobile permission state transitions and call overlay intent handling.
+
 ## 2026-10-23
 
 ### Phase & Baseline Status
@@ -167,7 +213,7 @@
 ### Verification Gate Summary
 
 - Root `npm run lint && npm run build`: PASS (0 errors / warnings).
-- Root `npm test`: 141 root unit tests PASS, 9 plugin unit tests PASS (150 total tests PASS).
+- Root `npm test`: 141 root unit tests PASS, 9 plugin unit tests PASS (153 total tests PASS).
 - Mobile `npm run typecheck && npm run lint`: PASS.
 - Prettier on touched files (`lib/rateLimit.ts`, `tests/rateLimit.test.ts`, `package.json`, `docs/NIGHTLY_LOG.md`, `ROADMAP.md`): PASS.
 - Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.

@@ -6,13 +6,9 @@
  * anywhere in this flow.
  */
 
-import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "@/lib/config";
-import {
-  computeDeviceProof,
-  verifyAttestation,
-  TRUST_PROTOCOL,
-} from "@/lib/trust/proof";
-import { getDeviceId, getDeviceSecret, newNonce } from "@/lib/trust/deviceIdentity";
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "../config";
+import { computeDeviceProof, verifyAttestation, TRUST_PROTOCOL } from "./proof";
+import { getDeviceId, getDeviceSecret, newNonce } from "./deviceIdentity";
 import { z } from "zod";
 
 export const trustStateSchema = z.enum(["unverified", "trusted"]);
@@ -158,7 +154,11 @@ async function request<T>(
   }
   const result = schema.safeParse(raw);
   if (!result.success) {
-    throw new TrustApiError(response.status, "bad_response", "The server sent an unexpected answer.");
+    throw new TrustApiError(
+      response.status,
+      "bad_response",
+      "The server sent an unexpected answer.",
+    );
   }
   return result.data;
 }
@@ -314,15 +314,19 @@ export async function acceptInvite(input: {
 }): Promise<{ state: "accepted"; pairId: string }> {
   const deviceId = await getDeviceId();
   const deviceSecret = await getDeviceSecret();
-  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/accept`, acceptedResponseSchema, {
-    method: "POST",
-    body: {
-      displayName: input.displayName,
-      deviceId,
-      deviceSecret,
-      label: input.label,
+  const result = await request(
+    `/api/trust/invite/${encodeURIComponent(input.inviteId)}/accept`,
+    acceptedResponseSchema,
+    {
+      method: "POST",
+      body: {
+        displayName: input.displayName,
+        deviceId,
+        deviceSecret,
+        label: input.label,
+      },
     },
-  });
+  );
   return { state: result.state, pairId: result.pairId };
 }
 
@@ -334,15 +338,19 @@ export async function confirmInvite(input: {
 }): Promise<{ state: "confirmed"; pairId: string }> {
   const deviceId = await getDeviceId();
   const deviceSecret = await getDeviceSecret();
-  const result = await request(`/api/trust/invite/${encodeURIComponent(input.inviteId)}/confirm`, confirmedResponseSchema, {
-    method: "POST",
-    body: {
-      pairId: input.pairId,
-      deviceId,
-      deviceSecret,
-      label: input.label,
+  const result = await request(
+    `/api/trust/invite/${encodeURIComponent(input.inviteId)}/confirm`,
+    confirmedResponseSchema,
+    {
+      method: "POST",
+      body: {
+        pairId: input.pairId,
+        deviceId,
+        deviceSecret,
+        label: input.label,
+      },
     },
-  });
+  );
   return { state: result.state, pairId: result.pairId };
 }
 
@@ -365,7 +373,7 @@ export function inviteQrUrl(inviteId: string): string | null {
  * The invite id is opaque to the client: there is deliberately no format check
  * beyond "non-empty", because the backend owns its id scheme.
  */
-export { parsePairInvite } from "@/lib/trust/pairLink";
+export { parsePairInvite } from "./pairLink";
 
 /**
  * Lightweight reachability probe used by the home surface. Any HTTP response
