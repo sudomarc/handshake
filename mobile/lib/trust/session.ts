@@ -26,9 +26,9 @@ import {
   openSession,
   pollSession,
   verifySessionTrust,
-} from "@/lib/trust/api";
-import { deriveCallState, type CallContext, type CallDecision } from "@/lib/trust/callState";
-import { getDeviceId } from "@/lib/trust/deviceIdentity";
+} from "./api";
+import { deriveCallState, type CallContext, type CallDecision } from "./callState";
+import { getDeviceId } from "./deviceIdentity";
 
 export type CallRole = "initiator" | "peer";
 
@@ -128,13 +128,15 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
   }
 
   // Phase 1: Initializing - starting the trust handshake
-  reportProgress(finish({
-    backendReachable: true,
-    sessionAttempted: false,
-    sessionId: null,
-    peerDeviceId: null,
-    trust: null,
-  }));
+  reportProgress(
+    finish({
+      backendReachable: true,
+      sessionAttempted: false,
+      sessionId: null,
+      peerDeviceId: null,
+      trust: null,
+    }),
+  );
 
   let backendReachable = true;
   let sessionId: string | null = null;
@@ -155,13 +157,15 @@ export async function runCallTrust(options: RunTrustOptions): Promise<CallTrustR
     sessionId = opened.sessionId;
 
     // Phase 3: Sending - session opened, now joining or waiting for peer
-    reportProgress(finish({
-      backendReachable: true,
-      sessionAttempted: true,
-      sessionId: opened.sessionId,
-      peerDeviceId: null,
-      trust: null,
-    }));
+    reportProgress(
+      finish({
+        backendReachable: true,
+        sessionAttempted: true,
+        sessionId: opened.sessionId,
+        peerDeviceId: null,
+        trust: null,
+      }),
+    );
 
     const localDeviceId = await getDeviceId();
     if (options.role === "peer" && opened.openedByDeviceId !== localDeviceId) {
