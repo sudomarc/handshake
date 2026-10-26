@@ -216,6 +216,17 @@ describe("lib/http", () => {
 
       const r6 = handleApiError(new Error("unexpected"));
       assert.equal(r6.status, 500);
+      const json6 = await r6.json();
+      assert.equal(json6.error.code, "internal_error");
+      assert.equal(json6.error.message, "Something went wrong on our side. Please try again.");
+
+      // Provider error message is sanitized and never echoed
+      const providerErr = new Error("Featherless API error (502)");
+      const r7 = handleApiError(providerErr);
+      assert.equal(r7.status, 500);
+      const json7 = await r7.json();
+      assert.equal(json7.error.code, "internal_error");
+      assert.equal(json7.error.message, "Something went wrong on our side. Please try again.");
     } finally {
       console.error = origConsoleError;
     }
