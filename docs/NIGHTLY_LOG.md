@@ -1,5 +1,55 @@
 # Nightly Engineer Log
 
+## 2026-10-24
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 24, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build && npm run format:check` -> PASS (lint and build pass).
+  - Root `npm test` -> 149 root tests PASS, 9 plugin tests PASS (158 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint && npm run format:check` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Mobile quality & Security API sanitization):**
+  - Added unit test coverage for `usePairs` mobile hook logic and storage interactions in `tests/usePairs.test.ts` via `--import ./tests/mocks/register-react-native.ts`.
+  - Sanitized 500 internal error responses in `lib/http.ts` (`handleApiError`) to remove temporary diagnostic error messages and ensure unhandled 500 errors consistently return `"Something went wrong on our side. Please try again."` without leaking provider details or internal implementation error text.
+- **What was changed:**
+  - `tests/mocks/register-react-native.ts`:
+    - Created mock loader registering `expo-secure-store`, `react-native`, and `expo-crypto` for Node `--test` test runner.
+  - `tests/usePairs.test.ts`:
+    - Added unit test suite covering initial empty state, `addPair`, `updatePair`, `removePair`, and storage fallback behavior for `usePairs` hook logic.
+  - `lib/http.ts`:
+    - Removed temporary diagnostic error message output in `handleApiError` for 500 internal error status codes.
+  - `tests/lib.test.ts`:
+    - Added test assertions verifying that generic errors and provider-style errors passed to `handleApiError` are strictly sanitized.
+  - `package.json`:
+    - Registered `--import ./tests/mocks/register-react-native.ts` and `tests/usePairs.test.ts` in root `"test"` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 154 root unit tests PASS, 9 plugin unit tests PASS (163 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/http.ts`, `tests/lib.test.ts`, `tests/usePairs.test.ts`, `tests/mocks/register-react-native.ts`, `package.json`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Enhance mobile hook test coverage for offline trust state fallback.
+2. Review Next.js API route Zod schema error messaging and structured error responses.
+3. Audit rate limit window header handling across WebRTC signaling endpoints (`/api/call/*`).
+
 ## 2026-10-23
 
 ### Phase & Baseline Status
