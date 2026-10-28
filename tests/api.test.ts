@@ -8,6 +8,7 @@ import { POST as analyzeHandler } from "../app/api/analyze/route";
 import { POST as challengeHandler } from "../app/api/challenge/route";
 import { resetRateLimits } from "../lib/rateLimit";
 import { getCurrentCode } from "../lib/totp";
+import { handleApiError } from "../lib/http";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
 const VALID_PAIR_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
@@ -221,6 +222,18 @@ describe("API routes", () => {
       assert.equal(json.challenge, "What is your favorite color?");
       assert.equal(json.category, "personal");
       assert.equal(json.difficulty, "easy");
+    });
+  });
+
+  describe("handleApiError error sanitization", () => {
+    test("sanitizes unhandled internal errors without echoing raw details", async () => {
+      const providerError = new Error("Featherless API error (502): upstream gateway timeout");
+      const res = handleApiError(providerError);
+      assert.equal(res.status, 500);
+
+      const json = await res.json();
+      assert.equal(json.error.code, "internal_error");
+      assert.equal(json.error.message, "Something went wrong on our side. Please try again.");
     });
   });
 });
