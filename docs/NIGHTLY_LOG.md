@@ -1,5 +1,47 @@
 # Nightly Engineer Log
 
+## 2026-10-28
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Oct 28, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS (lint and build pass).
+  - Root `npm test` -> 149 root tests PASS, 9 plugin tests PASS (158 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Security and Observability):** Sanitized unhandled 500 error responses in `lib/http.ts` by removing temporary diagnostic error message echoing, ensuring raw provider error messages or server implementation details are never leaked to API callers.
+- **What was changed:**
+  - `lib/http.ts`:
+    - Removed temporary diagnostic error message echoing for 500 internal errors in `handleApiError`. All unhandled 500 errors now return generic, sanitized `{ code: "internal_error", message: "Something went wrong on our side. Please try again." }`.
+  - `tests/api.test.ts`:
+    - Added unit test verifying that `handleApiError` returns sanitized 500 internal error responses without leaking raw Error messages, provider error details, or stack traces.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 150 root unit tests PASS, 9 plugin unit tests PASS (159 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/http.ts`, `tests/api.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Enhance mobile hook test coverage for offline trust state fallback.
+2. Review Next.js API route Zod schema error messaging and structured error responses across all API endpoints.
+3. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+
 ## 2026-10-23
 
 ### Phase & Baseline Status
