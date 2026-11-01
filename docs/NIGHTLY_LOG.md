@@ -1,5 +1,47 @@
 # Nightly Engineer Log
 
+## 2026-11-01
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Nov 1, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS (lint and build pass).
+  - Root `npm test` -> 150 root tests PASS, 9 plugin tests PASS (159 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Tests, Security, and Edge Cases):** Added comprehensive unit test coverage for call trust state derivation (`mobile/lib/trust/callState.ts`), covering `deriveCallState` and `deriveOutsideCallState`. Verified that risk detection strictly outranks confirmed trust, mutual trust confirmation requires both server-side attestation and local verification, in-flight/limitation states are accurately reported without overclaiming, and "Protected" is never claimed in any label or detail across all context permutations.
+- **What was changed:**
+  - `tests/callState.test.ts`:
+    - Created unit test suite with 14 tests verifying risk priority, outside-call calm ready/offline state handling, server and attestation verification invariants, in-flight analysis (`analyzing`, `verifying`, `initializing`), audio capture limitations (`capture_unavailable`), offline network status, missing/revoked circle handling, and exhaustive permutation assertions ensuring "Protected" is never claimed.
+  - `package.json`:
+    - Registered `tests/callState.test.ts` into root `npm test` script.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 164 root unit tests PASS, 9 plugin unit tests PASS (173 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`tests/callState.test.ts`, `package.json`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Review Next.js API route Zod schema error messaging and structured error responses across all API endpoints.
+2. Enhance mobile hook test coverage for offline trust state fallback.
+3. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+
 ## 2026-10-28
 
 ### Phase & Baseline Status
