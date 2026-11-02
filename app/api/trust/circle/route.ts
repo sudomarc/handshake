@@ -3,6 +3,7 @@ import { handleApiError } from "@/lib/http";
 import {
   circleStatusQuerySchema,
   circleStatusResponseSchema,
+  pairIdSchema,
   type DeviceId,
   type PairId,
 } from "@/lib/trustSchemas";
@@ -29,15 +30,17 @@ export async function GET(req: NextRequest) {
       issuedAt: url.searchParams.get("issuedAt") ?? undefined,
       proof: url.searchParams.get("proof") ?? undefined,
     });
-    const pairId = url.searchParams.get("pairId") ?? "";
+    const pairId = pairIdSchema.parse(url.searchParams.get("pairId"));
 
     let authorized = false;
-    if (query.deviceId && query.nonce && query.proof !== undefined && query.issuedAt !== undefined) {
+    if (
+      query.deviceId &&
+      query.nonce &&
+      query.proof !== undefined &&
+      query.issuedAt !== undefined
+    ) {
       try {
-        const device = trustStore.requireActiveDevice(
-          pairId as PairId,
-          query.deviceId as DeviceId,
-        );
+        const device = trustStore.requireActiveDevice(pairId, query.deviceId as DeviceId);
         authorized = verifyDeviceProof({
           expected: query.proof,
           pairId,
@@ -60,9 +63,7 @@ export async function GET(req: NextRequest) {
       revokedAt: device.revokedAt ? new Date(device.revokedAt).toISOString() : null,
     }));
 
-    return NextResponse.json(
-      circleStatusResponseSchema.parse({ pairId, devices, authorized }),
-    );
+    return NextResponse.json(circleStatusResponseSchema.parse({ pairId, devices, authorized }));
   } catch (error) {
     return handleApiError(error);
   }

@@ -6,9 +6,11 @@ import { POST as verifyCodeHandler } from "../app/api/code/verify/route";
 import { POST as createPairHandler } from "../app/api/circle/route";
 import { POST as analyzeHandler } from "../app/api/analyze/route";
 import { POST as challengeHandler } from "../app/api/challenge/route";
+import { GET as getCircleHandler } from "../app/api/trust/circle/route";
 import { resetRateLimits } from "../lib/rateLimit";
 import { getCurrentCode } from "../lib/totp";
 import { handleApiError } from "../lib/http";
+import { z } from "zod";
 
 const TEST_DERIVATION_KEY = "0123456789abcdef0123456789abcdef"; // 32 chars
 const VALID_PAIR_ID = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
@@ -225,7 +227,7 @@ describe("API routes", () => {
     });
   });
 
-  describe("handleApiError error sanitization", () => {
+  describe("handleApiError error sanitization and structured validation", () => {
     test("sanitizes unhandled internal errors without echoing raw details", async () => {
       const providerError = new Error("Featherless API error (502): upstream gateway timeout");
       const res = handleApiError(providerError);
@@ -234,6 +236,44 @@ describe("API routes", () => {
       const json = await res.json();
       assert.equal(json.error.code, "internal_error");
       assert.equal(json.error.message, "Something went wrong on our side. Please try again.");
+    });
+
+    test("formats ZodError with structured field details", async () => {
+      const testSchema = z.object({
+        name: z.string().min(3),
+        count: z.number().int().positive(),
+      });
+      const parsed = testSchema.safeParse({ name: "a", count: -1 });
+      assert.equal(parsed.success, false);
+
+      if (!parsed.success) {
+        const res = handleApiError(parsed.error);
+        assert.equal(res.status, 400);
+
+        const json = await res.json();
+        assert.equal(json.error.code, "invalid_input");
+        assert.equal(
+          json.error.message,
+          "That input doesn't look right. Please check it and try again.",
+        );
+        assert.ok(Array.isArray(json.error.details));
+        assert.equal(json.error.details.length, 2);
+        assert.equal(json.error.details[0].field, "name");
+        assert.equal(json.error.details[1].field, "count");
+      }
+    });
+  });
+
+  describe("GET /api/trust/circle input validation", () => {
+    test("returns 400 invalid_input when pairId is invalid or missing", async () => {
+      const req = new NextRequest("http://localhost/api/trust/circle?pairId=invalid");
+      const res = await getCircleHandler(req);
+      assert.equal(res.status, 400);
+
+      const json = await res.json();
+      assert.equal(json.error.code, "invalid_input");
+      assert.ok(Array.isArray(json.error.details));
+      assert.equal(json.error.details[0].field, "root");
     });
   });
 });

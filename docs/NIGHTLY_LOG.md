@@ -1,5 +1,50 @@
 # Nightly Engineer Log
 
+## 2026-11-02
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Nov 2, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS (lint and build pass).
+  - Root `npm test` -> 150 root tests PASS, 9 plugin tests PASS (159 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Security, Correctness, and Error Handling):** Enhanced API validation and error reporting consistency across Next.js API route handlers.
+- **What was changed:**
+  - `lib/http.ts`:
+    - Updated `handleApiError` for `ZodError` to include structured validation issues (`details: Array<{ field: string; issue: string }>`) alongside `code: "invalid_input"` and user-friendly error message, maintaining backward compatibility while providing structured debugging details to client callers without leaking server implementation details.
+  - `app/api/trust/circle/route.ts`:
+    - Enforced query parameter validation with `pairIdSchema.parse(url.searchParams.get("pairId"))`, returning 400 `invalid_input` cleanly on malformed or missing `pairId` queries.
+  - `tests/api.test.ts`:
+    - Added unit test verifying structured `ZodError` responses with path and issue details.
+    - Added unit test verifying `GET /api/trust/circle` validation failure handling for malformed `pairId` inputs.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 152 root unit tests PASS, 9 plugin unit tests PASS (161 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/http.ts`, `app/api/trust/circle/route.ts`, `tests/api.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Enhance mobile hook test coverage for offline trust state fallback.
+2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+3. Review Next.js API route error handling and status code mapping across call-related endpoints.
+
 ## 2026-10-28
 
 ### Phase & Baseline Status

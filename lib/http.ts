@@ -3,7 +3,11 @@ import { ZodError } from "zod";
 import { ConfigError, NotImplementedError, PairNotFoundError, RateLimitError } from "./errors";
 import { TrustError } from "./trustStore";
 
-type ApiError = { code: string; message: string };
+type ApiError = {
+  code: string;
+  message: string;
+  details?: Array<{ field: string; issue: string }>;
+};
 
 export function jsonError(status: number, error: ApiError) {
   return NextResponse.json({ error }, { status });
@@ -11,9 +15,14 @@ export function jsonError(status: number, error: ApiError) {
 
 export function handleApiError(error: unknown) {
   if (error instanceof ZodError) {
+    const details = error.issues.map((issue) => ({
+      field: issue.path.join(".") || "root",
+      issue: issue.message,
+    }));
     return jsonError(400, {
       code: "invalid_input",
       message: "That input doesn't look right. Please check it and try again.",
+      ...(details.length > 0 ? { details } : {}),
     });
   }
   if (error instanceof RateLimitError) {
