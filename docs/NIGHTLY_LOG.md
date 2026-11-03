@@ -1,5 +1,48 @@
 # Nightly Engineer Log
 
+## 2026-11-03
+
+### Phase & Baseline Status
+
+- **Phase:** Roadmap Mode (Current date: Nov 03, 2026, after Oct 10, 2026 submission cutoff).
+- **Baseline Status:**
+  - Root: `npm ci && npm run lint && npm run build` -> PASS (lint and build pass).
+  - Root `npm test` -> 150 root tests PASS, 9 plugin tests PASS (159 total tests PASS).
+  - Mobile: `cd mobile && npm ci && npm run typecheck && npm run lint` -> PASS (typecheck and lint pass).
+  - Plugin: `NODE_PATH=$(pwd)/mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js` -> 9/9 PASS.
+
+### Priority Level & Work Undertaken
+
+- **Priority Level 4 (Continuous improvement - Security, Observability, and Error Handling):** Enhanced Zod error handling in `handleApiError` (`lib/http.ts`) by extracting structured issue details (`{ field, issue }`) into an optional `details` array on the error payload. Expanded test coverage across API route boundaries in `tests/api.test.ts`.
+- **What was changed:**
+  - `lib/http.ts`:
+    - Updated `ApiError` type definition to include optional `details?: Array<{ field: string; issue: string }>`.
+    - In `handleApiError`, mapped `ZodError.issues` to `{ field: issue.path.map(String).join('.') || 'root', issue: issue.message }` and included `details` in HTTP 400 responses.
+  - `tests/api.test.ts`:
+    - Added assertions for `error.details` across `GET /api/code/current`, `POST /api/code/verify`, `POST /api/analyze`, and `POST /api/challenge` validating that input validation errors identify the field and message properly.
+
+### Verification Gate Summary
+
+- Root `npm run lint && npm run build`: PASS (0 errors / warnings).
+- Root `npm test`: 150 root unit tests PASS, 9 plugin unit tests PASS (159 total tests PASS).
+- Mobile `npm run typecheck && npm run lint`: PASS.
+- Prettier on touched files (`lib/http.ts`, `tests/api.test.ts`, `docs/NIGHTLY_LOG.md`): PASS.
+- Rebuild check (`./gradlew :app:assembleRelease`): Requires full Android SDK environment; Android release CI build workflow (`.github/workflows/android-apk.yml`) remains untouched.
+
+### Known Risks & Open Findings
+
+- Remote carrier call audio and WhatsApp call audio remain inaccessible due to Android OS security boundaries (`CAPTURE_AUDIO_OUTPUT` permission constraint).
+
+### Needs Human
+
+- Physical device testing on two phones for QR pairing and live call overlay behavior against the deployed backend.
+
+### Plan for Tomorrow (Next 3 Tasks)
+
+1. Enhance mobile hook test coverage for offline trust state fallback.
+2. Validate and refine device-key attestation expiration and revocation behavior under network partition scenarios.
+3. Review call session signaling timeout resilience under flaky WebRTC / ICE connectivity.
+
 ## 2026-10-28
 
 ### Phase & Baseline Status

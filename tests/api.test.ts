@@ -73,6 +73,10 @@ describe("API routes", () => {
 
       const json = await res.json();
       assert.equal(json.error.code, "invalid_input");
+      assert.ok(Array.isArray(json.error.details));
+      assert.equal(json.error.details.length, 1);
+      assert.equal(json.error.details[0].field, "pairId");
+      assert.equal(json.error.details[0].issue, "A pair code is 32 hex characters");
     });
   });
 
@@ -118,6 +122,10 @@ describe("API routes", () => {
 
       const json = await res.json();
       assert.equal(json.error.code, "invalid_input");
+      assert.ok(Array.isArray(json.error.details));
+      assert.equal(json.error.details.length, 1);
+      assert.equal(json.error.details[0].field, "code");
+      assert.equal(json.error.details[0].issue, "The code is 6 digits");
     });
 
     test("returns 429 when per-pair rate limit is exceeded", async () => {
@@ -170,6 +178,8 @@ describe("API routes", () => {
 
       const json = await res.json();
       assert.equal(json.error.code, "invalid_input");
+      assert.ok(Array.isArray(json.error.details));
+      assert.equal(json.error.details[0].field, "transcript");
     });
 
     test("returns 400 on invalid challenge request payload", async () => {
@@ -183,6 +193,9 @@ describe("API routes", () => {
 
       const json = await res.json();
       assert.equal(json.error.code, "invalid_input");
+      assert.ok(Array.isArray(json.error.details));
+      assert.equal(json.error.details[0].field, "pairId");
+      assert.equal(json.error.details[0].issue, "A pair code is 32 hex characters");
     });
 
     test("returns 200 for valid analyze request and 429 on IP rate limit exceed", async () => {
