@@ -22,6 +22,7 @@ import {
   type PairId,
 } from "./trustCrypto";
 import type { TrustState } from "./trustSchemas";
+import type { RedisTrustStore } from "./trustStoreRedis";
 
 export interface TrustStoreState {
   pairs: Array<{ pairId: PairId; devices: StoredDevice[] }>;
@@ -709,7 +710,35 @@ export class TrustStore {
   }
 }
 
-export const trustStore = new TrustStore();
+/**
+ * Factory function to create the appropriate TrustStore implementation
+ * based on environment configuration.
+ *
+ * - If UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set → RedisTrustStore
+ * - If TRUST_STORE_PATH is set → file-backed TrustStore
+ * - Otherwise → in-memory TrustStore
+ */
+export async function createTrustStore(): Promise<TrustStore | RedisTrustStore> {
+  // Dynamic import to avoid circular dependency
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const { RedisTrustStore } = await import("./trustStoreRedis");
+    return new RedisTrustStore();
+  }
+  if (process.env.TRUST_STORE_PATH) {
+    return new TrustStore(process.env.TRUST_STORE_PATH);
+  }
+  return new TrustStore();
+}
+
+// Synchronous version for backward compatibility (uses in-memory or file-backed only)
+export function createTrustStoreSync(): TrustStore {
+  if (process.env.TRUST_STORE_PATH) {
+    return new TrustStore(process.env.TRUST_STORE_PATH);
+  }
+  return new TrustStore();
+}
+
+export const trustStore = createTrustStoreSync();
 
 export interface ResolvedSession {
   sessionId: string;

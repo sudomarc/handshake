@@ -12,6 +12,7 @@
     "test": "npx tsx --test tests/lib.test.ts tests/api.test.ts tests/trust.test.ts tests/pairing.test.ts tests/pairLink.test.ts tests/sourceManager.test.ts tests/trustResolver.test.ts tests/callSession.test.ts tests/probeAdapter.test.ts tests/callAudioDirector.test.ts tests/rateLimit.test.ts tests/callState.test.ts && NODE_PATH=./mobile/node_modules node --test mobile/plugins/handshake-call-audio/plugin.test.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.41.0",
     "next": "16.3.8",
     "otplib": "^13.5.0",
     "qrcode": "^1.5.4",
