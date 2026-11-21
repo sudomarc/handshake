@@ -11,7 +11,10 @@ A “Trusted connection” state means that the required device relationship and
 ## Data and trust boundaries
 
 - **Mobile device:** stores local pairing information and initiates trust sessions. A compromised or unlocked device can undermine the local trust relationship.
-- **Trust backend:** validates request schemas, device proofs and session state. The current trust store is process-local in-memory state.
+- **Trust backend:** validates request schemas, device proofs and session state. The trust store supports three backends (auto-selected):
+  1. **Upstash Redis** (production) — shared, durable, atomic nonce consumption, multi-instance consistent
+  2. **File-backed** — atomic writes, single-instance only
+  3. **In-memory** (fallback) — loses state on restart, diverges across instances
 - **Pressure Check / Personal Challenge:** user-supplied transcript text and any relevant context may be sent from the server to the configured Featherless model when these features are invoked. The model response is untrusted input and is schema-validated before use.
 - **Server credentials:** provider/API secrets must remain in server-side environment variables; never put them in the mobile bundle or commit them to the repository.
 
@@ -29,7 +32,13 @@ These are implementation facts, not a substitute for an independent security rev
 
 ### 1. Serverless persistence
 
-`lib/trustStore.ts` keeps device enrollments, invitations and call sessions in process-local memory. Different serverless instances can have different state, and restarts can lose state. A production deployment needs shared, durable storage and tested consistency/expiry behavior.
+`lib/trustStore.ts` now supports three backends:
+
+- **Upstash Redis** (recommended): Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`. Shared durable storage, atomic nonce consumption via `SADD`, multi-instance consistent, TTL-based expiry.
+- **File-backed**: Set `TRUST_STORE_PATH`. Atomic writes via temp file + rename. Single-instance only.
+- **In-memory** (fallback): No config needed. Loses state on restart, diverges across instances.
+
+Without Redis configured, the in-memory fallback is not suitable for production-scale, multi-instance use or durable recovery.
 
 ### 2. Device-proof cryptography
 
@@ -55,8 +64,8 @@ Treat transcripts, saved personal context, logs and model responses as sensitive
 
 ## Required before production use
 
-1. Replace process-local trust state with a shared durable database and test multi-instance behavior.
-2. Complete a reviewed asymmetric-key design and threat-model review.
+1. **Configure Upstash Redis** for trust storage: set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` and test multi-instance behavior. The in-memory fallback is not production-ready.
+2. Complete a reviewed asymmetric-key design and threat-model review (Ed25519/X25519 with Noise XK/IK protocol).
 3. Run the final Android build through repeatable two-device tests, including denied permissions, offline behavior, carrier calls and third-party calling apps.
 4. Keep call-audio claims strictly tied to evidence from supported OS APIs; do not add covert recording.
 5. Add production-grade rate limiting, telemetry without sensitive payloads, key rotation and incident procedures.

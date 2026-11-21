@@ -23,7 +23,7 @@ A convincing voice clone can make an urgent request sound as though it came from
 - WhatsApp and other third-party calling apps do not expose their private two-way audio to Handshake.
 - Live call transcription, real-time speech-risk analysis and cloned-voice detection are not available capabilities in this release.
 - A call-state event or overlay is not identity proof. A trusted state must only be shown when the trust flow actually confirms it.
-- Trust data is held in an in-memory store in the current prototype. It is not suitable for production-scale, multi-instance use or durable recovery.
+- **Trust data is now optionally persisted to Upstash Redis** for production-scale, multi-instance deployments. Without Redis configured, the in-memory fallback is not suitable for production.
 - LLM-based text analysis can be wrong. Do not use it as the sole basis for sending money, sharing secrets or making a safety-critical decision.
 
 See [implementation and verification status](./docs/FINAL_STATUS_2026-10-10.md) for historical test evidence and the validation steps required before a demo.
@@ -70,14 +70,25 @@ The web application is available at http://localhost:3000.
 
 ### Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| FEATHERLESS_API_KEY | Server-side key for LLM-backed text analysis. Required for AI features. |
-| FEATHERLESS_BASE_URL | Optional provider API base URL; the example defaults to Featherless. |
-| FEATHERLESS_MODEL | Optional model identifier used by the provider client. |
-| PAIR_DERIVATION_KEY | Server-side secret for legacy rotating-code compatibility routes. |
+| Variable                 | Purpose                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| FEATHERLESS_API_KEY      | Server-side key for LLM-backed text analysis. Required for AI features.                                                      |
+| FEATHERLESS_BASE_URL     | Optional provider API base URL; the example defaults to Featherless.                                                         |
+| FEATHERLESS_MODEL        | Optional model identifier used by the provider client.                                                                       |
+| PAIR_DERIVATION_KEY      | Server-side secret for legacy rotating-code compatibility routes.                                                            |
+| UPSTASH_REDIS_REST_URL   | **Optional.** Upstash Redis REST URL (e.g. `https://eu1-...upstash.io`). Enables production-ready distributed trust storage. |
+| UPSTASH_REDIS_REST_TOKEN | **Optional.** Upstash Redis REST token. Required with URL.                                                                   |
+| TRUST_STORE_PATH         | **Optional.** Local file path for file-backed persistence (dev only, e.g. `./data/trust-store.json`).                        |
 
 Never embed secrets in source code or commit .env.local. The configured provider receives the text submitted for analysis; do not submit confidential material.
+
+#### Trust storage modes
+
+The trust store automatically selects the best available backend:
+
+1. **Upstash Redis** (recommended for production) — Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`. Persists across restarts, works across multiple serverless instances, atomic nonce consumption for replay protection.
+2. **File-backed** — Set `TRUST_STORE_PATH`. Atomic writes via temp file + rename. Single-instance only (no cross-instance sync).
+3. **In-memory** (default) — No config needed. Loses state on restart, diverges across instances. For development only.
 
 ## Tests and builds
 
@@ -107,20 +118,20 @@ Before a demo, install the artifact produced from the commit being presented and
 
 ## Repository guide
 
-| Path | Purpose |
-| --- | --- |
-| app/, components/, lib/ | Web application, API-facing UI and shared server logic |
-| mobile/ | Handshake Personal mobile client and Android integration |
-| tests/ | Web/API and shared-module tests |
-| ARCHITECTURE.md | Architecture and principal data flows |
-| SECURITY.md | Threat model and security limitations |
-| ROADMAP.md | Product direction and remaining milestones |
-| DEMO_SCRIPT.md | Evidence-based demo guide |
-| HACKATHON.md | Judge-facing project context |
-| docs/ANDROID_AUDIO_RESEARCH.md | Android platform research and audio-access boundaries |
-| docs/CALL_AUDIO_FEASIBILITY.md | Technical feasibility prototype report |
-| docs/ANDROID_FAKE_CALL_QA_2026-10-07.md | Historical Android call-overlay test evidence |
-| docs/DEVICE_TEST_REPORT_2026-10-06.md | Historical device test report |
+| Path                                    | Purpose                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| app/, components/, lib/                 | Web application, API-facing UI and shared server logic   |
+| mobile/                                 | Handshake Personal mobile client and Android integration |
+| tests/                                  | Web/API and shared-module tests                          |
+| ARCHITECTURE.md                         | Architecture and principal data flows                    |
+| SECURITY.md                             | Threat model and security limitations                    |
+| ROADMAP.md                              | Product direction and remaining milestones               |
+| DEMO_SCRIPT.md                          | Evidence-based demo guide                                |
+| HACKATHON.md                            | Judge-facing project context                             |
+| docs/ANDROID_AUDIO_RESEARCH.md          | Android platform research and audio-access boundaries    |
+| docs/CALL_AUDIO_FEASIBILITY.md          | Technical feasibility prototype report                   |
+| docs/ANDROID_FAKE_CALL_QA_2026-10-07.md | Historical Android call-overlay test evidence            |
+| docs/DEVICE_TEST_REPORT_2026-10-06.md   | Historical device test report                            |
 
 ## Demo and evaluation
 

@@ -12,23 +12,23 @@ device trust states, validated AI results, and static content.
 
 ## Components
 
-| Component          | Location                            | Responsibility                                                                          |
-| ------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| Home               | `mobile/app/(tabs)/index.tsx`       | Protection-ready home, automatic recognition state and warning setup                    |
-| Trusted people     | `mobile/app/(tabs)/trusted.tsx`     | QR pairing: show/scan a short-lived invite, confirm, manage trusted relationships       |
-| Person detail      | `mobile/app/trusted/[pairId].tsx`   | Enrolled devices, revocation                                                           |
-| Pressure check     | `app/analyze/page.tsx`              | Transcript in → pressure score + risk level + reasoning (advisory)                      |
-| Call warnings      | `mobile/lib/callOverlay.ts`         | Optional Android overlay above phone/calling apps                                       |
-| Demo / pairing     | `app/demo/page.tsx`                 | Flow description of two-phone QR pairing + automatic recognition (no live QR on web)    |
-| Codes module       | `lib/totp.ts`                       | `otplib` wrapper for the **legacy** `/api/code/*` compatibility routes                  |
-| Trust protocol     | `lib/trustCrypto.ts`                | Device proofs, session attestation, invite/pairing primitives                           |
-| Trust store        | `lib/trustStore.ts`                 | In-memory store: devices, invitations, sessions (per server instance)                   |
-| AI module          | `lib/llm.ts` / `lib/featherless.ts` | Server-only `fetch` client for Featherless (OpenAI-compatible `chat/completions`)       |
-| Schemas            | `lib/schemas.ts`                    | zod schemas for every API input/output and LLM output                                   |
-| Trust schemas      | `lib/trustSchemas.ts`               | zod wire contracts for invites, enrollment, revocation and sessions                     |
-| Prompts            | `lib/featherless.ts`                | System prompts with untrusted-data fence (`<UNTRUSTED_TRANSCRIPT>`, `<SHARED_CONTEXT>`) |
-| Rate limiting      | `lib/rateLimit.ts`                  | Fixed-window in-memory rate limiter (demo-grade)                                        |
-| Store              | `lib/store.ts`                      | Legacy demo-grade pair storage (stateless derived secrets)                              |
+| Component      | Location                                      | Responsibility                                                                                                                                                                                                                                               |
+| -------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Home           | `mobile/app/(tabs)/index.tsx`                 | Protection-ready home, automatic recognition state and warning setup                                                                                                                                                                                         |
+| Trusted people | `mobile/app/(tabs)/trusted.tsx`               | QR pairing: show/scan a short-lived invite, confirm, manage trusted relationships                                                                                                                                                                            |
+| Person detail  | `mobile/app/trusted/[pairId].tsx`             | Enrolled devices, revocation                                                                                                                                                                                                                                 |
+| Pressure check | `app/analyze/page.tsx`                        | Transcript in → pressure score + risk level + reasoning (advisory)                                                                                                                                                                                           |
+| Call warnings  | `mobile/lib/callOverlay.ts`                   | Optional Android overlay above phone/calling apps                                                                                                                                                                                                            |
+| Demo / pairing | `app/demo/page.tsx`                           | Flow description of two-phone QR pairing + automatic recognition (no live QR on web)                                                                                                                                                                         |
+| Codes module   | `lib/totp.ts`                                 | `otplib` wrapper for the **legacy** `/api/code/*` compatibility routes                                                                                                                                                                                       |
+| Trust protocol | `lib/trustCrypto.ts`                          | Device proofs, session attestation, invite/pairing primitives                                                                                                                                                                                                |
+| Trust store    | `lib/trustStore.ts`, `lib/trustStoreRedis.ts` | Redis-backed (production), file-backed, or in-memory fallback: devices, invitations, sessions. Auto-selects best backend via env vars (`UPSTASH_REDIS_REST_URL`, `TRUST_STORE_PATH`). Atomic nonce consumption, TTL-based expiry, multi-instance consistent. |
+| AI module      | `lib/llm.ts` / `lib/featherless.ts`           | Server-only `fetch` client for Featherless (OpenAI-compatible `chat/completions`)                                                                                                                                                                            |
+| Schemas        | `lib/schemas.ts`                              | zod schemas for every API input/output and LLM output                                                                                                                                                                                                        |
+| Trust schemas  | `lib/trustSchemas.ts`                         | zod wire contracts for invites, enrollment, revocation and sessions                                                                                                                                                                                          |
+| Prompts        | `lib/featherless.ts`                          | System prompts with untrusted-data fence (`<UNTRUSTED_TRANSCRIPT>`, `<SHARED_CONTEXT>`)                                                                                                                                                                      |
+| Rate limiting  | `lib/rateLimit.ts`                            | Fixed-window in-memory rate limiter (demo-grade)                                                                                                                                                                                                             |
+| Store          | `lib/store.ts`                                | Legacy demo-grade pair storage (stateless derived secrets)                                                                                                                                                                                                   |
 
 ## Data flows
 
