@@ -1,7 +1,6 @@
 name: Web and Mobile Checks
 
 on:
-  push:
     branches: [main]
     paths:
       - "mobile/**"
@@ -27,6 +26,8 @@ on:
       - "tsconfig.json"
       - "postcss.config.mjs"
       - ".github/workflows/web-check.yml"
+
+  workflow_dispatch:
 
 permissions:
   contents: read
